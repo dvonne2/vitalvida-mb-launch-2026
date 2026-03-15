@@ -1,0 +1,124 @@
+{
+ "actions": [],
+ "creation": "2026-03-01 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "meta_phone_id",
+  "meta_token",
+  "meta_business_id",
+  "meta_app_id",
+  "webhook_verify_token",
+  "fallback_phone"
+ ],
+ "fields": [
+  {
+   "fieldname": "meta_phone_id",
+   "fieldtype": "Data",
+   "label": "Meta Phone Number ID",
+   "reqd": 1
+  },
+  {
+   "fieldname": "meta_token",
+   "fieldtype": "Password",
+   "label": "Meta Access Token",
+   "reqd": 1
+  },
+  {
+   "fieldname": "meta_business_id",
+   "fieldtype": "Data",
+   "label": "WhatsApp Business Account ID",
+   "reqd": 1
+  },
+  {
+   "fieldname": "meta_app_id",
+   "fieldtype": "Data",
+   "label": "Meta App ID",
+   "reqd": 1
+  },
+  {
+   "fieldname": "webhook_verify_token",
+   "fieldtype": "Data",
+   "label": "Webhook Verify Token",
+   "reqd": 1
+  },
+  {
+   "fieldname": "fallback_phone",
+   "fieldtype": "Data",
+   "label": "Fallback Phone (Owner WhatsApp)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_channels",
+   "fieldtype": "Section Break",
+   "label": "Channel Phone IDs"
+  },
+  {
+   "fieldname": "transactional_phone_id",
+   "fieldtype": "Data",
+   "label": "Transactional Phone ID",
+   "description": "Order status messages to customers"
+  },
+  {
+   "fieldname": "da_phone_id",
+   "fieldtype": "Data",
+   "label": "DA Phone ID",
+   "description": "All Delivery Agent messages"
+  },
+  {
+   "fieldname": "column_break_channels",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "promo_phone_id",
+   "fieldtype": "Data",
+   "label": "Promo Phone ID",
+   "description": "Cart recovery, ladder, journey, campaigns"
+  },
+  {
+   "fieldname": "payment_phone_id",
+   "fieldtype": "Data",
+   "label": "Payment Phone ID",
+   "description": "Payment confirmed only"
+  },
+  {
+   "fieldname": "section_break_intervals",
+   "fieldtype": "Section Break",
+   "label": "Rate Limiting"
+  },
+  {
+   "fieldname": "min_message_interval_seconds",
+   "fieldtype": "Int",
+   "label": "Min Message Interval (seconds)",
+   "default": "180"
+  },
+  {
+   "fieldname": "max_message_interval_seconds",
+   "fieldtype": "Int",
+   "label": "Max Message Interval (seconds)",
+   "default": "300"
+  }
+ ],
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-03-01 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Vitalvida",
+ "name": "VV Notification Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 0
+}

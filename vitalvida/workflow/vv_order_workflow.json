@@ -1,0 +1,145 @@
+{
+ "doctype": "Workflow",
+ "name": "VV Order Workflow",
+ "document_type": "VV Order",
+ "workflow_state_field": "order_status",
+ "is_active": 1,
+ "send_email_alert": 0,
+
+ "states": [
+  {"state": "Partial", "doc_status": "0", "allow_edit": "Sales User"},
+  {"state": "Pending", "doc_status": "0", "allow_edit": "Sales User"},
+  {"state": "Confirmed", "doc_status": "0", "allow_edit": "Sales User"},
+  {"state": "Assigned", "doc_status": "0", "allow_edit": "Logistics User"},
+  {"state": "Out for Delivery", "doc_status": "0", "allow_edit": "Logistics User"},
+  {"state": "Delivered", "doc_status": "0", "allow_edit": "Logistics User"},
+  {"state": "Paid", "doc_status": "0", "allow_edit": "Finance User"},
+  {"state": "Rescheduled", "doc_status": "0", "allow_edit": "Logistics User"},
+  {"state": "Cancelled", "doc_status": "2", "allow_edit": "Sales User"},
+  {"state": "Returned", "doc_status": "0", "allow_edit": "Logistics User"}
+ ],
+
+ "transitions": [
+
+  {
+   "state": "Partial",
+   "action": "Submit to Pending",
+   "next_state": "Pending",
+   "allowed": "Sales User",
+   "condition": ""
+  },
+
+  {
+   "state": "Pending",
+   "action": "Confirm Order",
+   "next_state": "Confirmed",
+   "allowed": "Sales User, Telesales User",
+   "condition": ""
+  },
+
+  {
+   "state": "Confirmed",
+   "action": "Assign DA",
+   "next_state": "Assigned",
+   "allowed": "Logistics User",
+   "condition": ""
+  },
+
+  {
+   "state": "Assigned",
+   "action": "Rider Departed",
+   "next_state": "Out for Delivery",
+   "allowed": "Logistics User",
+   "condition": ""
+  },
+
+  {
+   "state": "Out for Delivery",
+   "action": "Mark Delivered",
+   "next_state": "Delivered",
+   "allowed": "Logistics User, Delivery Agent",
+   "condition": ""
+  },
+
+  {
+   "state": "Out for Delivery",
+   "action": "Reschedule",
+   "next_state": "Rescheduled",
+   "allowed": "Logistics User, Delivery Agent",
+   "condition": ""
+  },
+
+  {
+   "state": "Delivered",
+   "action": "Confirm Payment",
+   "next_state": "Paid",
+   "allowed": "Finance User",
+   "condition": ""
+  },
+
+  {
+   "state": "Delivered",
+   "action": "Mark Returned",
+   "next_state": "Returned",
+   "allowed": "Logistics User",
+   "condition": ""
+  },
+
+  {
+   "state": "Delivered",
+   "action": "Cancel",
+   "next_state": "Cancelled",
+   "allowed": "Sales User",
+   "condition": ""
+  },
+
+  {
+   "state": "Rescheduled",
+   "action": "Re-assign Rider",
+   "next_state": "Assigned",
+   "allowed": "Logistics User",
+   "condition": ""
+  },
+
+  {
+   "state": "Partial",
+   "action": "Cancel",
+   "next_state": "Cancelled",
+   "allowed": "Sales User",
+   "condition": ""
+  },
+
+  {
+   "state": "Pending",
+   "action": "Cancel",
+   "next_state": "Cancelled",
+   "allowed": "Sales User",
+   "condition": ""
+  },
+
+  {
+   "state": "Confirmed",
+   "action": "Cancel",
+   "next_state": "Cancelled",
+   "allowed": "Sales User",
+   "condition": ""
+  },
+
+  {
+   "state": "Assigned",
+   "action": "Cancel",
+   "next_state": "Cancelled",
+   "allowed": "Sales User",
+   "condition": ""
+  },
+
+  {
+   "state": "Out for Delivery",
+   "action": "Cancel",
+   "next_state": "Cancelled",
+   "allowed": "Sales User",
+   "condition": ""
+  }
+
+ ]
+}

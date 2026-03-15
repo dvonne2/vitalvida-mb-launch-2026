@@ -1,0 +1,95 @@
+{
+ "name": "Stock Movement Log",
+ "doctype": "DocType",
+ "module": "Vitalvida",
+ "fields": [
+  {
+   "fieldname": "consignment",
+   "fieldtype": "Link",
+   "options": "Consignment",
+   "label": "Consignment",
+   "in_list_view": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "movement_type",
+   "fieldtype": "Select",
+   "options": "\nHQ to DA\nDA to DA\nReturn to HQ",
+   "label": "Movement Type",
+   "in_list_view": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break",
+   "in_create": 0
+  },
+  {
+   "fieldname": "from_location",
+   "fieldtype": "Data",
+   "label": "From Location",
+   "in_list_view": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "to_location",
+   "fieldtype": "Data",
+   "label": "To Location",
+   "in_list_view": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "quantity",
+   "fieldtype": "Data",
+   "label": "Quantity Summary",
+   "in_create": 0
+  },
+  {
+   "fieldname": "tracking_number",
+   "fieldtype": "Data",
+   "label": "Tracking Number",
+   "in_create": 0
+  },
+  {
+   "fieldname": "section_break_timing",
+   "fieldtype": "Section Break",
+   "label": "Timing",
+   "in_create": 0
+  },
+  {
+   "fieldname": "started_at",
+   "fieldtype": "Datetime",
+   "label": "Started At",
+   "in_create": 0
+  },
+  {
+   "fieldname": "completed_at",
+   "fieldtype": "Datetime",
+   "label": "Completed At",
+   "in_create": 0
+  },
+  {
+   "fieldname": "is_delayed",
+   "fieldtype": "Check",
+   "label": "Is Delayed",
+   "default": 0,
+   "in_create": 0
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0
+  },
+  {
+   "role": "Operations Manager",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0
+  }
+ ]
+}

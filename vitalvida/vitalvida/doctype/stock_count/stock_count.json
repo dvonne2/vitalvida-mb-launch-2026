@@ -1,0 +1,202 @@
+{
+ "name": "Stock Count",
+ "doctype": "DocType",
+ "module": "Vitalvida",
+ "is_submittable": 1,
+ "fields": [
+  {
+   "fieldname": "delivery_agent",
+   "fieldtype": "Link",
+   "options": "Delivery Agent",
+   "label": "Delivery Agent",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "product",
+   "fieldtype": "Link",
+   "options": "Item",
+   "label": "Product",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "count_date",
+   "fieldtype": "Date",
+   "label": "Count Date",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "count_status",
+   "fieldtype": "Select",
+   "options": "\nDA Pending\nDA Submitted\nManager Reviewing\nConfirmed\nDisputed",
+   "label": "Status",
+   "default": "DA Pending",
+   "in_list_view": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break",
+   "in_create": 0
+  },
+  {
+   "fieldname": "submitted_by",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "Submitted By",
+   "read_only": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "section_break_photo",
+   "fieldtype": "Section Break",
+   "label": "Photo Verification",
+   "in_create": 0
+  },
+  {
+   "fieldname": "stock_photo",
+   "fieldtype": "Attach Image",
+   "label": "Stock Photo",
+   "in_create": 0
+  },
+  {
+   "fieldname": "photo_timestamp",
+   "fieldtype": "Datetime",
+   "label": "Photo Timestamp",
+   "read_only": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "section_break_counts",
+   "fieldtype": "Section Break",
+   "label": "Counts",
+   "in_create": 0
+  },
+  {
+   "fieldname": "counted_quantity",
+   "fieldtype": "Float",
+   "label": "Counted Quantity (Legacy)",
+   "in_create": 0,
+   "hidden": 1
+  },
+  {
+   "fieldname": "da_counted_quantity",
+   "fieldtype": "Float",
+   "label": "DA Counted Quantity",
+   "in_create": 0
+  },
+  {
+   "fieldname": "manager_counted_quantity",
+   "fieldtype": "Float",
+   "label": "Manager Counted Quantity",
+   "in_create": 0
+  },
+  {
+   "fieldname": "final_counted_quantity",
+   "fieldtype": "Float",
+   "label": "Final Counted Quantity",
+   "read_only": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "section_break_manager",
+   "fieldtype": "Section Break",
+   "label": "Manager Review",
+   "in_create": 0
+  },
+  {
+   "fieldname": "manager_reviewed_by",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "Manager Reviewed By",
+   "read_only": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "manager_reviewed_at",
+   "fieldtype": "Datetime",
+   "label": "Manager Reviewed At",
+   "read_only": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "section_break_compliance",
+   "fieldtype": "Section Break",
+   "label": "Compliance Actions",
+   "in_create": 0
+  },
+  {
+   "fieldname": "fraud_escalated",
+   "fieldtype": "Check",
+   "label": "Fraud Escalated",
+   "default": 0,
+   "read_only": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "escalation_note",
+   "fieldtype": "Text",
+   "label": "Escalation Note",
+   "read_only": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "verified_by",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "Manually Verified By",
+   "read_only": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "verified_at",
+   "fieldtype": "Datetime",
+   "label": "Manually Verified At",
+   "read_only": 1,
+   "in_create": 0
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 1,
+   "cancel": 0
+  },
+  {
+   "role": "Operations Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 1,
+   "cancel": 0
+  },
+  {
+   "role": "Inventory Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 1,
+   "cancel": 0
+  },
+  {
+   "role": "Delivery Agent",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0
+  }
+ ]
+}

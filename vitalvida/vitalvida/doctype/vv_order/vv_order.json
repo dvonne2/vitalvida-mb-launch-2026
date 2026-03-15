@@ -1,0 +1,280 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "VV-ORD-.YYYY.-.#####",
+ "creation": "2026-03-06 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "order_status",
+  "status_changed_at",
+  "column_break_1",
+  "delivery_type",
+  "delivery_fee",
+  "section_break_customer",
+  "customer_name",
+  "customer_phone",
+  "address",
+  "column_break_2",
+  "customer_tier",
+  "telesales_rep",
+  "brand",
+  "section_break_package",
+  "package_name",
+  "package_contents",
+  "column_break_3",
+  "product_amount",
+  "total_payable",
+  "section_break_delivery",
+  "delivery_agent",
+  "da_phone",
+  "assigned_at",
+  "column_break_4",
+  "delivered_at",
+  "paid_at",
+  "payment_confirmed_at",
+  "section_break_notes",
+  "reschedule_note"
+ ],
+ "fields": [
+  {
+   "fieldname": "order_status",
+   "fieldtype": "Select",
+   "label": "Order Status",
+   "options": "Partial\nPending\nConfirmed\nAssigned\nOut for Delivery\nDelivered\nPaid\nRescheduled\nCancelled\nReturned",
+   "reqd": 1,
+   "default": "Partial",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "status_changed_at",
+   "fieldtype": "Datetime",
+   "label": "Status Changed At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "delivery_type",
+   "fieldtype": "Select",
+   "label": "Delivery Type",
+   "options": "Same Day\nStandard",
+   "reqd": 1
+  },
+  {
+   "fieldname": "delivery_fee",
+   "fieldtype": "Currency",
+   "label": "Delivery Fee",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_customer",
+   "fieldtype": "Section Break",
+   "label": "Customer Information"
+  },
+  {
+   "fieldname": "customer_name",
+   "fieldtype": "Data",
+   "label": "Customer Name",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "customer_phone",
+   "fieldtype": "Data",
+   "label": "Customer Phone",
+   "reqd": 1,
+   "description": "Normalised 234XXXXXXXXXX format \u2014 no + prefix, no spaces"
+  },
+  {
+   "fieldname": "address",
+   "fieldtype": "Data",
+   "label": "Delivery Address",
+   "in_list_view": 0
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "customer_tier",
+   "fieldtype": "Select",
+   "label": "Customer Tier",
+   "options": "\nWhale\nMini Whale\nRegular",
+   "read_only": 1
+  },
+  {
+   "fieldname": "telesales_rep",
+   "fieldtype": "Link",
+   "label": "Telesales Rep",
+   "options": "Telesales Closer"
+  },
+  {
+   "fieldname": "brand",
+   "fieldtype": "Select",
+   "label": "Brand",
+   "options": "FHG\nIR\nGeneral",
+   "default": "General",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "section_break_package",
+   "fieldtype": "Section Break",
+   "label": "Package Information"
+  },
+  {
+   "fieldname": "package_name",
+   "fieldtype": "Link",
+   "label": "Package",
+   "options": "Package",
+   "reqd": 1
+  },
+  {
+   "fieldname": "package_contents",
+   "fieldtype": "Data",
+   "label": "Package Contents",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "product_amount",
+   "fieldtype": "Currency",
+   "label": "Product Amount",
+   "reqd": 1
+  },
+  {
+   "fieldname": "total_payable",
+   "fieldtype": "Currency",
+   "label": "Total Payable",
+   "read_only": 1,
+   "description": "Auto-computed: product_amount + delivery_fee"
+  },
+  {
+   "fieldname": "section_break_delivery",
+   "fieldtype": "Section Break",
+   "label": "Delivery Information"
+  },
+  {
+   "fieldname": "delivery_agent",
+   "fieldtype": "Link",
+   "label": "Delivery Agent",
+   "options": "Delivery Agent",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "da_phone",
+   "fieldtype": "Data",
+   "label": "DA Phone",
+   "fetch_from": "delivery_agent.phone",
+   "read_only": 1,
+   "description": "Auto-filled from Delivery Agent record"
+  },
+  {
+   "fieldname": "assigned_at",
+   "fieldtype": "Datetime",
+   "label": "Assigned At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "delivered_at",
+   "fieldtype": "Datetime",
+   "label": "Delivered At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "paid_at",
+   "fieldtype": "Datetime",
+   "label": "Paid At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "payment_confirmed_at",
+   "fieldtype": "Datetime",
+   "label": "Payment Confirmed At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_notes",
+   "fieldtype": "Section Break",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "reschedule_note",
+   "fieldtype": "Text",
+   "label": "Reschedule / Cancellation Note",
+   "description": "Mandatory when status is Rescheduled, Cancelled, or Returned"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-03-08 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Vitalvida",
+ "name": "VV Order",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Sales User",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "read": 1,
+   "role": "Delivery Agent",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "read": 1,
+   "role": "Logistics User",
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "read": 1,
+   "role": "Finance User",
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "customer_name",
+ "track_changes": 1
+}

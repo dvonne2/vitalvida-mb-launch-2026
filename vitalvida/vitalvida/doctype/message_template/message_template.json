@@ -1,0 +1,116 @@
+{
+ "actions": [],
+ "autoname": "field:template_name",
+ "creation": "2026-03-01 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "template_name",
+  "event",
+  "recipient_type",
+  "channel",
+  "active",
+  "section_body",
+  "body",
+  "section_meta",
+  "last_updated_by"
+ ],
+ "fields": [
+  {
+   "fieldname": "template_name",
+   "fieldtype": "Data",
+   "label": "Template Name",
+   "reqd": 1,
+   "unique": 1,
+   "description": "Unique ID e.g. order_pending_customer"
+  },
+  {
+   "fieldname": "event",
+   "fieldtype": "Select",
+   "label": "Event",
+   "options": "Pending\nConfirmed\nAssigned\nDelivered\nPaid\nRecovery1\nRecovery2\nRecovery3\nRecovery4\nCommitment1\nCommitment2\nCommitment3\nCommitment4\nPostDelivery1\nPostDelivery2\nPostDelivery3\nPostDelivery4\nPostDelivery5\nDANotification\nTelesalesAssigned",
+   "reqd": 1
+  },
+  {
+   "fieldname": "recipient_type",
+   "fieldtype": "Select",
+   "label": "Recipient Type",
+   "options": "Customer\nDelivery Agent\nTelesales\nOwner\nLogistics",
+   "reqd": 1
+  },
+  {
+   "fieldname": "channel",
+   "fieldtype": "Select",
+   "label": "Channel",
+   "options": "WhatsApp\nSMS\nEmail",
+   "reqd": 1
+  },
+  {
+   "fieldname": "active",
+   "fieldtype": "Check",
+   "label": "Active",
+   "default": "1",
+   "reqd": 1,
+   "description": "1 = in use, 0 = disabled"
+  },
+  {
+   "fieldname": "section_body",
+   "fieldtype": "Section Break",
+   "label": "Template Body"
+  },
+  {
+   "fieldname": "body",
+   "fieldtype": "Long Text",
+   "label": "Body",
+   "reqd": 1,
+   "description": "Use {{customer_name}}, {{order_id}}, {{package_contents}}, {{total}}, {{da_name}}, {{da_phone}}, {{telesales_name}}, {{delivery_date}}, {{payment_amount}} as placeholders"
+  },
+  {
+   "fieldname": "section_meta",
+   "fieldtype": "Section Break",
+   "label": "Meta"
+  },
+  {
+   "fieldname": "last_updated_by",
+   "fieldtype": "Link",
+   "label": "Last Updated By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sender_channel",
+   "fieldtype": "Select",
+   "label": "Sender Channel",
+   "options": "Transactional\nDA\nPromo\nPayment",
+   "default": "Transactional"
+  }
+ ],
+ "links": [],
+ "modified": "2026-03-01 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Vitalvida",
+ "name": "Message Template",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "read": 1,
+   "role": "All",
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

@@ -1,0 +1,151 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-02-23 17:27:44.769444",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_akrq",
+  "webhook_secret",
+  "section_break_tier",
+  "whale_threshold",
+  "mini_whale_threshold",
+  "section_break_telesales",
+  "telesales_assignment_mode",
+  "performance_weight_top_percent",
+  "performance_weight_lead_share",
+  "section_break_variance",
+  "variance_warning_percent",
+  "variance_critical_percent"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_akrq",
+   "fieldtype": "Section Break",
+   "in_create": 0
+  },
+  {
+   "fieldname": "webhook_secret",
+   "fieldtype": "Data",
+   "label": "Webhook Secret",
+   "in_create": 0
+  },
+  {
+   "fieldname": "section_break_tier",
+   "fieldtype": "Section Break",
+   "label": "Customer Tier Thresholds",
+   "in_create": 0
+  },
+  {
+   "fieldname": "whale_threshold",
+   "fieldtype": "Currency",
+   "label": "Whale Threshold",
+   "default": "50000",
+   "description": "Minimum total_payable to qualify as Whale. Default: 50000",
+   "in_create": 0
+  },
+  {
+   "fieldname": "mini_whale_threshold",
+   "fieldtype": "Currency",
+   "label": "Mini Whale Threshold",
+   "default": "20000",
+   "description": "Minimum total_payable to qualify as Mini Whale. Default: 20000",
+   "in_create": 0
+  },
+  {
+   "fieldname": "section_break_telesales",
+   "fieldtype": "Section Break",
+   "label": "Telesales Assignment",
+   "in_create": 0
+  },
+  {
+   "fieldname": "telesales_assignment_mode",
+   "fieldtype": "Select",
+   "label": "Assignment Mode",
+   "options": "Round Robin\nPerformance Weighted",
+   "default": "Round Robin",
+   "permlevel": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "performance_weight_top_percent",
+   "fieldtype": "Float",
+   "label": "Performance Weight Top %",
+   "default": "20.0",
+   "description": "Top X% of closers by weekly_delivery_rate",
+   "permlevel": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "performance_weight_lead_share",
+   "fieldtype": "Float",
+   "label": "Performance Weight Lead Share %",
+   "default": "40.0",
+   "description": "% of leads the top group receives",
+   "permlevel": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "section_break_variance",
+   "fieldtype": "Section Break",
+   "label": "Stock Variance Thresholds",
+   "in_create": 0
+  },
+  {
+   "fieldname": "variance_warning_percent",
+   "fieldtype": "Float",
+   "label": "Variance Warning %",
+   "default": "5.0",
+   "description": "Warn if variance percent >= this value",
+   "in_create": 0
+  },
+  {
+   "fieldname": "variance_critical_percent",
+   "fieldtype": "Float",
+   "label": "Variance Critical %",
+   "default": "15.0",
+   "description": "Critical if variance percent >= this value",
+   "in_create": 0
+  },
+  {
+   "fieldname": "variance_tolerance_percent",
+   "fieldtype": "Float",
+   "label": "Variance Tolerance %",
+   "default": "0.0",
+   "in_create": 0
+  },
+  {
+   "fieldname": "stock_movement_sla_hours",
+   "fieldtype": "Int",
+   "label": "Stock Movement SLA (Hours)",
+   "default": "24",
+   "in_create": 0
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-03-11 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Vitalvida",
+ "name": "Vitalvida Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

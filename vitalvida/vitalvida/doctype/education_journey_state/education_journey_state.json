@@ -1,0 +1,37 @@
+{
+ "actions": [],
+ "autoname": "format:EJS-{order}",
+ "creation": "2026-03-10 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "order", "customer_phone", "column_break_1",
+  "current_step", "next_run_at", "last_sent_at",
+  "section_break_kill", "kill_switch", "killed_reason"
+ ],
+ "fields": [
+  {"fieldname": "order", "fieldtype": "Link", "label": "VV Order", "options": "VV Order", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "customer_phone", "fieldtype": "Data", "label": "Customer Phone"},
+  {"fieldname": "column_break_1", "fieldtype": "Column Break"},
+  {"fieldname": "current_step", "fieldtype": "Int", "label": "Current Step", "default": "0", "in_list_view": 1},
+  {"fieldname": "next_run_at", "fieldtype": "Datetime", "label": "Next Run At", "in_list_view": 1},
+  {"fieldname": "last_sent_at", "fieldtype": "Datetime", "label": "Last Sent At"},
+  {"fieldname": "section_break_kill", "fieldtype": "Section Break", "label": "Kill Switch"},
+  {"fieldname": "kill_switch", "fieldtype": "Check", "label": "Kill Switch", "default": "0", "in_list_view": 1},
+  {"fieldname": "killed_reason", "fieldtype": "Select", "label": "Killed Reason", "options": "\nCompleted"}
+ ],
+ "links": [],
+ "modified": "2026-03-10 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Vitalvida",
+ "name": "Education Journey State",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {"create": 1, "delete": 0, "read": 1, "report": 1, "role": "System Manager", "write": 1},
+  {"create": 0, "delete": 0, "read": 0, "report": 0, "role": "Delivery Agent", "write": 0}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

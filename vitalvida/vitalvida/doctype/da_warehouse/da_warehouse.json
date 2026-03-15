@@ -1,0 +1,112 @@
+{
+ "actions": [],
+ "autoname": "format:{delivery_agent}-{product}",
+ "creation": "2026-03-12 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "delivery_agent",
+  "product",
+  "column_break_1",
+  "current_stock",
+  "last_updated",
+  "section_break_freeze",
+  "is_frozen",
+  "freeze_reason",
+  "section_break_notes",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "delivery_agent",
+   "fieldtype": "Link",
+   "label": "Delivery Agent",
+   "options": "Delivery Agent",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "product",
+   "fieldtype": "Link",
+   "label": "Product",
+   "options": "Item",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "current_stock",
+   "fieldtype": "Float",
+   "label": "Current Stock",
+   "default": "0",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "last_updated",
+   "fieldtype": "Datetime",
+   "label": "Last Updated",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_freeze",
+   "fieldtype": "Section Break",
+   "label": "Freeze Status"
+  },
+  {
+   "fieldname": "is_frozen",
+   "fieldtype": "Check",
+   "label": "Is Frozen",
+   "default": "0",
+   "description": "Set by M15 when stock variance detected"
+  },
+  {
+   "fieldname": "freeze_reason",
+   "fieldtype": "Text",
+   "label": "Freeze Reason"
+  },
+  {
+   "fieldname": "section_break_notes",
+   "fieldtype": "Section Break",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Text",
+   "label": "Notes"
+  }
+ ],
+ "links": [],
+ "modified": "2026-03-12 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Vitalvida",
+ "name": "DA Warehouse",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 0,
+   "read": 1,
+   "write": 1,
+   "report": 1,
+   "export": 1,
+   "role": "System Manager"
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "read": 1,
+   "write": 0,
+   "report": 1,
+   "export": 0,
+   "role": "Delivery Agent"
+  }
+ ],
+ "sort_field": "delivery_agent",
+ "sort_order": "ASC",
+ "track_changes": 1
+}

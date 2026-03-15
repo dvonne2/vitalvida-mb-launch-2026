@@ -1,0 +1,98 @@
+{
+ "name": "DA Strike Log",
+ "doctype": "DocType",
+ "module": "Vitalvida",
+ "fields": [
+  {
+   "fieldname": "delivery_agent",
+   "fieldtype": "Link",
+   "options": "Delivery Agent",
+   "label": "Delivery Agent",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Select",
+   "options": "\nPhoto Non-Compliance\nProof Demand Failure\nInventory Discrepancy\nManual Admin Flag",
+   "label": "Source",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break",
+   "in_create": 0
+  },
+  {
+   "fieldname": "created_by",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "Created By",
+   "in_create": 0
+  },
+  {
+   "fieldname": "created_at",
+   "fieldtype": "Datetime",
+   "label": "Created At",
+   "in_create": 0
+  },
+  {
+   "fieldname": "section_break_reason",
+   "fieldtype": "Section Break",
+   "label": "Reason",
+   "in_create": 0
+  },
+  {
+   "fieldname": "reason",
+   "fieldtype": "Text",
+   "label": "Reason",
+   "reqd": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "section_break_clear",
+   "fieldtype": "Section Break",
+   "label": "Clearance",
+   "in_create": 0
+  },
+  {
+   "fieldname": "is_cleared",
+   "fieldtype": "Check",
+   "label": "Cleared",
+   "default": 0,
+   "in_create": 0
+  },
+  {
+   "fieldname": "cleared_by",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "Cleared By",
+   "in_create": 0
+  },
+  {
+   "fieldname": "cleared_reason",
+   "fieldtype": "Text",
+   "label": "Cleared Reason",
+   "in_create": 0
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0
+  },
+  {
+   "role": "Operations Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0
+  }
+ ]
+}

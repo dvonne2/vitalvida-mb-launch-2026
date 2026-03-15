@@ -1,0 +1,154 @@
+{% extends "templates/web.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block page_content %}
+<div class="container" style="max-width:600px;margin:0 auto;padding:16px;font-family:Arial,sans-serif;">
+
+  <!-- Header -->
+  <div style="background:#1a5276;color:white;padding:16px;border-radius:8px;margin-bottom:16px;">
+    <div style="font-size:18px;font-weight:bold;">{{ da.agent_name }}</div>
+    <div style="font-size:13px;opacity:0.85;">{{ compliance.strike_status }}</div>
+  </div>
+
+  <!-- 1. Performance Summary -->
+  <div style="background:white;border:1px solid #e0e0e0;border-radius:8px;padding:16px;margin-bottom:12px;">
+    <div style="font-weight:bold;font-size:15px;margin-bottom:12px;color:#1a5276;">📊 Performance</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div style="text-align:center;">
+        <div style="font-size:28px;font-weight:bold;color:#1a5276;">{{ performance.score }}%</div>
+        <div style="font-size:11px;color:#666;">Score</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:28px;font-weight:bold;color:#1a5276;">#{{ performance.rank }}</div>
+        <div style="font-size:11px;color:#666;">Rank</div>
+      </div>
+      <div style="text-align:center;">
+        {% if performance.partnership_level == "Elite Partner" %}
+          <div style="background:#f39c12;color:white;padding:4px 10px;border-radius:12px;font-size:12px;font-weight:bold;">⭐ Elite</div>
+        {% elif performance.partnership_level == "Gold Partner" %}
+          <div style="background:#d4ac0d;color:white;padding:4px 10px;border-radius:12px;font-size:12px;font-weight:bold;">🥇 Gold</div>
+        {% elif performance.partnership_level == "Silver Partner" %}
+          <div style="background:#85929e;color:white;padding:4px 10px;border-radius:12px;font-size:12px;font-weight:bold;">🥈 Silver</div>
+        {% else %}
+          <div style="background:#aab7b8;color:white;padding:4px 10px;border-radius:12px;font-size:12px;font-weight:bold;">Standard</div>
+        {% endif %}
+        <div style="font-size:11px;color:#666;margin-top:4px;">Level</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. This Week's Metrics -->
+  <div style="background:white;border:1px solid #e0e0e0;border-radius:8px;padding:16px;margin-bottom:12px;">
+    <div style="font-weight:bold;font-size:15px;margin-bottom:12px;color:#1a5276;">📦 This Week</div>
+    <div style="display:flex;justify-content:space-around;">
+      <div style="text-align:center;">
+        <div style="font-size:22px;font-weight:bold;">{{ weekly_metrics.paid_deliveries }}</div>
+        <div style="font-size:11px;color:#666;">Delivered</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:22px;font-weight:bold;">{{ weekly_metrics.delivery_rate }}%</div>
+        <div style="font-size:11px;color:#666;">Delivery Rate</div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:#999;margin-top:8px;text-align:center;">
+      {{ weekly_metrics.week_start }} — {{ weekly_metrics.week_end }}
+    </div>
+  </div>
+
+  <!-- 3. Stock Confirmations -->
+  {% if pending_confirmations %}
+  <div style="background:#fff8e1;border:1px solid #f9ca24;border-radius:8px;padding:16px;margin-bottom:12px;">
+    <div style="font-weight:bold;font-size:15px;margin-bottom:10px;color:#d35400;">⚠️ Stock Confirmations Pending ({{ pending_confirmations|length }})</div>
+    {% for c in pending_confirmations %}
+    <div style="background:white;border:1px solid #e0e0e0;border-radius:6px;padding:10px;margin-bottom:8px;">
+      <div style="font-weight:bold;">{{ c.consignment_id }}</div>
+      <div style="font-size:12px;color:#666;">From: {{ c.from_location }}</div>
+      <a href="/app/consignment/{{ c.name }}" style="font-size:12px;color:#1a5276;">Confirm Receipt →</a>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- 4. Achievements -->
+  <div style="background:white;border:1px solid #e0e0e0;border-radius:8px;padding:16px;margin-bottom:12px;">
+    <div style="font-weight:bold;font-size:15px;margin-bottom:12px;color:#1a5276;">🏆 Achievements This Week</div>
+    {% if achievements %}
+      {% for a in achievements %}
+      <div style="margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:13px;font-weight:bold;">{{ a.achievement_name }}</span>
+          {% if a.status == "Earned" %}
+            <span style="background:#27ae60;color:white;padding:2px 8px;border-radius:10px;font-size:11px;">✓ Earned</span>
+          {% elif a.status == "In Progress" %}
+            <span style="background:#f39c12;color:white;padding:2px 8px;border-radius:10px;font-size:11px;">In Progress</span>
+          {% else %}
+            <span style="background:#bdc3c7;color:white;padding:2px 8px;border-radius:10px;font-size:11px;">Not Started</span>
+          {% endif %}
+        </div>
+        <div style="background:#ecf0f1;border-radius:4px;height:6px;margin:6px 0;">
+          <div style="background:{% if a.status == 'Earned' %}#27ae60{% else %}#f39c12{% endif %};height:6px;border-radius:4px;width:{{ a.progress_pct }}%;"></div>
+        </div>
+        <div style="font-size:11px;color:#666;">
+          {{ a.progress_value|int }} / {{ a.target_value|int }} &nbsp;|&nbsp;
+          Bonus: ₦{{ "{:,.0f}".format(a.bonus_amount) }}
+          {% if a.applied_to_payout %}&nbsp;<span style="color:#27ae60;">✓ Paid</span>{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div style="color:#999;font-size:13px;">No achievements tracked yet for this week.</div>
+    {% endif %}
+  </div>
+
+  <!-- 5. Compliance -->
+  <div style="background:white;border:1px solid #e0e0e0;border-radius:8px;padding:16px;margin-bottom:12px;">
+    <div style="font-weight:bold;font-size:15px;margin-bottom:12px;color:#1a5276;">✅ Compliance</div>
+
+    <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0f0;">
+      <span style="font-size:13px;">Friday Photo Submitted</span>
+      {% if compliance.photo_submitted %}
+        <span style="color:#27ae60;font-weight:bold;">✓ Yes</span>
+      {% else %}
+        <span style="color:#e74c3c;font-weight:bold;">✗ No</span>
+      {% endif %}
+    </div>
+
+    <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0f0;">
+      <span style="font-size:13px;">Count Confirmed</span>
+      {% if compliance.photo_confirmed %}
+        <span style="color:#27ae60;font-weight:bold;">✓ Yes</span>
+      {% else %}
+        <span style="color:#e74c3c;font-weight:bold;">✗ Pending</span>
+      {% endif %}
+    </div>
+
+    <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0f0;">
+      <span style="font-size:13px;">Active Strikes</span>
+      <span style="font-weight:bold;{% if compliance.strike_count >= 3 %}color:#e74c3c;{% elif compliance.strike_count > 0 %}color:#f39c12;{% else %}color:#27ae60;{% endif %}">
+        {{ compliance.strike_count }} / 3
+      </span>
+    </div>
+
+    {% if compliance.pending_deductions > 0 %}
+    <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0f0;">
+      <span style="font-size:13px;">Pending Deductions</span>
+      <span style="color:#e74c3c;font-weight:bold;">₦{{ "{:,.0f}".format(compliance.pending_deductions) }}</span>
+    </div>
+    {% endif %}
+
+    <div style="padding:10px 0;margin-top:4px;">
+      {% if compliance.payout_eligible %}
+        <div style="background:#d5f5e3;color:#1e8449;padding:10px;border-radius:6px;font-size:13px;text-align:center;">
+          ✓ Eligible for next payout
+        </div>
+      {% else %}
+        <div style="background:#fdecea;color:#c0392b;padding:10px;border-radius:6px;font-size:13px;text-align:center;">
+          ✗ Payout blocked — {{ compliance.payout_blocked_reason }}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}
