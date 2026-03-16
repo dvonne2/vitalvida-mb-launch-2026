@@ -1,0 +1,67 @@
+{%- extends "templates/web.html" -%}
+
+{%- block page_content -%}
+<div style="max-width: 900px; margin: 0 auto; padding: 20px;">
+    <h1>{{ title }}</h1>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin: 24px 0;">
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 14px; color: #666;">This Month Revenue</div>
+            <div style="font-size: 28px; font-weight: bold; color: #28a745;">₦{{ "{:,.0f}".format(month_revenue) }}</div>
+        </div>
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 14px; color: #666;">YTD Revenue</div>
+            <div style="font-size: 28px; font-weight: bold; color: #007bff;">₦{{ "{:,.0f}".format(ytd_revenue) }}</div>
+        </div>
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 14px; color: #666;">Total Paid Orders</div>
+            <div style="font-size: 28px; font-weight: bold;">{{ total_paid }}</div>
+        </div>
+    </div>
+
+    <h3>Revenue Trend (6 Months)</h3>
+    <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+        <tr style="background: #e9ecef;">
+            <th style="padding: 10px; text-align: left;">Month</th>
+            <th style="padding: 10px; text-align: right;">Revenue</th>
+        </tr>
+        {% for m in revenue_trend %}
+        <tr style="border-bottom: 1px solid #dee2e6;">
+            <td style="padding: 10px;">{{ m.month }}</td>
+            <td style="padding: 10px; text-align: right;">₦{{ "{:,.0f}".format(m.revenue) }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <h3>Top Product: {{ top_product }}</h3>
+
+    {% if valuation %}
+    <h3>Current Valuation</h3>
+    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 16px 0;">
+        <div style="font-size: 32px; font-weight: bold; color: #007bff;">₦{{ "{:,.0f}".format(valuation.valuation_amount or 0) }}</div>
+        <div style="font-size: 14px; color: #666;">Method: {{ valuation.valuation_method }} | Date: {{ valuation.valuation_date }}</div>
+        {% if valuation.notes %}<div style="margin-top: 10px; font-size: 14px;">{{ valuation.notes }}</div>{% endif %}
+    </div>
+    {% endif %}
+
+    {% if cap_table %}
+    <h3>Cap Table</h3>
+    <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+        <tr style="background: #e9ecef;">
+            <th style="padding: 10px; text-align: left;">Investor</th>
+            <th style="padding: 10px;">Type</th>
+            <th style="padding: 10px; text-align: right;">Ownership %</th>
+            <th style="padding: 10px; text-align: right;">Invested</th>
+        </tr>
+        {% for entry in cap_table %}
+        <tr style="border-bottom: 1px solid #dee2e6;">
+            <td style="padding: 10px;">{{ entry.investor_name }}</td>
+            <td style="padding: 10px;">{{ entry.investor_type }}</td>
+            <td style="padding: 10px; text-align: right;">{{ entry.percentage_ownership }}%</td>
+            <td style="padding: 10px; text-align: right;">₦{{ "{:,.0f}".format(entry.investment_amount or 0) }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% endif %}
+</div>
+{%- endblock -%}

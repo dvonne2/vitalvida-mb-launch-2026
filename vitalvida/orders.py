@@ -133,7 +133,19 @@ def process_webhook_queue(queue_id=None):
                 message=f"Order {row.order_id} clean:\n{json.dumps(clean_data, indent=2)}"
             )
 
-            # 5. MARK SUCCESS
+            # 5. M32: UTM Attribution — tag order with media_buyer
+            try:
+                from vitalvida.media_buyer import attribute_order
+                # Find the VV Order created from this webhook
+                vv_order = frappe.db.exists("VV Order", {"name": row.order_id})
+                if not vv_order:
+                    vv_order = frappe.db.exists("VV Order", {"order_id": row.order_id})
+                if vv_order:
+                    attribute_order(vv_order, raw_payload)
+            except Exception:
+                pass  # M32 not installed or no ref in payload — skip silently
+
+            # 6. MARK SUCCESS
             frappe.db.set_value("Vitalvida Webhook Queue", row.name, {
                 "status": "Processed",
                 "processed_at": now_datetime()

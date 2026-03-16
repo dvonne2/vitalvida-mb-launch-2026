@@ -92,6 +92,10 @@ scheduler_events = {
         "0 3 * * 1": [
             "vitalvida.cycle_count.generate_cycle_count_schedule"
         ],
+        # M32: Every Monday 6:00 AM — generate media buyer weekly reports
+        "0 6 * * 1": [
+            "vitalvida.media_buyer.run_weekly_media_buyer_reports"
+        ],
         # M15: Every night 2:00 AM — update DA partnership levels
         "0 2 * * *": [
             "vitalvida.achievement.update_all_partnership_levels"

@@ -125,6 +125,36 @@
    "in_create": 0
   },
   {
+   "fieldname": "section_break_threeway",
+   "fieldtype": "Section Break",
+   "label": "Three-Way Match",
+   "in_create": 0
+  },
+  {
+   "fieldname": "system_stock",
+   "fieldtype": "Float",
+   "label": "System Stock",
+   "read_only": 1,
+   "description": "Gap 6: Auto-populated from DA Warehouse on count submit",
+   "in_create": 0
+  },
+  {
+   "fieldname": "three_way_match",
+   "fieldtype": "Select",
+   "label": "Three-Way Match",
+   "options": "\nMatch\nMismatch",
+   "read_only": 1,
+   "description": "DA count vs Manager count vs System stock",
+   "in_create": 0
+  },
+  {
+   "fieldname": "three_way_variance",
+   "fieldtype": "Float",
+   "label": "Three-Way Variance",
+   "read_only": 1,
+   "in_create": 0
+  },
+  {
    "fieldname": "section_break_compliance",
    "fieldtype": "Section Break",
    "label": "Compliance Actions",

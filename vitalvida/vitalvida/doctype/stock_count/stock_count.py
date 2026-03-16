@@ -72,6 +72,7 @@ class StockCount(Document):
                 self._alert_disputed()
             else:
                 self.count_status = "Confirmed"
+                self._compute_three_way_match()
 
     def on_submit(self):
         """Trigger variance check — only if Confirmed."""
@@ -90,6 +91,35 @@ class StockCount(Document):
             "Stock Count records cannot be deleted.",
             frappe.PermissionError
         )
+
+    # ── Gap 6: Three-Way Stock Match ─────────────────────────────
+
+    def _compute_three_way_match(self):
+        """
+        Gap 6: Compare DA count vs Manager count vs System stock (DA Warehouse).
+        Sets three_way_match = Match/Mismatch and system_stock value.
+        """
+        try:
+            wh = frappe.db.exists("DA Warehouse", {
+                "delivery_agent": self.delivery_agent,
+                "product": self.product
+            })
+            system_qty = float(
+                frappe.db.get_value("DA Warehouse", wh, "current_stock") or 0
+            ) if wh else 0.0
+
+            self.system_stock = system_qty
+            final = float(self.final_counted_quantity or 0)
+
+            variance = abs(system_qty - final)
+            self.three_way_variance = round(variance, 2)
+
+            if variance <= 1:
+                self.three_way_match = "Match"
+            else:
+                self.three_way_match = "Mismatch"
+        except Exception as e:
+            frappe.log_error(str(e), "Gap 6 Three-Way Match Error")
 
     # ── Photo Compliance Manager Actions ─────────────────────────────
 

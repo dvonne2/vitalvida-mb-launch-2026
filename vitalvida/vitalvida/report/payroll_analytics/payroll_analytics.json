@@ -1,0 +1,7 @@
+{
+ "add_total_row":1,"creation":"2026-03-16 00:00:00.000000","doctype":"Report","is_standard":"Yes",
+ "modified":"2026-03-16 00:00:00.000000","modified_by":"Administrator","module":"Vitalvida",
+ "name":"Payroll Analytics","owner":"Administrator","prepared_report":0,
+ "ref_doctype":"Monthly Payroll Run","report_name":"Payroll Analytics","report_type":"Script Report",
+ "roles":[{"role":"System Manager"},{"role":"Finance User"}]
+}
