@@ -1,0 +1,14 @@
+{
+ "actions":[],"creation":"2026-03-16 00:00:00.000000","doctype":"DocType","engine":"InnoDB",
+ "field_order":["band_name","lower_limit","upper_limit","rate_percent"],
+ "fields":[
+  {"fieldname":"band_name","fieldtype":"Data","label":"Band Name","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"lower_limit","fieldtype":"Currency","label":"Lower Limit","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"upper_limit","fieldtype":"Currency","label":"Upper Limit","description":"Leave 0 for no upper limit","in_list_view":1,"in_create":0},
+  {"fieldname":"rate_percent","fieldtype":"Percent","label":"Tax Rate %","reqd":1,"in_list_view":1,"in_create":0}
+ ],
+ "modified":"2026-03-16 00:00:00.000000","modified_by":"Administrator","module":"Vitalvida",
+ "name":"Tax Band","owner":"Administrator",
+ "permissions":[{"create":1,"delete":1,"read":1,"role":"System Manager","write":1}],
+ "sort_field":"lower_limit","sort_order":"ASC","track_changes":0
+}

@@ -1,0 +1,27 @@
+{
+ "actions":[],"creation":"2026-03-16 00:00:00.000000","doctype":"DocType","engine":"InnoDB",
+ "field_order":["payroll_month","status","column_break_1","total_gross","total_deductions","total_net",
+  "section_break_payslips","payslips",
+  "section_break_approval","approved_by","approved_at"],
+ "fields":[
+  {"fieldname":"payroll_month","fieldtype":"Date","label":"Payroll Month","reqd":1,"in_list_view":1,"description":"First day of the month","in_create":0},
+  {"fieldname":"status","fieldtype":"Select","label":"Status","options":"Draft\nProcessing\nApproved\nPaid","default":"Draft","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"column_break_1","fieldtype":"Column Break","in_create":0},
+  {"fieldname":"total_gross","fieldtype":"Currency","label":"Total Gross","read_only":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"total_deductions","fieldtype":"Currency","label":"Total Deductions","read_only":1,"in_create":0},
+  {"fieldname":"total_net","fieldtype":"Currency","label":"Total Net","read_only":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"section_break_payslips","fieldtype":"Section Break","label":"Payslips","in_create":0},
+  {"fieldname":"payslips","fieldtype":"Table","label":"Payslips","options":"Payslip","in_create":0},
+  {"fieldname":"section_break_approval","fieldtype":"Section Break","label":"Approval","in_create":0},
+  {"fieldname":"approved_by","fieldtype":"Link","label":"Approved By","options":"User","read_only":1,"in_create":0},
+  {"fieldname":"approved_at","fieldtype":"Datetime","label":"Approved At","read_only":1,"in_create":0}
+ ],
+ "modified":"2026-03-16 00:00:00.000000","modified_by":"Administrator","module":"Vitalvida",
+ "name":"Monthly Payroll Run","owner":"Administrator",
+ "permissions":[
+  {"create":1,"delete":0,"read":1,"report":1,"role":"System Manager","write":1},
+  {"read":1,"role":"HR Manager","write":1,"create":1},
+  {"read":1,"role":"Finance User","write":1}
+ ],
+ "sort_field":"payroll_month","sort_order":"DESC","track_changes":1
+}

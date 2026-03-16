@@ -1,0 +1,17 @@
+{
+ "actions":[],"creation":"2026-03-16 00:00:00.000000","doctype":"DocType","engine":"InnoDB",
+ "field_order":["from_bucket","to_bucket","amount","column_break_1","transferred_by","transferred_at","reason"],
+ "fields":[
+  {"fieldname":"from_bucket","fieldtype":"Link","label":"From Bucket","options":"Profit First Bucket","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"to_bucket","fieldtype":"Link","label":"To Bucket","options":"Profit First Bucket","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"amount","fieldtype":"Currency","label":"Amount","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"column_break_1","fieldtype":"Column Break","in_create":0},
+  {"fieldname":"transferred_by","fieldtype":"Link","label":"Transferred By","options":"User","read_only":1,"in_create":0},
+  {"fieldname":"transferred_at","fieldtype":"Datetime","label":"Transferred At","read_only":1,"in_create":0},
+  {"fieldname":"reason","fieldtype":"Text","label":"Reason","in_create":0}
+ ],
+ "modified":"2026-03-16 00:00:00.000000","modified_by":"Administrator","module":"Vitalvida",
+ "name":"Wallet Transfer Log","owner":"Administrator",
+ "permissions":[{"create":1,"delete":0,"read":1,"role":"System Manager","write":0}],
+ "sort_field":"transferred_at","sort_order":"DESC","track_changes":0
+}

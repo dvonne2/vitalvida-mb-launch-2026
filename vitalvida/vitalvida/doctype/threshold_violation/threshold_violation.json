@@ -1,0 +1,19 @@
+{
+ "actions":[],"creation":"2026-03-16 00:00:00.000000","doctype":"DocType","engine":"InnoDB",
+ "field_order":["category","subcategory","amount_requested","threshold_limit","column_break_1","overage_amount","overage_percentage","status","created_at"],
+ "fields":[
+  {"fieldname":"category","fieldtype":"Data","label":"Category","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"subcategory","fieldtype":"Data","label":"Subcategory","in_create":0},
+  {"fieldname":"amount_requested","fieldtype":"Currency","label":"Amount Requested","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"threshold_limit","fieldtype":"Currency","label":"Threshold Limit","reqd":1,"in_create":0},
+  {"fieldname":"column_break_1","fieldtype":"Column Break","in_create":0},
+  {"fieldname":"overage_amount","fieldtype":"Currency","label":"Overage Amount","read_only":1,"in_create":0},
+  {"fieldname":"overage_percentage","fieldtype":"Percent","label":"Overage %","read_only":1,"in_create":0},
+  {"fieldname":"status","fieldtype":"Select","label":"Status","options":"Open\nEscalated\nApproved\nRejected","default":"Open","in_list_view":1,"in_create":0},
+  {"fieldname":"created_at","fieldtype":"Datetime","label":"Created At","read_only":1,"in_create":0}
+ ],
+ "modified":"2026-03-16 00:00:00.000000","modified_by":"Administrator","module":"Vitalvida",
+ "name":"Threshold Violation","owner":"Administrator",
+ "permissions":[{"read":1,"role":"System Manager","report":1},{"read":1,"role":"Finance User","report":1}],
+ "sort_field":"created_at","sort_order":"DESC","track_changes":0
+}

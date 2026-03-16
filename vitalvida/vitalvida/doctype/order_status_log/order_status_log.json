@@ -1,0 +1,35 @@
+{
+ "actions": [],
+ "creation": "2026-03-16 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "order","from_status","to_status","column_break_1",
+  "changed_by","changed_at","role_at_change","notes"
+ ],
+ "fields": [
+  {"fieldname":"order","fieldtype":"Link","label":"Order","options":"VV Order","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"from_status","fieldtype":"Data","label":"From Status","in_list_view":1,"in_create":0},
+  {"fieldname":"to_status","fieldtype":"Data","label":"To Status","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"column_break_1","fieldtype":"Column Break","in_create":0},
+  {"fieldname":"changed_by","fieldtype":"Link","label":"Changed By","options":"User","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"changed_at","fieldtype":"Datetime","label":"Changed At","reqd":1,"in_create":0},
+  {"fieldname":"role_at_change","fieldtype":"Data","label":"Role At Change","description":"Primary role of user at time of change","in_create":0},
+  {"fieldname":"notes","fieldtype":"Text","label":"Notes","in_create":0}
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-03-16 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Vitalvida",
+ "name": "Order Status Log",
+ "owner": "Administrator",
+ "permissions": [
+  {"read":1,"role":"System Manager","export":1,"report":1},
+  {"read":1,"role":"Finance User","report":1},
+  {"read":1,"role":"Logistics User","report":1}
+ ],
+ "sort_field": "changed_at",
+ "sort_order": "DESC",
+ "track_changes": 0
+}

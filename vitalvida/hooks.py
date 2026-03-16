@@ -9,7 +9,8 @@ app_license = "mit"
 override_whitelisted_methods = {
     "vitalvida.orders.ingest": "vitalvida.orders.ingest",
     "vitalvida.notifications.webhook": "vitalvida.notifications.webhook",
-    "vitalvida.moniepoint.webhook": "vitalvida.moniepoint.webhook"
+    "vitalvida.moniepoint.webhook": "vitalvida.moniepoint.webhook",
+    "vitalvida.dsr_api.get_da_dsr_colour": "vitalvida.dsr_api.get_da_dsr_colour"
 }
 
 fixtures = [
@@ -22,6 +23,21 @@ fixtures = [
     }
 ]
 
+# M21: Auto-create FIRS eInvoice on Sales Invoice submit
+# M31: Auto-provision role on LMS course completion
+doc_events = {
+    "Sales Invoice": {
+        "on_submit": "vitalvida.firs.on_sales_invoice_submit"
+    },
+    # Frappe LMS hooks — safe even if LMS not installed (import guard in academy.py)
+    "LMS Enrollment": {
+        "on_update": "vitalvida.academy.on_course_completion"
+    },
+    "Course Enrollment": {
+        "on_update": "vitalvida.academy.on_course_completion"
+    }
+}
+
 scheduler_events = {
     "all": [
         "vitalvida.orders.process_webhook_queue"
@@ -31,7 +47,25 @@ scheduler_events = {
             "vitalvida.cart_recovery.run_cart_recovery",
             "vitalvida.commitment_ladder.run_commitment_ladder",
             "vitalvida.education_journey.run_education_journey",
-            "vitalvida.reconciliation.run_reconciliation"
+            "vitalvida.reconciliation.run_reconciliation",
+            "vitalvida.campaign.fire_scheduled_campaigns"
+        ],
+        # M16: Every midnight — compute DSR for all DAs and Telesales Closers
+        "0 0 * * *": [
+            "vitalvida.dsr.run_nightly_dsr",
+            "vitalvida.telesales_scoring.run_nightly_telesales_scoring"
+        ],
+        # M18: Every 15 minutes — check Whale/Mini Whale SLA breaches
+        "*/15 * * * *": [
+            "vitalvida.sla.check_whale_sla_breaches"
+        ],
+        # M22: Every 2 minutes — process FIRS outbox queue
+        "*/2 * * * *": [
+            "vitalvida.firs.process_firs_outbox"
+        ],
+        # M20: Every day at 7:00 AM WAT — send daily inventory report
+        "0 7 * * *": [
+            "vitalvida.inventory_report.send_daily_inventory_report"
         ],
         # M15: Friday 11:00 AM WAT — stock count reminders to all DAs
         "0 11 * * 5": [
@@ -43,13 +77,20 @@ scheduler_events = {
         ],
         # M15: Every hour — expire overdue proof demands + add strikes
         "0 * * * *": [
-            "vitalvida.proof_demand.check_expired_proof_demands"
-        ,
-            "vitalvida.consignment.check_delayed_movements"
+            "vitalvida.proof_demand.check_expired_proof_demands",
+            "vitalvida.consignment.check_delayed_movements",
+            "vitalvida.telesales_scoring.expire_bonus_approvals",
+            "vitalvida.expense_check.expire_escalations",
+            "vitalvida.firs.check_firs_status",
+            "vitalvida.firs.reconcile_firs_payments"
         ],
         # M15: Every Monday 1:00 AM — calculate weekly DA achievements
         "0 1 * * 1": [
             "vitalvida.achievement.calculate_weekly_achievements"
+        ],
+        # Gap 9: Every Monday 3:00 AM — generate cycle count schedules
+        "0 3 * * 1": [
+            "vitalvida.cycle_count.generate_cycle_count_schedule"
         ],
         # M15: Every night 2:00 AM — update DA partnership levels
         "0 2 * * *": [

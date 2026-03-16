@@ -1,0 +1,38 @@
+{
+ "actions":[],"creation":"2026-03-16 00:00:00.000000","doctype":"DocType","engine":"InnoDB",
+ "field_order":["transfer_code","from_agent","to_agent","product","quantity","column_break_1","status","orchestrated_by",
+  "section_break_codes","pickup_code","delivery_code",
+  "section_break_times","pickup_window_start","pickup_window_end","picked_up_at","column_break_t","delivery_window_start","delivery_window_end","delivered_at",
+  "section_break_notes","notes","violation_flags"],
+ "fields":[
+  {"fieldname":"transfer_code","fieldtype":"Data","label":"Transfer Code","unique":1,"read_only":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"from_agent","fieldtype":"Link","label":"From DA","options":"Delivery Agent","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"to_agent","fieldtype":"Link","label":"To DA","options":"Delivery Agent","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"product","fieldtype":"Link","label":"Product","options":"Item","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"quantity","fieldtype":"Float","label":"Quantity","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"column_break_1","fieldtype":"Column Break","in_create":0},
+  {"fieldname":"status","fieldtype":"Select","label":"Status","options":"Initiated\nPickup Ready\nIn Transit\nDelivered\nCompleted\nCancelled","default":"Initiated","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"orchestrated_by","fieldtype":"Link","label":"Orchestrated By","options":"User","read_only":1,"in_create":0},
+  {"fieldname":"section_break_codes","fieldtype":"Section Break","label":"Verification Codes","in_create":0},
+  {"fieldname":"pickup_code","fieldtype":"Data","label":"Pickup Code","read_only":1,"description":"6-digit code for sender DA to confirm pickup","in_create":0},
+  {"fieldname":"delivery_code","fieldtype":"Data","label":"Delivery Code","read_only":1,"description":"6-digit code for receiver DA to confirm receipt","in_create":0},
+  {"fieldname":"section_break_times","fieldtype":"Section Break","label":"Timing","in_create":0},
+  {"fieldname":"pickup_window_start","fieldtype":"Datetime","label":"Pickup Window Start","in_create":0},
+  {"fieldname":"pickup_window_end","fieldtype":"Datetime","label":"Pickup Window End","in_create":0},
+  {"fieldname":"picked_up_at","fieldtype":"Datetime","label":"Picked Up At","read_only":1,"in_create":0},
+  {"fieldname":"column_break_t","fieldtype":"Column Break","in_create":0},
+  {"fieldname":"delivery_window_start","fieldtype":"Datetime","label":"Delivery Window Start","in_create":0},
+  {"fieldname":"delivery_window_end","fieldtype":"Datetime","label":"Delivery Window End","in_create":0},
+  {"fieldname":"delivered_at","fieldtype":"Datetime","label":"Delivered At","read_only":1,"in_create":0},
+  {"fieldname":"section_break_notes","fieldtype":"Section Break","label":"Notes","in_create":0},
+  {"fieldname":"notes","fieldtype":"Text","label":"Notes","in_create":0},
+  {"fieldname":"violation_flags","fieldtype":"Data","label":"Violation Flags","read_only":1,"in_create":0}
+ ],
+ "modified":"2026-03-16 00:00:00.000000","modified_by":"Administrator","module":"Vitalvida",
+ "name":"Blind Transfer","owner":"Administrator",
+ "permissions":[
+  {"create":1,"delete":0,"read":1,"report":1,"role":"System Manager","write":1},
+  {"create":1,"read":1,"role":"Logistics User","write":1}
+ ],
+ "sort_field":"modified","sort_order":"DESC","track_changes":1
+}

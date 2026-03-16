@@ -1,0 +1,29 @@
+{
+ "actions":[],"creation":"2026-03-16 00:00:00.000000","doctype":"DocType","engine":"InnoDB",
+ "field_order":["supplier","period_start","period_end","column_break_1",
+  "total_orders_placed","total_orders_fulfilled","on_time_deliveries","defect_count",
+  "section_break_scores","fulfillment_rate","on_time_rate","quality_score","overall_score","computed_at"],
+ "fields":[
+  {"fieldname":"supplier","fieldtype":"Link","label":"Supplier","options":"VV Supplier","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"period_start","fieldtype":"Date","label":"Period Start","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"period_end","fieldtype":"Date","label":"Period End","reqd":1,"in_create":0},
+  {"fieldname":"column_break_1","fieldtype":"Column Break","in_create":0},
+  {"fieldname":"total_orders_placed","fieldtype":"Int","label":"Orders Placed","in_create":0},
+  {"fieldname":"total_orders_fulfilled","fieldtype":"Int","label":"Orders Fulfilled","in_create":0},
+  {"fieldname":"on_time_deliveries","fieldtype":"Int","label":"On-Time Deliveries","in_create":0},
+  {"fieldname":"defect_count","fieldtype":"Int","label":"Defects Reported","in_create":0},
+  {"fieldname":"section_break_scores","fieldtype":"Section Break","label":"Scores","in_create":0},
+  {"fieldname":"fulfillment_rate","fieldtype":"Percent","label":"Fulfillment Rate","read_only":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"on_time_rate","fieldtype":"Percent","label":"On-Time Rate","read_only":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"quality_score","fieldtype":"Percent","label":"Quality Score","read_only":1,"description":"100 minus defect rate","in_create":0},
+  {"fieldname":"overall_score","fieldtype":"Percent","label":"Overall Score","read_only":1,"in_list_view":1,"description":"Weighted: 40% fulfillment + 30% on-time + 30% quality","in_create":0},
+  {"fieldname":"computed_at","fieldtype":"Datetime","label":"Computed At","read_only":1,"in_create":0}
+ ],
+ "modified":"2026-03-16 00:00:00.000000","modified_by":"Administrator","module":"Vitalvida",
+ "name":"Supplier Performance","owner":"Administrator",
+ "permissions":[
+  {"create":1,"delete":0,"read":1,"report":1,"role":"System Manager","write":1},
+  {"read":1,"role":"Logistics User","report":1}
+ ],
+ "sort_field":"overall_score","sort_order":"DESC","track_changes":0
+}

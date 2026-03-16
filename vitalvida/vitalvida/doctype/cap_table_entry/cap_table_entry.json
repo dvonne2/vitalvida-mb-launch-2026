@@ -1,0 +1,20 @@
+{
+ "actions":[],"creation":"2026-03-16 00:00:00.000000","doctype":"DocType","engine":"InnoDB",
+ "field_order":["investor_name","investor_type","shares_held","column_break_1","percentage_ownership","investment_amount","entry_date"],
+ "fields":[
+  {"fieldname":"investor_name","fieldtype":"Data","label":"Investor Name","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"investor_type","fieldtype":"Select","label":"Type","options":"Founder\nAngel\nInstitutional\nEmployee","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"shares_held","fieldtype":"Float","label":"Shares Held","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"column_break_1","fieldtype":"Column Break","in_create":0},
+  {"fieldname":"percentage_ownership","fieldtype":"Percent","label":"Ownership %","read_only":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"investment_amount","fieldtype":"Currency","label":"Investment Amount","in_create":0},
+  {"fieldname":"entry_date","fieldtype":"Date","label":"Entry Date","reqd":1,"in_create":0}
+ ],
+ "modified":"2026-03-16 00:00:00.000000","modified_by":"Administrator","module":"Vitalvida",
+ "name":"Cap Table Entry","owner":"Administrator",
+ "permissions":[
+  {"create":1,"delete":1,"read":1,"role":"System Manager","write":1},
+  {"read":1,"role":"Investor"}
+ ],
+ "sort_field":"percentage_ownership","sort_order":"DESC","title_field":"investor_name","track_changes":1
+}

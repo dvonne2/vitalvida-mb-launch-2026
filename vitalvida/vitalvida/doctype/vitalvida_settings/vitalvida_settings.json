@@ -10,13 +10,19 @@
   "section_break_tier",
   "whale_threshold",
   "mini_whale_threshold",
+  "whale_sla_hours",
+  "mini_whale_sla_hours",
   "section_break_telesales",
   "telesales_assignment_mode",
   "performance_weight_top_percent",
   "performance_weight_lead_share",
   "section_break_variance",
   "variance_warning_percent",
-  "variance_critical_percent"
+  "variance_critical_percent",
+  "variance_tolerance_percent",
+  "stock_movement_sla_hours",
+  "section_break_inventory_report",
+  "inventory_report_email"
  ],
  "fields": [
   {
@@ -50,6 +56,22 @@
    "label": "Mini Whale Threshold",
    "default": "20000",
    "description": "Minimum total_payable to qualify as Mini Whale. Default: 20000",
+   "in_create": 0
+  },
+  {
+   "fieldname": "whale_sla_hours",
+   "fieldtype": "Int",
+   "label": "Whale SLA (Hours)",
+   "default": "2",
+   "description": "M18: Max hours to confirm Whale orders before SLA breach alert",
+   "in_create": 0
+  },
+  {
+   "fieldname": "mini_whale_sla_hours",
+   "fieldtype": "Int",
+   "label": "Mini Whale SLA (Hours)",
+   "default": "4",
+   "description": "M18: Max hours to confirm Mini Whale orders before SLA breach alert",
    "in_create": 0
   },
   {
@@ -119,6 +141,19 @@
    "fieldtype": "Int",
    "label": "Stock Movement SLA (Hours)",
    "default": "24",
+   "in_create": 0
+  },
+  {
+   "fieldname": "section_break_inventory_report",
+   "fieldtype": "Section Break",
+   "label": "Daily Inventory Report",
+   "in_create": 0
+  },
+  {
+   "fieldname": "inventory_report_email",
+   "fieldtype": "Data",
+   "label": "Inventory Report Email",
+   "description": "M20: Recipient email for daily 7AM inventory report. Leave blank to disable.",
    "in_create": 0
   }
  ],

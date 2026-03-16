@@ -35,7 +35,9 @@
   "paid_at",
   "payment_confirmed_at",
   "section_break_notes",
-  "reschedule_note"
+  "reschedule_note",
+  "cancellation_source",
+  "sla_breached"
  ],
  "fields": [
   {
@@ -215,6 +217,25 @@
    "fieldtype": "Text",
    "label": "Reschedule / Cancellation Note",
    "description": "Mandatory when status is Rescheduled, Cancelled, or Returned"
+  },
+  {
+   "fieldname": "cancellation_source",
+   "fieldtype": "Select",
+   "label": "Cancellation Source",
+   "options": "\nCustomer\nDA\nOperations\nSystem",
+   "description": "M16: Required when status = Cancelled. Used for DSR Adjusted calculation.",
+   "depends_on": "eval:doc.order_status=='Cancelled' || doc.order_status=='Returned'",
+   "in_create": 0
+  },
+  {
+   "fieldname": "sla_breached",
+   "fieldtype": "Check",
+   "label": "SLA Breached",
+   "default": "0",
+   "read_only": 1,
+   "hidden": 1,
+   "description": "M18: Auto-set when Whale/Mini Whale SLA is breached",
+   "in_create": 0
   }
  ],
  "index_web_pages_for_search": 1,

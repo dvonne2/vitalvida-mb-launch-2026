@@ -451,5 +451,26 @@
   "sender_channel": "Transactional",
   "active": 1,
   "body": "PROOF EXPIRED \u2014 DA {delivery_agent_name} did not submit {proof_type} by the deadline. 1 strike added."
- }
+ },{
+ "doctype": "Message Template",
+ "template_name": "UnauthorizedPaid",
+ "name": "UnauthorizedPaid",
+ "event": "UnauthorizedPaid",
+ "recipient_type": "Owner",
+ "channel": "WhatsApp",
+ "sender_channel": "Transactional",
+ "active": 1,
+ "body": "UNAUTHORIZED PAID — Order {name} was set to Paid by {unauthorized_user} (role: {unauthorized_roles}). This user is not Finance. Please review immediately."
+},
+{
+ "doctype": "Message Template",
+ "template_name": "WhaleSLABreach",
+ "event": "WhaleSLABreach",
+ "name": "WhaleSLABreach",
+ "recipient_type": "Owner",
+ "channel": "WhatsApp",
+ "sender_channel": "Transactional",
+ "active": 1,
+ "body": "SLA BREACH — {tier} order {name} for {customer_name} (₦{total_payable}) has been Pending for over {sla_hours} hours. Immediate action required."
+}
 ]

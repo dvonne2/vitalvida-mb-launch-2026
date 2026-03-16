@@ -1,0 +1,195 @@
+{
+ "actions": [],
+ "creation": "2026-03-15 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "entity_type",
+  "entity",
+  "column_break_1",
+  "period_start",
+  "period_end",
+  "section_break_counts",
+  "total_assigned",
+  "total_paid",
+  "total_customer_cancelled",
+  "total_ghosted",
+  "section_break_dsr",
+  "dsr_strict",
+  "dsr_adjusted",
+  "column_break_dsr",
+  "shrinkage_rate",
+  "ghost_rate",
+  "section_break_meta",
+  "avg_confirmation_minutes",
+  "dsr_colour",
+  "is_double_risk",
+  "column_break_meta",
+  "computed_at"
+ ],
+ "fields": [
+  {
+   "fieldname": "entity_type",
+   "fieldtype": "Select",
+   "in_create": 0,
+   "in_list_view": 1,
+   "label": "Entity Type",
+   "options": "DA\nTelesales",
+   "reqd": 1
+  },
+  {
+   "fieldname": "entity",
+   "fieldtype": "Dynamic Link",
+   "in_create": 0,
+   "in_list_view": 1,
+   "label": "Entity",
+   "options": "entity_type",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break",
+   "in_create": 0
+  },
+  {
+   "fieldname": "period_start",
+   "fieldtype": "Date",
+   "in_create": 0,
+   "in_list_view": 1,
+   "label": "Period Start",
+   "reqd": 1
+  },
+  {
+   "fieldname": "period_end",
+   "fieldtype": "Date",
+   "in_create": 0,
+   "label": "Period End",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_counts",
+   "fieldtype": "Section Break",
+   "in_create": 0,
+   "label": "Counts"
+  },
+  {
+   "fieldname": "total_assigned",
+   "fieldtype": "Int",
+   "in_create": 0,
+   "label": "Total Assigned"
+  },
+  {
+   "fieldname": "total_paid",
+   "fieldtype": "Int",
+   "in_create": 0,
+   "label": "Total Paid"
+  },
+  {
+   "fieldname": "total_customer_cancelled",
+   "fieldtype": "Int",
+   "in_create": 0,
+   "label": "Total Customer Cancelled"
+  },
+  {
+   "fieldname": "total_ghosted",
+   "fieldtype": "Int",
+   "in_create": 0,
+   "label": "Total Ghosted"
+  },
+  {
+   "fieldname": "section_break_dsr",
+   "fieldtype": "Section Break",
+   "in_create": 0,
+   "label": "DSR"
+  },
+  {
+   "fieldname": "dsr_strict",
+   "fieldtype": "Percent",
+   "in_create": 0,
+   "in_list_view": 1,
+   "label": "DSR Strict"
+  },
+  {
+   "fieldname": "dsr_adjusted",
+   "fieldtype": "Percent",
+   "in_create": 0,
+   "label": "DSR Adjusted"
+  },
+  {
+   "fieldname": "column_break_dsr",
+   "fieldtype": "Column Break",
+   "in_create": 0
+  },
+  {
+   "fieldname": "shrinkage_rate",
+   "fieldtype": "Percent",
+   "in_create": 0,
+   "label": "Shrinkage Rate"
+  },
+  {
+   "fieldname": "ghost_rate",
+   "fieldtype": "Percent",
+   "in_create": 0,
+   "label": "Ghost Rate"
+  },
+  {
+   "fieldname": "section_break_meta",
+   "fieldtype": "Section Break",
+   "in_create": 0,
+   "label": "Meta"
+  },
+  {
+   "fieldname": "avg_confirmation_minutes",
+   "fieldtype": "Float",
+   "in_create": 0,
+   "label": "Avg Confirmation Minutes"
+  },
+  {
+   "fieldname": "dsr_colour",
+   "fieldtype": "Data",
+   "in_create": 0,
+   "label": "DSR Colour"
+  },
+  {
+   "fieldname": "is_double_risk",
+   "fieldtype": "Check",
+   "in_create": 0,
+   "label": "Is Double Risk"
+  },
+  {
+   "fieldname": "column_break_meta",
+   "fieldtype": "Column Break",
+   "in_create": 0
+  },
+  {
+   "fieldname": "computed_at",
+   "fieldtype": "Datetime",
+   "in_create": 0,
+   "label": "Computed At"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-03-15 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Vitalvida",
+ "name": "DSR Snapshot",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 0,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 0
+}

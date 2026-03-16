@@ -1,0 +1,35 @@
+{
+ "actions":[],"creation":"2026-03-16 00:00:00.000000","doctype":"DocType","engine":"InnoDB",
+ "field_order":["delivery_agent","product","abc_classification","column_break_1","scheduled_date","count_status",
+  "section_break_count","system_quantity","counted_quantity","variance_quantity","variance_percentage",
+  "section_break_audit","count_method","counted_by","verified_by","column_break_a","started_at","completed_at","verified_at","count_notes"],
+ "fields":[
+  {"fieldname":"delivery_agent","fieldtype":"Link","label":"Delivery Agent","options":"Delivery Agent","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"product","fieldtype":"Link","label":"Product","options":"Item","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"abc_classification","fieldtype":"Select","label":"ABC Class","options":"A\nB\nC","reqd":1,"in_list_view":1,"in_create":0,"description":"A=weekly, B=monthly, C=quarterly"},
+  {"fieldname":"column_break_1","fieldtype":"Column Break","in_create":0},
+  {"fieldname":"scheduled_date","fieldtype":"Date","label":"Scheduled Date","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"count_status","fieldtype":"Select","label":"Status","options":"Scheduled\nIn Progress\nCompleted\nVerified\nSkipped","default":"Scheduled","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"section_break_count","fieldtype":"Section Break","label":"Count Data","in_create":0},
+  {"fieldname":"system_quantity","fieldtype":"Float","label":"System Quantity","read_only":1,"in_create":0},
+  {"fieldname":"counted_quantity","fieldtype":"Float","label":"Counted Quantity","in_create":0},
+  {"fieldname":"variance_quantity","fieldtype":"Float","label":"Variance","read_only":1,"in_create":0},
+  {"fieldname":"variance_percentage","fieldtype":"Percent","label":"Variance %","read_only":1,"in_create":0},
+  {"fieldname":"section_break_audit","fieldtype":"Section Break","label":"Audit","in_create":0},
+  {"fieldname":"count_method","fieldtype":"Select","label":"Count Method","options":"Physical\nPhoto\nBarcode","default":"Physical","in_create":0},
+  {"fieldname":"counted_by","fieldtype":"Link","label":"Counted By","options":"User","in_create":0},
+  {"fieldname":"verified_by","fieldtype":"Link","label":"Verified By","options":"User","read_only":1,"in_create":0},
+  {"fieldname":"column_break_a","fieldtype":"Column Break","in_create":0},
+  {"fieldname":"started_at","fieldtype":"Datetime","label":"Started At","in_create":0},
+  {"fieldname":"completed_at","fieldtype":"Datetime","label":"Completed At","read_only":1,"in_create":0},
+  {"fieldname":"verified_at","fieldtype":"Datetime","label":"Verified At","read_only":1,"in_create":0},
+  {"fieldname":"count_notes","fieldtype":"Text","label":"Notes","in_create":0}
+ ],
+ "modified":"2026-03-16 00:00:00.000000","modified_by":"Administrator","module":"Vitalvida",
+ "name":"Cycle Count Schedule","owner":"Administrator",
+ "permissions":[
+  {"create":1,"delete":0,"read":1,"report":1,"role":"System Manager","write":1},
+  {"create":1,"read":1,"role":"Logistics User","write":1}
+ ],
+ "sort_field":"scheduled_date","sort_order":"ASC","track_changes":1
+}

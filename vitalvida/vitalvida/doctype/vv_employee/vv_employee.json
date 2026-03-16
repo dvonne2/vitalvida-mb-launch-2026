@@ -1,0 +1,37 @@
+{
+ "actions":[],"creation":"2026-03-16 00:00:00.000000","doctype":"DocType","engine":"InnoDB",
+ "field_order":[
+  "employee_name","employment_type","staff_role","column_break_1","commission_eligible","is_active",
+  "section_break_salary","base_salary","total_earned_ytd",
+  "section_break_bank","bank_name","account_number","column_break_b","paye_tin","pension_pin",
+  "section_break_link","linked_da","linked_closer","user"
+ ],
+ "fields":[
+  {"fieldname":"employee_name","fieldtype":"Data","label":"Employee Name","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"employment_type","fieldtype":"Select","label":"Employment Type","options":"Full-Time\nPart-Time\nContract\nCommission-Only","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"staff_role","fieldtype":"Select","label":"Staff Role","options":"Telesales Rep\nDelivery Agent\nFinance\nHR\nManagement\nOther","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"column_break_1","fieldtype":"Column Break","in_create":0},
+  {"fieldname":"commission_eligible","fieldtype":"Check","label":"Commission Eligible","default":"0","in_create":0},
+  {"fieldname":"is_active","fieldtype":"Check","label":"Active","default":"1","in_list_view":1,"in_create":0},
+  {"fieldname":"section_break_salary","fieldtype":"Section Break","label":"Salary","in_create":0},
+  {"fieldname":"base_salary","fieldtype":"Currency","label":"Base Salary","default":"0","description":"Monthly fixed salary. 0 for commission-only.","in_create":0},
+  {"fieldname":"total_earned_ytd","fieldtype":"Currency","label":"Total Earned YTD","read_only":1,"default":"0","in_create":0},
+  {"fieldname":"section_break_bank","fieldtype":"Section Break","label":"Banking","in_create":0},
+  {"fieldname":"bank_name","fieldtype":"Data","label":"Bank Name","reqd":1,"in_create":0},
+  {"fieldname":"account_number","fieldtype":"Data","label":"Account Number","reqd":1,"in_create":0},
+  {"fieldname":"column_break_b","fieldtype":"Column Break","in_create":0},
+  {"fieldname":"paye_tin","fieldtype":"Data","label":"PAYE TIN","in_create":0},
+  {"fieldname":"pension_pin","fieldtype":"Data","label":"Pension PIN","in_create":0},
+  {"fieldname":"section_break_link","fieldtype":"Section Break","label":"Linked Records","in_create":0},
+  {"fieldname":"linked_da","fieldtype":"Link","label":"Linked DA","options":"Delivery Agent","in_create":0},
+  {"fieldname":"linked_closer","fieldtype":"Link","label":"Linked Closer","options":"Telesales Closer","in_create":0},
+  {"fieldname":"user","fieldtype":"Link","label":"User","options":"User","in_create":0}
+ ],
+ "modified":"2026-03-16 00:00:00.000000","modified_by":"Administrator","module":"Vitalvida",
+ "name":"VV Employee","owner":"Administrator",
+ "permissions":[
+  {"create":1,"delete":0,"read":1,"report":1,"role":"System Manager","write":1},
+  {"read":1,"role":"HR Manager","write":1,"create":1}
+ ],
+ "sort_field":"employee_name","sort_order":"ASC","title_field":"employee_name","track_changes":1
+}

@@ -74,6 +74,7 @@ class VVOrder(Document):
 		self._validate_da_cannot_set_paid()
 		self._validate_reschedule_note()
 		self._validate_da_assignment_not_terminal()
+		self._validate_cancellation_source()
 
 	def after_save(self):
 		"""M8: Trigger Commitment Ladder when order transitions to Assigned."""
@@ -96,6 +97,9 @@ class VVOrder(Document):
 
 		if prev_status == curr_status:
 			return  # No status change — skip
+
+		# M17: Create immutable audit log for every status transition
+		self._create_status_log(prev_status, curr_status)
 
 		# Stamp status_changed_at on every transition
 		frappe.db.set_value("VV Order", self.name, "status_changed_at", now_datetime())
@@ -169,8 +173,55 @@ class VVOrder(Document):
 		self._create_post_delivery_placeholder()
 
 	def _on_paid(self):
-		"""On → Paid: stamp paid_at."""
+		"""On → Paid: stamp paid_at. M17: alert if non-Finance set Paid."""
 		frappe.db.set_value("VV Order", self.name, "paid_at", now_datetime())
+		self._check_unauthorized_paid()
+
+	def _check_unauthorized_paid(self):
+		"""M17: Alert Owner if Paid is set by a non-Finance role."""
+		try:
+			user_roles = frappe.get_roles(frappe.session.user)
+			if "Finance User" not in user_roles and frappe.session.user != "Administrator":
+				from vitalvida.notifications import send_notification
+				stub = frappe._dict({
+					"name": self.name,
+					"customer_name": self.customer_name or "",
+					"customer_phone": self.customer_phone or "",
+					"total_payable": self.total_payable or 0,
+					"package_contents": self.package_contents or "",
+					"address": self.address or "",
+					"delivery_agent_name": "",
+					"unauthorized_user": frappe.session.user,
+					"unauthorized_roles": ", ".join(user_roles),
+				})
+				send_notification(stub, event="UnauthorizedPaid",
+								  recipient_type="Owner", sender_channel="Transactional")
+		except Exception as e:
+			frappe.log_error(str(e), "M17 Unauthorized Paid Alert Error")
+
+	def _create_status_log(self, from_status, to_status):
+		"""M17: Create immutable Order Status Log entry on every transition."""
+		try:
+			user_roles = frappe.get_roles(frappe.session.user)
+			primary_role = next(
+				(r for r in user_roles if r not in ("All", "Guest")),
+				"Unknown"
+			)
+			frappe.get_doc({
+				"doctype": "Order Status Log",
+				"order": self.name,
+				"from_status": from_status or "",
+				"to_status": to_status,
+				"changed_by": frappe.session.user,
+				"changed_at": now_datetime(),
+				"role_at_change": primary_role,
+			}).insert(ignore_permissions=True)
+			frappe.db.commit()
+		except Exception as e:
+			frappe.log_error(
+				f"M17: Status log failed for {self.name}: {str(e)}",
+				"M17 Status Log Error"
+			)
 
 	def _on_cancelled_or_returned(self):
 		"""On → Cancelled/Returned: log for now (M6 will handle engine rows)."""
@@ -255,6 +306,16 @@ class VVOrder(Document):
 				frappe.throw(
 					_(f"Cannot assign a Delivery Agent to an order in '{self.order_status}' status. "
 					  f"Only active orders can be assigned."),
+					frappe.ValidationError
+				)
+
+	def _validate_cancellation_source(self):
+		"""M16: cancellation_source is mandatory when status = Cancelled."""
+		if self.order_status == "Cancelled":
+			if not getattr(self, "cancellation_source", None):
+				frappe.throw(
+					_("Cancellation Source is mandatory when status is Cancelled. "
+					  "Please select: Customer, DA, Operations, or System."),
 					frappe.ValidationError
 				)
 

@@ -1,5 +1,6 @@
 """
 Delivery Agent DocType Controller
+M16: recompute_stats() fixed to use Paid status (DSR) instead of Delivered.
 """
 
 import frappe
@@ -25,31 +26,35 @@ class DeliveryAgent(Document):
 
 	def recompute_stats(self):
 		"""
-		Recompute total_orders and success_rate from VV Order records.
-		Called by M6 after every terminal transition.
+		Recompute total_orders, success_rate, and all DSR fields.
+		M16 FIX: Uses Paid status only — never Delivered.
+		CRITICAL: success_rate now equals dsr_strict.
 		"""
 		try:
+			from vitalvida.dsr import (
+				compute_da_dsr, compute_da_shrinkage,
+				get_dsr_colour, is_double_risk
+			)
+			from frappe.utils import today, get_first_day_of_week, add_days
+
 			total = frappe.db.count("VV Order", {"delivery_agent": self.name})
 
-			delivered = frappe.db.count("VV Order", {
-				"delivery_agent": self.name,
-				"order_status": "Delivered"
-			})
-			cancelled = frappe.db.count("VV Order", {
-				"delivery_agent": self.name,
-				"order_status": "Cancelled"
-			})
-			returned = frappe.db.count("VV Order", {
-				"delivery_agent": self.name,
-				"order_status": "Returned"
-			})
+			week_start = str(get_first_day_of_week(today()))
+			week_end = str(add_days(week_start, 6))
 
-			denominator = delivered + cancelled + returned
-			rate = (delivered / denominator * 100) if denominator > 0 else 0.0
+			dsr = compute_da_dsr(self.name, week_start, week_end)
+			shrinkage = compute_da_shrinkage(self.name, week_start, week_end)
+			colour = get_dsr_colour(dsr["dsr_strict"])
+			double_risk = is_double_risk(dsr["dsr_strict"], shrinkage)
 
 			frappe.db.set_value("Delivery Agent", self.name, {
 				"total_orders": total,
-				"success_rate": round(rate, 2)
+				"success_rate": round(dsr["dsr_strict"], 2),
+				"dsr_strict": round(dsr["dsr_strict"], 2),
+				"dsr_adjusted": round(dsr["dsr_adjusted"], 2),
+				"shrinkage_rate": round(shrinkage, 2),
+				"dsr_colour": colour,
+				"is_double_risk": 1 if double_risk else 0,
 			})
 
 		except Exception as e:

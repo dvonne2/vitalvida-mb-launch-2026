@@ -1,0 +1,30 @@
+{
+ "actions":[],"creation":"2026-03-16 00:00:00.000000","doctype":"DocType","engine":"InnoDB",
+ "issingle":1,
+ "field_order":["environment","section_break_sandbox","sandbox_api_url","sandbox_api_key","sandbox_api_secret",
+  "section_break_production","production_api_url","production_api_key","production_api_secret",
+  "section_break_seller","seller_tin","seller_name","seller_address",
+  "section_break_settings","max_retry_attempts","retry_backoff_minutes"],
+ "fields":[
+  {"fieldname":"environment","fieldtype":"Select","label":"Environment","options":"Sandbox\nProduction","default":"Sandbox","reqd":1,"in_create":0,"description":"Toggle without code change"},
+  {"fieldname":"section_break_sandbox","fieldtype":"Section Break","label":"Sandbox Credentials","in_create":0},
+  {"fieldname":"sandbox_api_url","fieldtype":"Data","label":"Sandbox API URL","in_create":0},
+  {"fieldname":"sandbox_api_key","fieldtype":"Password","label":"Sandbox API Key","in_create":0},
+  {"fieldname":"sandbox_api_secret","fieldtype":"Password","label":"Sandbox API Secret","in_create":0},
+  {"fieldname":"section_break_production","fieldtype":"Section Break","label":"Production Credentials","in_create":0},
+  {"fieldname":"production_api_url","fieldtype":"Data","label":"Production API URL","in_create":0},
+  {"fieldname":"production_api_key","fieldtype":"Password","label":"Production API Key","in_create":0},
+  {"fieldname":"production_api_secret","fieldtype":"Password","label":"Production API Secret","in_create":0},
+  {"fieldname":"section_break_seller","fieldtype":"Section Break","label":"Seller Info","in_create":0},
+  {"fieldname":"seller_tin","fieldtype":"Data","label":"Seller TIN","reqd":1,"in_create":0},
+  {"fieldname":"seller_name","fieldtype":"Data","label":"Seller Name","reqd":1,"in_create":0},
+  {"fieldname":"seller_address","fieldtype":"Text","label":"Seller Address","in_create":0},
+  {"fieldname":"section_break_settings","fieldtype":"Section Break","label":"Queue Settings","in_create":0},
+  {"fieldname":"max_retry_attempts","fieldtype":"Int","label":"Max Retry Attempts","default":"3","in_create":0},
+  {"fieldname":"retry_backoff_minutes","fieldtype":"Data","label":"Retry Backoff (min)","default":"0,5,30","description":"Comma-separated minutes per attempt","in_create":0}
+ ],
+ "modified":"2026-03-16 00:00:00.000000","modified_by":"Administrator","module":"Vitalvida",
+ "name":"FIRS Connector Config","owner":"Administrator",
+ "permissions":[{"create":1,"delete":0,"read":1,"role":"System Manager","write":1}],
+ "sort_field":"creation","sort_order":"DESC"
+}

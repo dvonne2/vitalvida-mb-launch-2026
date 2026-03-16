@@ -1,0 +1,21 @@
+{
+ "actions":[],"creation":"2026-03-16 00:00:00.000000","doctype":"DocType","engine":"InnoDB",
+ "field_order":["application","document_type","status","column_break_1","file_path","file_size","mime_type","section_break_meta","ip_address","user_agent","submitted_at"],
+ "fields":[
+  {"fieldname":"application","fieldtype":"Link","label":"Application","options":"DA Application","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"document_type","fieldtype":"Select","label":"Document Type","options":"NIN Front\nNIN Back\nSelfie\nUtility Bill\nOther","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"status","fieldtype":"Select","label":"Status","options":"Uploaded\nVerified\nRejected","default":"Uploaded","in_list_view":1,"in_create":0},
+  {"fieldname":"column_break_1","fieldtype":"Column Break","in_create":0},
+  {"fieldname":"file_path","fieldtype":"Data","label":"File Path","in_create":0},
+  {"fieldname":"file_size","fieldtype":"Int","label":"File Size (bytes)","in_create":0},
+  {"fieldname":"mime_type","fieldtype":"Data","label":"MIME Type","in_create":0},
+  {"fieldname":"section_break_meta","fieldtype":"Section Break","label":"Meta","in_create":0},
+  {"fieldname":"ip_address","fieldtype":"Data","label":"IP Address","read_only":1,"in_create":0},
+  {"fieldname":"user_agent","fieldtype":"Data","label":"User Agent","read_only":1,"in_create":0},
+  {"fieldname":"submitted_at","fieldtype":"Datetime","label":"Submitted At","read_only":1,"in_create":0}
+ ],
+ "modified":"2026-03-16 00:00:00.000000","modified_by":"Administrator","module":"Vitalvida",
+ "name":"KYC Document Log","owner":"Administrator",
+ "permissions":[{"read":1,"role":"System Manager","report":1}],
+ "sort_field":"submitted_at","sort_order":"DESC","track_changes":0
+}

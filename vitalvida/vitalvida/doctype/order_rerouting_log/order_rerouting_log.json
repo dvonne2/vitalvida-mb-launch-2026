@@ -1,0 +1,20 @@
+{
+ "actions":[],"creation":"2026-03-16 00:00:00.000000","doctype":"DocType","engine":"InnoDB",
+ "field_order":["order","from_agent","to_agent","reason","column_break_1","auto_rerouted","rerouted_by","rerouted_at","success_status","notes"],
+ "fields":[
+  {"fieldname":"order","fieldtype":"Link","label":"Order","options":"VV Order","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"from_agent","fieldtype":"Data","label":"From","description":"DA or Telesales name","in_list_view":1,"in_create":0},
+  {"fieldname":"to_agent","fieldtype":"Data","label":"To","description":"DA or Telesales name","in_list_view":1,"in_create":0},
+  {"fieldname":"reason","fieldtype":"Select","label":"Reason","options":"Ghosted\nStaff Unavailable\nPerformance Issue\nCustomer Request\nFraud Alert\nSuspension\nManual Reassignment\nSystem Optimization","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"column_break_1","fieldtype":"Column Break","in_create":0},
+  {"fieldname":"auto_rerouted","fieldtype":"Check","label":"Auto Rerouted","default":"0","in_create":0},
+  {"fieldname":"rerouted_by","fieldtype":"Link","label":"Rerouted By","options":"User","read_only":1,"in_create":0},
+  {"fieldname":"rerouted_at","fieldtype":"Datetime","label":"Rerouted At","read_only":1,"in_create":0},
+  {"fieldname":"success_status","fieldtype":"Select","label":"Status","options":"Pending\nSuccess\nFailed","default":"Pending","in_list_view":1,"in_create":0},
+  {"fieldname":"notes","fieldtype":"Text","label":"Notes","in_create":0}
+ ],
+ "modified":"2026-03-16 00:00:00.000000","modified_by":"Administrator","module":"Vitalvida",
+ "name":"Order Rerouting Log","owner":"Administrator",
+ "permissions":[{"read":1,"role":"System Manager","report":1,"export":1},{"read":1,"role":"Logistics User","report":1}],
+ "sort_field":"rerouted_at","sort_order":"DESC","track_changes":0
+}

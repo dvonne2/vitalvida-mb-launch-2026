@@ -79,8 +79,14 @@ def _recompute_strike_count(delivery_agent: str) -> None:
 
 
 def _reassign_open_orders(delivery_agent: str) -> None:
-    """Reset open orders back to Pending for M10 round-robin to pick up."""
+    """Reset open orders back to Pending for M10 round-robin to pick up.
+    Gap 3: Creates Order Rerouting Log for each reassignment."""
     try:
+        da_name = (
+            frappe.db.get_value("Delivery Agent", delivery_agent, "agent_name")
+            or delivery_agent
+        )
+
         open_orders = frappe.get_all("VV Order", filters={
             "delivery_agent": delivery_agent,
             "order_status": ["in", ["Assigned", "Out for Delivery"]]
@@ -91,6 +97,21 @@ def _reassign_open_orders(delivery_agent: str) -> None:
                 "delivery_agent": None,
                 "order_status": "Pending"
             })
+
+            # Gap 3: Log the rerouting
+            try:
+                frappe.get_doc({
+                    "doctype": "Order Rerouting Log",
+                    "order": order.name,
+                    "from_agent": da_name,
+                    "to_agent": "Pending (round-robin)",
+                    "reason": "Suspension",
+                    "auto_rerouted": 1,
+                    "success_status": "Success",
+                    "notes": f"DA {da_name} suspended — 3 strikes reached",
+                }).insert(ignore_permissions=True)
+            except Exception:
+                pass  # Don't block reassignment if log fails
 
         if open_orders:
             frappe.db.commit()
