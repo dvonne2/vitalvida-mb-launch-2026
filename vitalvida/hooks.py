@@ -20,6 +20,9 @@ fixtures = [
     },{
       "doctype": "Workflow",
       "filters": [["document_type", "=", "VV Order"]]
+    },{
+      "doctype": "Workspace",
+      "filters": [["module", "=", "Vitalvida"]]
     }
 ]
 

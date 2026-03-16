@@ -1,0 +1,185 @@
+{
+ "actions": [],
+ "creation": "2026-03-16 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "issingle": 1,
+ "field_order": [
+  "section_break_telesales",
+  "telesales_commission_type",
+  "telesales_commission_amount",
+  "telesales_commission_pct",
+  "section_break_da",
+  "da_delivery_bonus",
+  "da_fasttrack_bonus",
+  "fasttrack_hours",
+  "section_break_compliance",
+  "payout_min_compliance_score",
+  "section_break_tiers",
+  "performance_tiers",
+  "section_break_bonus_approval",
+  "bonus_approval_fc_threshold",
+  "bonus_approval_gm_threshold",
+  "bonus_approval_ceo_threshold",
+  "bonus_approval_expiry_days",
+  "section_break_media_buyer_tiers",
+  "media_buyer_tiers"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_telesales",
+   "fieldtype": "Section Break",
+   "label": "Telesales Commission",
+   "in_create": 0
+  },
+  {
+   "fieldname": "telesales_commission_type",
+   "fieldtype": "Select",
+   "label": "Commission Type",
+   "options": "Per Order\nPercentage of Order Value",
+   "reqd": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "telesales_commission_amount",
+   "fieldtype": "Currency",
+   "label": "Commission Amount (Per Order)",
+   "description": "Fixed NGN per confirmed delivered order",
+   "in_create": 0
+  },
+  {
+   "fieldname": "telesales_commission_pct",
+   "fieldtype": "Percent",
+   "label": "Commission % (of Order Value)",
+   "in_create": 0
+  },
+  {
+   "fieldname": "section_break_da",
+   "fieldtype": "Section Break",
+   "label": "DA Bonuses",
+   "in_create": 0
+  },
+  {
+   "fieldname": "da_delivery_bonus",
+   "fieldtype": "Currency",
+   "label": "DA Delivery Bonus",
+   "description": "NGN per successfully delivered + paid order",
+   "reqd": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "da_fasttrack_bonus",
+   "fieldtype": "Currency",
+   "label": "DA Fast-Track Bonus",
+   "description": "Additional NGN for delivery within fast-track window",
+   "reqd": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "fasttrack_hours",
+   "fieldtype": "Int",
+   "label": "Fast-Track Hours",
+   "description": "Hours within which delivery qualifies for fast-track bonus",
+   "reqd": 1,
+   "default": "10",
+   "in_create": 0
+  },
+  {
+   "fieldname": "section_break_compliance",
+   "fieldtype": "Section Break",
+   "label": "Compliance",
+   "in_create": 0
+  },
+  {
+   "fieldname": "payout_min_compliance_score",
+   "fieldtype": "Percent",
+   "label": "Min Compliance Score for Payout",
+   "description": "0-100. Orders below this score are flagged.",
+   "reqd": 1,
+   "default": "70",
+   "in_create": 0
+  },
+  {
+   "fieldname": "section_break_tiers",
+   "fieldtype": "Section Break",
+   "label": "Performance Tiers",
+   "in_create": 0
+  },
+  {
+   "fieldname": "performance_tiers",
+   "fieldtype": "Table",
+   "label": "Performance Tiers",
+   "options": "Commission Tier",
+   "reqd": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "section_break_bonus_approval",
+   "fieldtype": "Section Break",
+   "label": "Bonus Approval Thresholds",
+   "in_create": 0
+  },
+  {
+   "fieldname": "bonus_approval_fc_threshold",
+   "fieldtype": "Currency",
+   "label": "FC Approval Threshold",
+   "description": "Bonuses above this need Finance Controller approval",
+   "default": "15000",
+   "in_create": 0
+  },
+  {
+   "fieldname": "bonus_approval_gm_threshold",
+   "fieldtype": "Currency",
+   "label": "GM Approval Threshold",
+   "description": "Bonuses above this need GM approval",
+   "default": "50000",
+   "in_create": 0
+  },
+  {
+   "fieldname": "bonus_approval_ceo_threshold",
+   "fieldtype": "Currency",
+   "label": "CEO Approval Threshold",
+   "description": "Bonuses above this need CEO approval",
+   "default": "100000",
+   "in_create": 0
+  },
+  {
+   "fieldname": "bonus_approval_expiry_days",
+   "fieldtype": "Int",
+   "label": "Approval Expiry (Days)",
+   "description": "Days before unapproved bonuses auto-reject",
+   "default": "7",
+   "in_create": 0
+  },
+  {
+   "fieldname": "section_break_media_buyer_tiers",
+   "fieldtype": "Section Break",
+   "label": "Media Buyer Commission Tiers (M32)",
+   "in_create": 0
+  },
+  {
+   "fieldname": "media_buyer_tiers",
+   "fieldtype": "Table",
+   "label": "Media Buyer Tiers",
+   "options": "Media Buyer Commission Tier",
+   "in_create": 0
+  }
+ ],
+ "modified": "2026-03-16 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Vitalvida",
+ "name": "VV Commission Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 0,
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

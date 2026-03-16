@@ -1,0 +1,33 @@
+{
+ "actions":[],"creation":"2026-03-16 00:00:00.000000","doctype":"DocType","engine":"InnoDB",
+ "field_order":["media_buyer","week_start","week_end","column_break_1","status","approved_by",
+  "section_break_orders","orders_generated","orders_delivered",
+  "section_break_commission","commission_tier_name","commission_per_order","gross_commission",
+  "section_break_payout","deductions","net_payout"],
+ "fields":[
+  {"fieldname":"media_buyer","fieldtype":"Link","label":"Media Buyer","options":"VV Media Buyer","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"week_start","fieldtype":"Date","label":"Week Start","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"week_end","fieldtype":"Date","label":"Week End","reqd":1,"in_create":0},
+  {"fieldname":"column_break_1","fieldtype":"Column Break","in_create":0},
+  {"fieldname":"status","fieldtype":"Select","label":"Status","options":"Draft\nPending Approval\nApproved\nPaid","default":"Draft","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"approved_by","fieldtype":"Link","label":"Approved By","options":"User","read_only":1,"in_create":0},
+  {"fieldname":"section_break_orders","fieldtype":"Section Break","label":"Orders","in_create":0},
+  {"fieldname":"orders_generated","fieldtype":"Int","label":"Orders Generated","in_create":0,"description":"Total orders from this buyer's UTM link"},
+  {"fieldname":"orders_delivered","fieldtype":"Int","label":"Orders Delivered (Paid)","reqd":1,"in_list_view":1,"in_create":0,"description":"Only Paid orders count for commission"},
+  {"fieldname":"section_break_commission","fieldtype":"Section Break","label":"Commission","in_create":0},
+  {"fieldname":"commission_tier_name","fieldtype":"Data","label":"Tier","read_only":1,"in_create":0},
+  {"fieldname":"commission_per_order","fieldtype":"Currency","label":"Commission per Order","read_only":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"gross_commission","fieldtype":"Currency","label":"Gross Commission","in_list_view":1,"in_create":0},
+  {"fieldname":"section_break_payout","fieldtype":"Section Break","label":"Payout","in_create":0},
+  {"fieldname":"deductions","fieldtype":"Currency","label":"Deductions","default":"0","in_create":0,"description":"Manual deductions if any"},
+  {"fieldname":"net_payout","fieldtype":"Currency","label":"Net Payout","in_list_view":1,"in_create":0}
+ ],
+ "modified":"2026-03-16 00:00:00.000000","modified_by":"Administrator","module":"Vitalvida",
+ "name":"VV Media Buyer Weekly Report","owner":"Administrator",
+ "permissions":[
+  {"create":1,"delete":0,"read":1,"report":1,"role":"System Manager","write":1},
+  {"read":1,"role":"Sales Manager","report":1},
+  {"read":1,"role":"Finance User","write":1}
+ ],
+ "sort_field":"week_start","sort_order":"DESC","track_changes":1
+}

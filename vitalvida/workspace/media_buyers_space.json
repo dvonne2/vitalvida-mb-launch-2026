@@ -1,0 +1,178 @@
+{
+  "charts": [],
+  "content": "[{\"id\":\"kpi_section\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Media Buyers Space</b></span>\",\"col\":12}},{\"id\":\"orders_received\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"MB Orders Received\",\"col\":4}},{\"id\":\"orders_received_month\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"MB Orders Received This Month\",\"col\":4}},{\"id\":\"orders_received_today\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"MB Orders Received Today\",\"col\":4}},{\"id\":\"orders_delivered\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"MB Orders Delivered\",\"col\":4}},{\"id\":\"orders_delivered_month\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"MB Orders Delivered This Month\",\"col\":4}},{\"id\":\"orders_delivered_today\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"MB Orders Delivered Today\",\"col\":4}},{\"id\":\"transactions_header\",\"type\":\"header\",\"data\":{\"text\":\"Transactions\",\"col\":6}},{\"id\":\"reports_header\",\"type\":\"header\",\"data\":{\"text\":\"Reports\",\"col\":6}},{\"id\":\"shortcut_orders\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"VV Order\",\"col\":6}},{\"id\":\"shortcut_buyers\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"VV Media Buyer\",\"col\":6}},{\"id\":\"shortcut_report1\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Media Buyer Dashboard\",\"col\":6}},{\"id\":\"shortcut_report2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Product Revenue Breakdown\",\"col\":6}},{\"id\":\"shortcut_report3\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"State Performance Dashboard\",\"col\":6}}]",
+  "creation": "2026-03-16 00:00:00.000000",
+  "docstatus": 0,
+  "doctype": "Workspace",
+  "for_user": "",
+  "hide_custom": 0,
+  "icon": "chart",
+  "idx": 0,
+  "is_default": 0,
+  "is_hidden": 0,
+  "label": "Media Buyers Space",
+  "links": [
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "VV Order",
+      "link_count": 0,
+      "link_to": "VV Order",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "VV Media Buyer",
+      "link_count": 0,
+      "link_to": "VV Media Buyer",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Weekly Reports",
+      "link_count": 0,
+      "link_to": "VV Media Buyer Weekly Report",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 1,
+      "label": "Media Buyer Dashboard",
+      "link_count": 0,
+      "link_to": "Media Buyer Dashboard",
+      "link_type": "Report",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 1,
+      "label": "Product Revenue Breakdown",
+      "link_count": 0,
+      "link_to": "Product Revenue Breakdown",
+      "link_type": "Report",
+      "onboard": 0,
+      "type": "Link"
+    },
+    {
+      "hidden": 0,
+      "is_query_report": 1,
+      "label": "State Performance Dashboard",
+      "link_count": 0,
+      "link_to": "State Performance Dashboard",
+      "link_type": "Report",
+      "onboard": 0,
+      "type": "Link"
+    }
+  ],
+  "modified": "2026-03-16 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Vitalvida",
+  "name": "Media Buyers Space",
+  "number_cards": [
+    {
+      "color": "#29CD42",
+      "document_type": "VV Order",
+      "filters_json": "[[\"VV Order\",\"media_buyer\",\"is\",\"set\"],[\"VV Order\",\"order_status\",\"!=\",\"Partial\"]]",
+      "function": "Count",
+      "label": "MB Orders Received",
+      "number_card_name": "MB Orders Received",
+      "show_percentage_stats": 1,
+      "stats_time_interval": "Weekly"
+    },
+    {
+      "color": "#29CD42",
+      "document_type": "VV Order",
+      "filters_json": "[[\"VV Order\",\"media_buyer\",\"is\",\"set\"],[\"VV Order\",\"order_status\",\"!=\",\"Partial\"],[\"VV Order\",\"creation\",\"Timespan\",\"this month\"]]",
+      "function": "Count",
+      "label": "MB Orders Received This Month",
+      "number_card_name": "MB Orders Received This Month",
+      "show_percentage_stats": 1,
+      "stats_time_interval": "Weekly"
+    },
+    {
+      "color": "#29CD42",
+      "document_type": "VV Order",
+      "filters_json": "[[\"VV Order\",\"media_buyer\",\"is\",\"set\"],[\"VV Order\",\"order_status\",\"!=\",\"Partial\"],[\"VV Order\",\"creation\",\"Timespan\",\"today\"]]",
+      "function": "Count",
+      "label": "MB Orders Received Today",
+      "number_card_name": "MB Orders Received Today",
+      "show_percentage_stats": 0,
+      "stats_time_interval": "Daily"
+    },
+    {
+      "color": "#0089FF",
+      "document_type": "VV Order",
+      "filters_json": "[[\"VV Order\",\"media_buyer\",\"is\",\"set\"],[\"VV Order\",\"order_status\",\"=\",\"Paid\"]]",
+      "function": "Count",
+      "label": "MB Orders Delivered",
+      "number_card_name": "MB Orders Delivered",
+      "show_percentage_stats": 1,
+      "stats_time_interval": "Daily"
+    },
+    {
+      "color": "#0089FF",
+      "document_type": "VV Order",
+      "filters_json": "[[\"VV Order\",\"media_buyer\",\"is\",\"set\"],[\"VV Order\",\"order_status\",\"=\",\"Paid\"],[\"VV Order\",\"paid_at\",\"Timespan\",\"this month\"]]",
+      "function": "Count",
+      "label": "MB Orders Delivered This Month",
+      "number_card_name": "MB Orders Delivered This Month",
+      "show_percentage_stats": 0,
+      "stats_time_interval": "Daily"
+    },
+    {
+      "color": "#0089FF",
+      "document_type": "VV Order",
+      "filters_json": "[[\"VV Order\",\"media_buyer\",\"is\",\"set\"],[\"VV Order\",\"order_status\",\"=\",\"Paid\"],[\"VV Order\",\"paid_at\",\"Timespan\",\"today\"]]",
+      "function": "Count",
+      "label": "MB Orders Delivered Today",
+      "number_card_name": "MB Orders Delivered Today",
+      "show_percentage_stats": 0,
+      "stats_time_interval": "Daily"
+    }
+  ],
+  "owner": "Administrator",
+  "parent_page": "",
+  "public": 1,
+  "roles": [
+    {"role": "System Manager"},
+    {"role": "Sales Manager"}
+  ],
+  "sequence_id": 40,
+  "shortcuts": [
+    {
+      "label": "VV Order",
+      "link_to": "VV Order",
+      "type": "DocType"
+    },
+    {
+      "label": "VV Media Buyer",
+      "link_to": "VV Media Buyer",
+      "type": "DocType"
+    },
+    {
+      "label": "Media Buyer Dashboard",
+      "link_to": "Media Buyer Dashboard",
+      "type": "Report"
+    },
+    {
+      "label": "Product Revenue Breakdown",
+      "link_to": "Product Revenue Breakdown",
+      "type": "Report"
+    },
+    {
+      "label": "State Performance Dashboard",
+      "link_to": "State Performance Dashboard",
+      "type": "Report"
+    }
+  ],
+  "title": "Media Buyers Space"
+}
