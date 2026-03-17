@@ -13,7 +13,8 @@ override_whitelisted_methods = {
     "vitalvida.dsr_api.get_da_dsr_colour": "vitalvida.dsr_api.get_da_dsr_colour",
     "vitalvida.media_buyer.get_affiliate_summary": "vitalvida.media_buyer.get_affiliate_summary",
     "vitalvida.media_buyer.mark_batch_paid": "vitalvida.media_buyer.mark_batch_paid",
-    "vitalvida.media_buyer.approve_all_reports": "vitalvida.media_buyer.approve_all_reports"
+    "vitalvida.media_buyer.approve_all_reports": "vitalvida.media_buyer.approve_all_reports",
+    "vitalvida.media_buyer.validate_commission_coverage": "vitalvida.media_buyer.validate_commission_coverage"
 }
 
 fixtures = [

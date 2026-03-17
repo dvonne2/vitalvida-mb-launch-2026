@@ -1,15 +1,20 @@
 """
 M32 — Media Buyer / Affiliate Commission Engine (TK Store Model)
-media_buyer.py
+media_buyer.py  v29
 
 MODEL: Buyer funds their own ads. Company provides product + fulfillment.
 Commission paid ONLY on Delivered + Paid (order_status = Paid) orders.
 
 ATTRIBUTION: ?aff_id=MB001&utm_source=facebook&utm_campaign=recovery&click_id=abc123
-COMMISSION: Per-bundle via Affiliate Commission Rule, or flat-rate via VV Commission Settings tiers.
-  Zero hardcoded values — all commission rates configured in the system.
+COMMISSION: Per-bundle via Affiliate Commission Rule, or flat-rate via
+  VV Commission Settings → Media Buyer Tiers. Zero hardcoded values.
 FRAUD: Duplicate phone, duplicate click_id, high failure rate, suspicious patterns.
+  Unresolved fraud flags AUTO-BLOCK payout.
 PAYOUT: Batch workflow — Draft → Pending → Approved → Paid.
+SECURITY: Affiliates can only see their own data. Finance/Admin see all.
+
+NAMING: The VV Media Buyer field 'utm_ref' IS the aff_id. Same field,
+  labeled 'Affiliate ID (aff_id)' in the UI. Code uses both names interchangeably.
 
 Scheduler:
   run_weekly_media_buyer_reports() — Monday 6AM
@@ -27,14 +32,13 @@ from frappe.utils import now_datetime, today, add_days, get_first_day_of_week, g
 def attribute_order(order_name, payload):
     """
     Called from orders.py during webhook processing.
-    Reads aff_id, utm_*, click_id from payload. Tags VV Order.
+    Reads aff_id + UTM fields from payload. Tags VV Order.
     Locks attribution to prevent tampering.
     """
     aff_id = (payload.get("aff_id") or payload.get("utm_ref")
               or payload.get("ref") or payload.get("source_ref") or "").strip()
 
     if not aff_id:
-        # Try extracting from source_url
         source_url = payload.get("source_url") or payload.get("landing_page_url") or ""
         if "aff_id=" in source_url or "ref=" in source_url:
             try:
@@ -55,6 +59,7 @@ def attribute_order(order_name, payload):
     }
 
     if aff_id:
+        # utm_ref IS the aff_id field on VV Media Buyer
         buyer = frappe.db.get_value("VV Media Buyer",
             {"utm_ref": aff_id, "status": "Active"}, "name")
         if buyer:
@@ -62,11 +67,17 @@ def attribute_order(order_name, payload):
             update["aff_id"] = aff_id
             update["attribution_locked"] = 1
 
-            # Calculate commission for this order
             commission = _calculate_order_commission(order_name, buyer)
             if commission > 0:
                 update["affiliate_commission_amount"] = commission
                 update["affiliate_payout_status"] = "Pending"
+            else:
+                # FIX #3: Flag zero commission — missing rule
+                frappe.log_error(
+                    f"M32: Zero commission for order {order_name}, "
+                    f"buyer {buyer}. Check Affiliate Commission Rules.",
+                    "M32 Zero Commission Warning"
+                )
 
     if any(v for v in update.values()):
         frappe.db.set_value("VV Order", order_name, update)
@@ -74,39 +85,37 @@ def attribute_order(order_name, payload):
 
 def _calculate_order_commission(order_name, buyer_name):
     """
-    Calculate commission for a single order using Affiliate Commission Rule.
-    Checks: bundle match → affiliate tier match → fallback to flat tiers.
+    Calculate commission using Affiliate Commission Rule DocType.
+    Tries: bundle+tier → bundle only → flat-rate tiers → 0 (with warning).
     """
     order = frappe.db.get_value("VV Order", order_name,
         ["package_name", "total_payable"], as_dict=True)
     if not order:
         return 0.0
 
-    # Get buyer tier
     buyer_tier = frappe.db.get_value("VV Media Buyer", buyer_name,
                                      "default_commission_tier") or ""
 
-    # 1. Try bundle-specific + tier-specific rule
+    # 1. Bundle-specific + tier-specific rule
     commission = _find_commission_rule(order.package_name, buyer_tier)
     if commission > 0:
         return commission
 
-    # 2. Try bundle-specific, any tier
+    # 2. Bundle-specific, any tier
     commission = _find_commission_rule(order.package_name, "")
     if commission > 0:
         return commission
 
-    # 3. Fallback to flat-rate tiers from VV Commission Settings
-    return 0.0  # Will be calculated at weekly report time from tier tables
+    # 3. No rule found — return 0 (logged at caller)
+    return 0.0
 
 
 def _find_commission_rule(bundle_name, tier):
     """Find matching Affiliate Commission Rule."""
+    if not bundle_name:
+        return 0.0
     today_str = str(today())
-    filters = {
-        "bundle_name": bundle_name,
-        "is_active": 1,
-    }
+    filters = {"bundle_name": bundle_name, "is_active": 1}
     if tier:
         filters["affiliate_tier"] = tier
     else:
@@ -123,7 +132,6 @@ def _find_commission_rule(bundle_name, tier):
         if rule.effective_to and str(rule.effective_to) < today_str:
             continue
         return float(rule.payout_amount or 0)
-
     return 0.0
 
 
@@ -133,12 +141,12 @@ def _find_commission_rule(bundle_name, tier):
 
 def qualify_order_for_payout(order_name):
     """
-    Check if an order qualifies for affiliate payout.
     Returns (qualified: bool, reason: str).
+    FIX #5: Unresolved fraud flags AUTO-BLOCK payout.
     """
     order = frappe.db.get_value("VV Order", order_name,
         ["aff_id", "media_buyer", "order_status", "affiliate_payout_status",
-         "customer_phone"], as_dict=True)
+         "affiliate_commission_amount"], as_dict=True)
 
     if not order:
         return False, "Order not found"
@@ -149,14 +157,25 @@ def qualify_order_for_payout(order_name):
     if order.affiliate_payout_status in ("Approved", "Paid", "Rejected"):
         return False, f"Payout already {order.affiliate_payout_status}"
 
-    # Check fraud flags
-    flags = frappe.db.count("Affiliate Fraud Flag", {
+    # FIX #3: Zero commission = not qualified
+    if not order.affiliate_commission_amount or float(order.affiliate_commission_amount) <= 0:
+        return False, "Commission amount is zero — check Affiliate Commission Rules"
+
+    # FIX #5: Unresolved fraud flags block payout
+    order_flags = frappe.db.count("Affiliate Fraud Flag", {
         "order": order_name, "resolved": 0
     })
-    if flags > 0:
-        return False, f"{flags} unresolved fraud flag(s)"
+    if order_flags > 0:
+        return False, f"{order_flags} unresolved fraud flag(s) on this order"
 
-    # Check buyer is still active
+    # FIX #5: Buyer-level fraud flags also block
+    buyer_flags = frappe.db.count("Affiliate Fraud Flag", {
+        "media_buyer": order.media_buyer, "resolved": 0,
+        "severity": ["in", ["High", "Critical"]]
+    })
+    if buyer_flags > 0:
+        return False, f"Media buyer has {buyer_flags} unresolved High/Critical fraud flag(s)"
+
     buyer_status = frappe.db.get_value("VV Media Buyer",
                                         order.media_buyer, "status")
     if buyer_status != "Active":
@@ -171,20 +190,18 @@ def qualify_order_for_payout(order_name):
 
 def run_fraud_scan():
     """
-    Runs daily at 3:00 AM. Checks for:
-    1. Same phone across multiple aff_ids
-    2. Duplicate click_ids
-    3. High failure rate per buyer
-    4. Suspicious duplicate address+phone patterns
+    Daily 3AM. Checks for suspicious patterns.
+    FIX #5: Flags ALL affected buyers (not just first path).
     """
     _check_duplicate_phones()
     _check_duplicate_click_ids()
     _check_high_failure_rate()
+    _auto_block_flagged_payouts()
     frappe.db.commit()
 
 
 def _check_duplicate_phones():
-    """Flag phones appearing under multiple different media buyers."""
+    """Flag phones appearing under 3+ different media buyers in 30 days."""
     dupes = frappe.db.sql("""
         SELECT customer_phone, COUNT(DISTINCT media_buyer) as buyer_count,
                GROUP_CONCAT(DISTINCT media_buyer) as buyers
@@ -197,6 +214,7 @@ def _check_duplicate_phones():
     """, as_dict=True)
 
     for d in dupes:
+        # FIX #5: Flag EVERY affected buyer, not just one
         for buyer in (d.buyers or "").split(","):
             buyer = buyer.strip()
             if not buyer:
@@ -213,22 +231,24 @@ def _check_duplicate_phones():
 
 
 def _check_duplicate_click_ids():
-    """Flag click_ids appearing on multiple orders."""
+    """Flag click_ids appearing on 3+ orders in 7 days. Flags ALL affected buyers."""
     dupes = frappe.db.sql("""
-        SELECT click_id, COUNT(*) as cnt, GROUP_CONCAT(name) as orders
+        SELECT click_id, COUNT(*) as cnt,
+               GROUP_CONCAT(DISTINCT media_buyer) as buyers
         FROM `tabVV Order`
         WHERE click_id IS NOT NULL AND click_id != ''
-        AND media_buyer IS NOT NULL
+        AND media_buyer IS NOT NULL AND media_buyer != ''
         AND creation >= DATE_SUB(NOW(), INTERVAL 7 DAY)
         GROUP BY click_id
         HAVING cnt >= 3
     """, as_dict=True)
 
     for d in dupes:
-        order_list = (d.orders or "").split(",")
-        first_order = order_list[0].strip() if order_list else None
-        buyer = frappe.db.get_value("VV Order", first_order, "media_buyer") if first_order else None
-        if buyer:
+        # FIX #5: Flag ALL affected buyers
+        for buyer in (d.buyers or "").split(","):
+            buyer = buyer.strip()
+            if not buyer:
+                continue
             existing = frappe.db.exists("Affiliate Fraud Flag", {
                 "media_buyer": buyer,
                 "flag_type": "Duplicate Click ID",
@@ -236,8 +256,8 @@ def _check_duplicate_click_ids():
                 "resolved": 0,
             })
             if not existing:
-                _create_fraud_flag(first_order, buyer, "Duplicate Click ID", "Medium",
-                    f"click_id={d.click_id} used on {d.cnt} orders")
+                _create_fraud_flag(None, buyer, "Duplicate Click ID", "Medium",
+                    f"click_id={d.click_id} used on {d.cnt} orders across buyers: {d.buyers}")
 
 
 def _check_high_failure_rate():
@@ -245,8 +265,7 @@ def _check_high_failure_rate():
     buyers = frappe.db.sql("""
         SELECT media_buyer,
                COUNT(*) as total,
-               SUM(CASE WHEN order_status = 'Paid' THEN 1 ELSE 0 END) as paid,
-               SUM(CASE WHEN order_status IN ('Cancelled','Returned') THEN 1 ELSE 0 END) as failed
+               SUM(CASE WHEN order_status = 'Paid' THEN 1 ELSE 0 END) as paid
         FROM `tabVV Order`
         WHERE media_buyer IS NOT NULL AND media_buyer != ''
         AND creation >= DATE_SUB(NOW(), INTERVAL 30 DAY)
@@ -266,6 +285,39 @@ def _check_high_failure_rate():
                 f"Delivery rate: {rate}% ({b.paid}/{b.total} in last 30 days)")
 
 
+def _auto_block_flagged_payouts():
+    """
+    FIX #5: Auto-reject pending payouts for buyers with unresolved
+    High/Critical fraud flags.
+    """
+    flagged_buyers = frappe.db.sql("""
+        SELECT DISTINCT media_buyer FROM `tabAffiliate Fraud Flag`
+        WHERE resolved = 0 AND severity IN ('High', 'Critical')
+    """, as_dict=True)
+
+    for fb in flagged_buyers:
+        buyer = fb.media_buyer
+        # Block pending orders
+        frappe.db.sql("""
+            UPDATE `tabVV Order`
+            SET affiliate_payout_status = 'Rejected',
+                affiliate_notes = CONCAT(COALESCE(affiliate_notes,''),
+                    '\nAuto-rejected: unresolved High/Critical fraud flag')
+            WHERE media_buyer = %s
+            AND affiliate_payout_status = 'Pending'
+        """, (buyer,))
+
+        # Block pending payout batches
+        frappe.db.sql("""
+            UPDATE `tabAffiliate Payout Batch`
+            SET status = 'Rejected',
+                notes = CONCAT(COALESCE(notes,''),
+                    '\nAuto-rejected: unresolved High/Critical fraud flag')
+            WHERE media_buyer = %s
+            AND status IN ('Draft', 'Pending')
+        """, (buyer,))
+
+
 def _create_fraud_flag(order, buyer, flag_type, severity, detail):
     try:
         frappe.get_doc({
@@ -276,7 +328,6 @@ def _create_fraud_flag(order, buyer, flag_type, severity, detail):
             "severity": severity,
             "detail": detail,
         }).insert(ignore_permissions=True)
-        # Increment fraud_flag_count on buyer
         frappe.db.sql("""
             UPDATE `tabVV Media Buyer`
             SET fraud_flag_count = COALESCE(fraud_flag_count, 0) + 1
@@ -330,15 +381,12 @@ def _create_weekly_report(buyer, week_start, week_end, tiers):
         "media_buyer": buyer.name,
         "creation": ["between", [week_start, end_plus]]})
 
-    # Only Paid orders count — per PRD
     paid_orders = frappe.get_all("VV Order", filters={
         "media_buyer": buyer.name, "order_status": "Paid",
         "paid_at": ["between", [week_start, end_plus]]},
         fields=["name", "affiliate_commission_amount", "total_payable"])
 
     orders_delivered = len(paid_orders)
-
-    # Commission: sum per-order commissions if set, else use tier rate
     commission_from_rules = sum(float(o.affiliate_commission_amount or 0)
                                  for o in paid_orders)
     total_revenue = sum(float(o.total_payable or 0) for o in paid_orders)
@@ -351,7 +399,6 @@ def _create_weekly_report(buyer, week_start, week_end, tiers):
         tier_name, rate = _match_tier(orders_delivered, tiers)
         gross = round(orders_delivered * rate, 2)
 
-    # Create weekly report
     frappe.get_doc({
         "doctype": "VV Media Buyer Weekly Report",
         "media_buyer": buyer.name,
@@ -365,7 +412,6 @@ def _create_weekly_report(buyer, week_start, week_end, tiers):
         "deductions": 0, "net_payout": gross,
     }).insert(ignore_permissions=True)
 
-    # Create payout batch
     if gross > 0:
         frappe.get_doc({
             "doctype": "Affiliate Payout Batch",
@@ -376,7 +422,6 @@ def _create_weekly_report(buyer, week_start, week_end, tiers):
             "total_commission": gross,
         }).insert(ignore_permissions=True)
 
-        # Mark qualifying orders as Pending payout
         for o in paid_orders:
             qualified, _ = qualify_order_for_payout(o.name)
             if qualified:
@@ -397,7 +442,6 @@ def _create_weekly_report(buyer, week_start, week_end, tiers):
         "orders_toward_refund": orders_toward,
     }
 
-    # Delivery quality score
     total_all = frappe.db.count("VV Order", {
         "media_buyer": buyer.name, "order_status": ["!=", "Partial"]})
     total_paid = frappe.db.count("VV Order", {
@@ -405,7 +449,6 @@ def _create_weekly_report(buyer, week_start, week_end, tiers):
     update["delivery_quality_score"] = round(
         total_paid / total_all * 100, 1) if total_all > 0 else 0.0
 
-    # Zero weeks tracking
     if orders_delivered == 0:
         zero = int(buyer.get("consecutive_zero_weeks") or 0) + 1
         update["consecutive_zero_weeks"] = zero
@@ -429,14 +472,10 @@ def _match_tier(orders_delivered, tiers):
     if orders_delivered <= 0:
         return ("None", 0.0)
     if not tiers:
-        # No hardcoded fallback — tiers MUST be configured in
-        # VV Commission Settings → Media Buyer Tiers table
-        # or per-bundle via Affiliate Commission Rule DocType
         frappe.log_error(
             "M32: No media buyer commission tiers configured. "
             "Set them in VV Commission Settings → Media Buyer Tiers.",
-            "M32 No Tiers"
-        )
+            "M32 No Tiers")
         return ("Not Configured", 0.0)
     for tier in sorted(tiers, key=lambda t: t.get("min_orders", 0)):
         min_o = int(tier.get("min_orders", 0))
@@ -449,11 +488,15 @@ def _match_tier(orders_delivered, tiers):
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# PAYOUT APPROVAL — batch approve + mark paid
+# PAYOUT APPROVAL — FIX #1: @frappe.whitelist() on all public actions
 # ═══════════════════════════════════════════════════════════════════════════════
 
+@frappe.whitelist()
 def approve_all_reports(week_start):
-    """Bulk approve all Pending Approval reports for a given week."""
+    """Bulk approve all Pending Approval reports for a given week.
+    Requires Finance User or System Manager role."""
+    _require_payout_role()
+
     reports = frappe.get_all("VV Media Buyer Weekly Report",
         filters={"week_start": week_start, "status": "Pending Approval"},
         fields=["name"])
@@ -462,7 +505,6 @@ def approve_all_reports(week_start):
         frappe.db.set_value("VV Media Buyer Weekly Report", r.name, {
             "status": "Approved", "approved_by": frappe.session.user})
         approved += 1
-    # Also approve matching payout batches
     batches = frappe.get_all("Affiliate Payout Batch",
         filters={"period_start": week_start, "status": "Pending"},
         fields=["name"])
@@ -474,8 +516,11 @@ def approve_all_reports(week_start):
     return {"approved": approved, "week_start": week_start}
 
 
+@frappe.whitelist()
 def mark_batch_paid(batch_name, payment_reference=""):
-    """Mark a payout batch as Paid and update all linked orders."""
+    """Mark a payout batch as Paid. Requires Finance User or System Manager."""
+    _require_payout_role()
+
     batch = frappe.get_doc("Affiliate Payout Batch", batch_name)
     if batch.status != "Approved":
         frappe.throw("Only Approved batches can be marked as Paid.")
@@ -485,14 +530,13 @@ def mark_batch_paid(batch_name, payment_reference=""):
     batch.payment_reference = payment_reference
     batch.save(ignore_permissions=True)
 
-    # Mark orders as Paid
     frappe.db.sql("""
         UPDATE `tabVV Order`
         SET affiliate_payout_status = 'Paid',
             affiliate_payout_batch = %s
         WHERE media_buyer = %s
         AND order_status = 'Paid'
-        AND affiliate_payout_status = 'Pending'
+        AND affiliate_payout_status IN ('Pending', 'Approved')
         AND DATE(paid_at) BETWEEN %s AND %s
     """, (batch_name, batch.media_buyer, batch.period_start, batch.period_end))
 
@@ -500,13 +544,44 @@ def mark_batch_paid(batch_name, payment_reference=""):
     return {"batch": batch_name, "status": "Paid"}
 
 
+def _require_payout_role():
+    """FIX #1: Only Finance User or System Manager can approve/pay."""
+    roles = frappe.get_roles(frappe.session.user)
+    if "System Manager" not in roles and "Finance User" not in roles:
+        frappe.throw(
+            "Only Finance User or System Manager can approve or pay affiliate batches.",
+            frappe.PermissionError)
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
-# REPORTING API — per-affiliate summaries
+# REPORTING API — FIX #4: Permission-checked per-affiliate summaries
 # ═══════════════════════════════════════════════════════════════════════════════
 
 @frappe.whitelist()
 def get_affiliate_summary(media_buyer, from_date=None, to_date=None):
-    """Return per-affiliate summary for dashboard."""
+    """
+    Return per-affiliate summary for dashboard.
+    FIX #4: Affiliates can only fetch their own data.
+    Finance/Admin can fetch any buyer.
+    """
+    # Permission check
+    roles = frappe.get_roles(frappe.session.user)
+    is_admin = "System Manager" in roles or "Finance User" in roles or "Sales Manager" in roles
+
+    if not is_admin:
+        # Check if calling user is linked to this media buyer
+        user_buyer = frappe.db.get_value("VV Media Buyer",
+            {"name": media_buyer}, "email")
+        if user_buyer != frappe.session.user:
+            # Also check phone match
+            user_email = frappe.session.user
+            buyer_email = frappe.db.get_value("VV Media Buyer",
+                                               media_buyer, "email") or ""
+            if buyer_email != user_email:
+                frappe.throw(
+                    "You can only view your own affiliate data.",
+                    frappe.PermissionError)
+
     if not from_date:
         from_date = str(getdate(today()).replace(day=1))
     if not to_date:
@@ -531,6 +606,17 @@ def get_affiliate_summary(media_buyer, from_date=None, to_date=None):
     total = int(s.get("total_orders") or 0)
     delivered = int(s.get("delivered_paid") or 0)
 
+    # Offer breakdown
+    offer_breakdown = frappe.db.sql("""
+        SELECT package_name, COUNT(*) as orders,
+            SUM(CASE WHEN order_status = 'Paid' THEN 1 ELSE 0 END) as delivered,
+            SUM(CASE WHEN order_status = 'Paid' THEN total_payable ELSE 0 END) as revenue
+        FROM `tabVV Order`
+        WHERE media_buyer = %s AND creation BETWEEN %s AND %s
+        GROUP BY package_name
+        ORDER BY orders DESC
+    """, (media_buyer, from_date, end_plus), as_dict=True)
+
     return {
         "total_orders": total,
         "delivered_paid": delivered,
@@ -540,7 +626,55 @@ def get_affiliate_summary(media_buyer, from_date=None, to_date=None):
         "commission_due": float(s.get("commission_due") or 0),
         "commission_paid": float(s.get("commission_paid") or 0),
         "unpaid_commission": float(s.get("commission_due") or 0) - float(s.get("commission_paid") or 0),
+        "offer_breakdown": offer_breakdown,
         "period": {"from": from_date, "to": to_date},
+    }
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# FIX #6: Commission rule validation for active affiliates
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@frappe.whitelist()
+def validate_commission_coverage():
+    """
+    Check that every active affiliate's allowed bundles have commission rules.
+    Returns list of gaps. Call from admin dashboard or before payout runs.
+    """
+    buyers = frappe.get_all("VV Media Buyer",
+        filters={"status": "Active"},
+        fields=["name", "full_name", "utm_ref", "default_commission_tier", "allowed_offers"])
+
+    gaps = []
+    all_packages = frappe.get_all("Package", fields=["name"])
+    package_names = [p.name for p in all_packages]
+
+    for buyer in buyers:
+        # Determine which bundles this buyer can sell
+        if buyer.allowed_offers and buyer.allowed_offers.strip():
+            bundles = [b.strip() for b in buyer.allowed_offers.split(",") if b.strip()]
+        else:
+            bundles = package_names  # all
+
+        tier = buyer.default_commission_tier or ""
+
+        for bundle in bundles:
+            commission = _find_commission_rule(bundle, tier)
+            if commission <= 0:
+                commission = _find_commission_rule(bundle, "")
+            if commission <= 0:
+                gaps.append({
+                    "buyer": buyer.full_name,
+                    "aff_id": buyer.utm_ref,
+                    "bundle": bundle,
+                    "tier": tier or "(any)",
+                    "issue": "No active commission rule"
+                })
+
+    return {
+        "total_gaps": len(gaps),
+        "gaps": gaps,
+        "message": "All covered" if not gaps else f"{len(gaps)} missing commission rules"
     }
 
 
@@ -564,9 +698,9 @@ def check_commitment_refunds():
             "commitment_refunded_at": now_datetime()})
         try:
             from vitalvida.notifications import send_notification
-            fee_amount = float(buyer.get("commitment_fee_amount") or 0)
+            fee = float(buyer.get("commitment_fee_amount") or 0)
             stub = frappe._dict({"name": buyer.name, "customer_name": buyer.full_name,
-                "customer_phone": buyer.phone or "", "total_payable": fee_amount,
+                "customer_phone": buyer.phone or "", "total_payable": fee,
                 "package_contents": "", "address": "", "delivery_agent_name": buyer.full_name})
             send_notification(stub, event="CommitmentFeeRefunded",
                               recipient_type="Customer", sender_channel="Transactional")
