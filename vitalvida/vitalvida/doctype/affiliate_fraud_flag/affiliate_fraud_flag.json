@@ -1,0 +1,24 @@
+{
+ "actions":[],"creation":"2026-03-16 00:00:00.000000","doctype":"DocType","engine":"InnoDB",
+ "field_order":["order","media_buyer","flag_type","column_break_1","severity","detail","flagged_at","resolved","resolved_by","resolved_at","resolution_notes"],
+ "fields":[
+  {"fieldname":"order","fieldtype":"Link","label":"Order","options":"VV Order","in_list_view":1,"in_create":0},
+  {"fieldname":"media_buyer","fieldtype":"Link","label":"Media Buyer","options":"VV Media Buyer","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"flag_type","fieldtype":"Select","label":"Flag Type","options":"Duplicate Phone\nDuplicate Address\nDuplicate Click ID\nHigh Failure Rate\nSuspicious Pattern\nManual Flag","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"column_break_1","fieldtype":"Column Break","in_create":0},
+  {"fieldname":"severity","fieldtype":"Select","label":"Severity","options":"Low\nMedium\nHigh\nCritical","default":"Medium","in_list_view":1,"in_create":0},
+  {"fieldname":"detail","fieldtype":"Small Text","label":"Detail","in_create":0},
+  {"fieldname":"flagged_at","fieldtype":"Datetime","label":"Flagged At","read_only":1,"in_create":0},
+  {"fieldname":"resolved","fieldtype":"Check","label":"Resolved","default":"0","in_create":0},
+  {"fieldname":"resolved_by","fieldtype":"Link","label":"Resolved By","options":"User","read_only":1,"in_create":0},
+  {"fieldname":"resolved_at","fieldtype":"Datetime","label":"Resolved At","read_only":1,"in_create":0},
+  {"fieldname":"resolution_notes","fieldtype":"Small Text","label":"Resolution Notes","in_create":0}
+ ],
+ "modified":"2026-03-16 00:00:00.000000","modified_by":"Administrator","module":"Vitalvida",
+ "name":"Affiliate Fraud Flag","owner":"Administrator",
+ "permissions":[
+  {"create":1,"delete":0,"read":1,"report":1,"role":"System Manager","write":1},
+  {"read":1,"role":"Finance User","write":1}
+ ],
+ "sort_field":"flagged_at","sort_order":"DESC","track_changes":1
+}

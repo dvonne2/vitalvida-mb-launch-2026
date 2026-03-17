@@ -1,39 +1,339 @@
 {
- "actions":[],"creation":"2026-03-16 00:00:00.000000","doctype":"DocType","engine":"InnoDB",
- "field_order":["full_name","phone","email","utm_ref","platform","column_break_1","is_active","batch_number",
-  "section_break_commitment","commitment_fee_status","commitment_fee_amount","commitment_fee_paid_at","orders_toward_refund","commitment_refunded_at",
-  "section_break_banking","bank_name","account_number",
-  "section_break_performance","total_lifetime_orders","total_lifetime_earned","consecutive_zero_weeks","is_suspended","suspension_reason"],
- "fields":[
-  {"fieldname":"full_name","fieldtype":"Data","label":"Full Name","reqd":1,"in_list_view":1,"in_create":0},
-  {"fieldname":"phone","fieldtype":"Data","label":"Phone","reqd":1,"in_list_view":1,"in_create":0},
-  {"fieldname":"email","fieldtype":"Data","label":"Email","in_create":0},
-  {"fieldname":"utm_ref","fieldtype":"Data","label":"UTM Ref Code","reqd":1,"unique":1,"in_list_view":1,"in_create":0,"description":"Unique ref e.g. MB001 — used in ?ref= link"},
-  {"fieldname":"platform","fieldtype":"Select","label":"Platform","options":"Facebook\nTikTok\nBoth","reqd":1,"in_list_view":1,"in_create":0},
-  {"fieldname":"column_break_1","fieldtype":"Column Break","in_create":0},
-  {"fieldname":"is_active","fieldtype":"Check","label":"Active","default":"1","in_list_view":1,"in_create":0},
-  {"fieldname":"batch_number","fieldtype":"Int","label":"Batch","description":"Onboarding batch number","in_list_view":1,"in_create":0},
-  {"fieldname":"section_break_commitment","fieldtype":"Section Break","label":"Commitment Fee","in_create":0},
-  {"fieldname":"commitment_fee_status","fieldtype":"Select","label":"Fee Status","options":"Unpaid\nPaid\nRefunded\nForfeited","default":"Unpaid","in_list_view":1,"in_create":0},
-  {"fieldname":"commitment_fee_amount","fieldtype":"Currency","label":"Fee Amount","default":"50000","in_create":0},
-  {"fieldname":"commitment_fee_paid_at","fieldtype":"Datetime","label":"Paid At","read_only":1,"in_create":0},
-  {"fieldname":"orders_toward_refund","fieldtype":"Int","label":"Orders Toward Refund","default":"0","read_only":1,"in_create":0,"description":"Auto-incremented. Refund triggers at 10."},
-  {"fieldname":"commitment_refunded_at","fieldtype":"Datetime","label":"Refunded At","read_only":1,"in_create":0},
-  {"fieldname":"section_break_banking","fieldtype":"Section Break","label":"Banking","in_create":0},
-  {"fieldname":"bank_name","fieldtype":"Data","label":"Bank Name","reqd":1,"in_create":0},
-  {"fieldname":"account_number","fieldtype":"Data","label":"Account Number","reqd":1,"in_create":0},
-  {"fieldname":"section_break_performance","fieldtype":"Section Break","label":"Performance","in_create":0},
-  {"fieldname":"total_lifetime_orders","fieldtype":"Int","label":"Lifetime Orders","default":"0","read_only":1,"in_create":0},
-  {"fieldname":"total_lifetime_earned","fieldtype":"Currency","label":"Lifetime Earned","default":"0","read_only":1,"in_create":0},
-  {"fieldname":"consecutive_zero_weeks","fieldtype":"Int","label":"Consecutive Zero Weeks","default":"0","read_only":1,"in_create":0,"description":"Weeks with 0 delivered orders"},
-  {"fieldname":"is_suspended","fieldtype":"Check","label":"Suspended","default":"0","read_only":1,"in_create":0},
-  {"fieldname":"suspension_reason","fieldtype":"Data","label":"Suspension Reason","read_only":1,"in_create":0}
+ "actions": [],
+ "creation": "2026-03-16 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "full_name",
+  "phone",
+  "email",
+  "utm_ref",
+  "platform",
+  "column_break_1",
+  "is_active",
+  "batch_number",
+  "section_break_commitment",
+  "commitment_fee_status",
+  "commitment_fee_amount",
+  "commitment_fee_paid_at",
+  "orders_toward_refund",
+  "commitment_refunded_at",
+  "section_break_banking",
+  "bank_name",
+  "account_number",
+  "section_break_contact",
+  "whatsapp",
+  "status",
+  "date_joined",
+  "section_break_commission",
+  "default_commission_tier",
+  "allowed_offers",
+  "section_break_quality",
+  "delivery_quality_score",
+  "fraud_flag_count",
+  "total_revenue_generated",
+  "section_break_payout_notes",
+  "payout_notes",
+  "account_name",
+  "section_break_performance",
+  "total_lifetime_orders",
+  "total_lifetime_earned",
+  "consecutive_zero_weeks",
+  "is_suspended",
+  "suspension_reason"
  ],
- "modified":"2026-03-16 00:00:00.000000","modified_by":"Administrator","module":"Vitalvida",
- "name":"VV Media Buyer","owner":"Administrator",
- "permissions":[
-  {"create":1,"delete":0,"read":1,"report":1,"role":"System Manager","write":1},
-  {"read":1,"role":"Sales Manager","report":1}
+ "fields": [
+  {
+   "fieldname": "full_name",
+   "fieldtype": "Data",
+   "label": "Full Name",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "phone",
+   "fieldtype": "Data",
+   "label": "Phone",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "label": "Email",
+   "in_create": 0
+  },
+  {
+   "fieldname": "utm_ref",
+   "fieldtype": "Data",
+   "label": "UTM Ref Code",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1,
+   "in_create": 0,
+   "description": "Unique ref e.g. MB001 \u2014 used in ?ref= link"
+  },
+  {
+   "fieldname": "platform",
+   "fieldtype": "Select",
+   "label": "Platform",
+   "options": "Facebook\nTikTok\nBoth",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break",
+   "in_create": 0
+  },
+  {
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "label": "Active",
+   "default": "1",
+   "in_list_view": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "batch_number",
+   "fieldtype": "Int",
+   "label": "Batch",
+   "description": "Onboarding batch number",
+   "in_list_view": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "section_break_commitment",
+   "fieldtype": "Section Break",
+   "label": "Commitment Fee",
+   "in_create": 0
+  },
+  {
+   "fieldname": "commitment_fee_status",
+   "fieldtype": "Select",
+   "label": "Fee Status",
+   "options": "Unpaid\nPaid\nRefunded\nForfeited",
+   "default": "Unpaid",
+   "in_list_view": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "commitment_fee_amount",
+   "fieldtype": "Currency",
+   "label": "Fee Amount",
+   "default": "50000",
+   "in_create": 0
+  },
+  {
+   "fieldname": "commitment_fee_paid_at",
+   "fieldtype": "Datetime",
+   "label": "Paid At",
+   "read_only": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "orders_toward_refund",
+   "fieldtype": "Int",
+   "label": "Orders Toward Refund",
+   "default": "0",
+   "read_only": 1,
+   "in_create": 0,
+   "description": "Auto-incremented. Refund triggers at 10."
+  },
+  {
+   "fieldname": "commitment_refunded_at",
+   "fieldtype": "Datetime",
+   "label": "Refunded At",
+   "read_only": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "section_break_banking",
+   "fieldtype": "Section Break",
+   "label": "Banking",
+   "in_create": 0
+  },
+  {
+   "fieldname": "bank_name",
+   "fieldtype": "Data",
+   "label": "Bank Name",
+   "reqd": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "account_number",
+   "fieldtype": "Data",
+   "label": "Account Number",
+   "reqd": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "section_break_contact",
+   "fieldtype": "Section Break",
+   "label": "Contact",
+   "in_create": 0
+  },
+  {
+   "fieldname": "whatsapp",
+   "fieldtype": "Data",
+   "label": "WhatsApp",
+   "in_create": 0
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Active\nSuspended\nPending Approval",
+   "default": "Active",
+   "in_list_view": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "date_joined",
+   "fieldtype": "Date",
+   "label": "Date Joined",
+   "in_create": 0
+  },
+  {
+   "fieldname": "section_break_commission",
+   "fieldtype": "Section Break",
+   "label": "Commission",
+   "in_create": 0
+  },
+  {
+   "fieldname": "default_commission_tier",
+   "fieldtype": "Data",
+   "label": "Default Commission Tier",
+   "description": "e.g. Standard, Gold, Elite",
+   "in_create": 0
+  },
+  {
+   "fieldname": "allowed_offers",
+   "fieldtype": "Small Text",
+   "label": "Allowed Offers/Bundles",
+   "description": "Comma-separated bundle names. Blank = all offers.",
+   "in_create": 0
+  },
+  {
+   "fieldname": "section_break_quality",
+   "fieldtype": "Section Break",
+   "label": "Quality & Fraud",
+   "in_create": 0
+  },
+  {
+   "fieldname": "delivery_quality_score",
+   "fieldtype": "Percent",
+   "label": "Delivery Quality Score",
+   "read_only": 1,
+   "in_create": 0,
+   "description": "Delivered / Total assigned \u00d7 100"
+  },
+  {
+   "fieldname": "fraud_flag_count",
+   "fieldtype": "Int",
+   "label": "Fraud Flags",
+   "default": "0",
+   "read_only": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "total_revenue_generated",
+   "fieldtype": "Currency",
+   "label": "Total Revenue Generated",
+   "default": "0",
+   "read_only": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "section_break_payout_notes",
+   "fieldtype": "Section Break",
+   "label": "Notes",
+   "in_create": 0
+  },
+  {
+   "fieldname": "payout_notes",
+   "fieldtype": "Small Text",
+   "label": "Payout Notes",
+   "in_create": 0
+  },
+  {
+   "fieldname": "account_name",
+   "fieldtype": "Data",
+   "label": "Account Name",
+   "in_create": 0
+  },
+  {
+   "fieldname": "section_break_performance",
+   "fieldtype": "Section Break",
+   "label": "Performance",
+   "in_create": 0
+  },
+  {
+   "fieldname": "total_lifetime_orders",
+   "fieldtype": "Int",
+   "label": "Lifetime Orders",
+   "default": "0",
+   "read_only": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "total_lifetime_earned",
+   "fieldtype": "Currency",
+   "label": "Lifetime Earned",
+   "default": "0",
+   "read_only": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "consecutive_zero_weeks",
+   "fieldtype": "Int",
+   "label": "Consecutive Zero Weeks",
+   "default": "0",
+   "read_only": 1,
+   "in_create": 0,
+   "description": "Weeks with 0 delivered orders"
+  },
+  {
+   "fieldname": "is_suspended",
+   "fieldtype": "Check",
+   "label": "Suspended",
+   "default": "0",
+   "read_only": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "suspension_reason",
+   "fieldtype": "Data",
+   "label": "Suspension Reason",
+   "read_only": 1,
+   "in_create": 0
+  }
  ],
- "sort_field":"full_name","sort_order":"ASC","title_field":"full_name","track_changes":1
+ "modified": "2026-03-16 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Vitalvida",
+ "name": "VV Media Buyer",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Sales Manager",
+   "report": 1
+  }
+ ],
+ "sort_field": "full_name",
+ "sort_order": "ASC",
+ "title_field": "full_name",
+ "track_changes": 1
 }

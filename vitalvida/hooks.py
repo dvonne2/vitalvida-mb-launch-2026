@@ -10,7 +10,10 @@ override_whitelisted_methods = {
     "vitalvida.orders.ingest": "vitalvida.orders.ingest",
     "vitalvida.notifications.webhook": "vitalvida.notifications.webhook",
     "vitalvida.moniepoint.webhook": "vitalvida.moniepoint.webhook",
-    "vitalvida.dsr_api.get_da_dsr_colour": "vitalvida.dsr_api.get_da_dsr_colour"
+    "vitalvida.dsr_api.get_da_dsr_colour": "vitalvida.dsr_api.get_da_dsr_colour",
+    "vitalvida.media_buyer.get_affiliate_summary": "vitalvida.media_buyer.get_affiliate_summary",
+    "vitalvida.media_buyer.mark_batch_paid": "vitalvida.media_buyer.mark_batch_paid",
+    "vitalvida.media_buyer.approve_all_reports": "vitalvida.media_buyer.approve_all_reports"
 }
 
 fixtures = [
@@ -90,6 +93,11 @@ scheduler_events = {
         # M15: Every Monday 1:00 AM — calculate weekly DA achievements
         "0 1 * * 1": [
             "vitalvida.achievement.calculate_weekly_achievements"
+        ],
+        # Gap 9: Every Monday 3:00 AM — generate cycle count schedules
+        # M32: Daily 3AM — fraud scan
+        "0 3 * * *": [
+            "vitalvida.media_buyer.run_fraud_scan"
         ],
         # Gap 9: Every Monday 3:00 AM — generate cycle count schedules
         "0 3 * * 1": [

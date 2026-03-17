@@ -1,0 +1,17 @@
+{
+ "actions":[],"creation":"2026-03-16 00:00:00.000000","doctype":"DocType","engine":"InnoDB",
+ "field_order":["bundle_name","affiliate_tier","payout_amount","column_break_1","is_active","effective_from","effective_to"],
+ "fields":[
+  {"fieldname":"bundle_name","fieldtype":"Link","label":"Bundle / Package","options":"Package","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"affiliate_tier","fieldtype":"Data","label":"Affiliate Tier","description":"e.g. Standard, Gold, Elite. Blank = applies to all tiers.","in_list_view":1,"in_create":0},
+  {"fieldname":"payout_amount","fieldtype":"Currency","label":"Payout Amount","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"column_break_1","fieldtype":"Column Break","in_create":0},
+  {"fieldname":"is_active","fieldtype":"Check","label":"Active","default":"1","in_list_view":1,"in_create":0},
+  {"fieldname":"effective_from","fieldtype":"Date","label":"Effective From","in_create":0},
+  {"fieldname":"effective_to","fieldtype":"Date","label":"Effective To","description":"Blank = no expiry","in_create":0}
+ ],
+ "modified":"2026-03-16 00:00:00.000000","modified_by":"Administrator","module":"Vitalvida",
+ "name":"Affiliate Commission Rule","owner":"Administrator",
+ "permissions":[{"create":1,"delete":1,"read":1,"role":"System Manager","write":1},{"read":1,"role":"Sales Manager"}],
+ "sort_field":"bundle_name","sort_order":"ASC","track_changes":1
+}

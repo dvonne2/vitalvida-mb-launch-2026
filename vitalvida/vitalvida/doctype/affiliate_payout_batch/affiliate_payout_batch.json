@@ -1,0 +1,28 @@
+{
+ "actions":[],"creation":"2026-03-16 00:00:00.000000","doctype":"DocType","engine":"InnoDB",
+ "field_order":["media_buyer","period_start","period_end","column_break_1","status","total_orders","total_commission",
+  "section_break_approval","approved_by","approved_at","paid_by","paid_at","payment_reference","notes"],
+ "fields":[
+  {"fieldname":"media_buyer","fieldtype":"Link","label":"Media Buyer","options":"VV Media Buyer","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"period_start","fieldtype":"Date","label":"Period Start","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"period_end","fieldtype":"Date","label":"Period End","reqd":1,"in_create":0},
+  {"fieldname":"column_break_1","fieldtype":"Column Break","in_create":0},
+  {"fieldname":"status","fieldtype":"Select","label":"Status","options":"Draft\nPending\nApproved\nPaid\nRejected","default":"Draft","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"total_orders","fieldtype":"Int","label":"Total Orders","read_only":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"total_commission","fieldtype":"Currency","label":"Total Commission","read_only":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"section_break_approval","fieldtype":"Section Break","label":"Approval & Payment","in_create":0},
+  {"fieldname":"approved_by","fieldtype":"Link","label":"Approved By","options":"User","read_only":1,"in_create":0},
+  {"fieldname":"approved_at","fieldtype":"Datetime","label":"Approved At","read_only":1,"in_create":0},
+  {"fieldname":"paid_by","fieldtype":"Link","label":"Paid By","options":"User","read_only":1,"in_create":0},
+  {"fieldname":"paid_at","fieldtype":"Datetime","label":"Paid At","read_only":1,"in_create":0},
+  {"fieldname":"payment_reference","fieldtype":"Data","label":"Payment Reference","in_create":0},
+  {"fieldname":"notes","fieldtype":"Small Text","label":"Notes","in_create":0}
+ ],
+ "modified":"2026-03-16 00:00:00.000000","modified_by":"Administrator","module":"Vitalvida",
+ "name":"Affiliate Payout Batch","owner":"Administrator",
+ "permissions":[
+  {"create":1,"delete":0,"read":1,"report":1,"role":"System Manager","write":1},
+  {"read":1,"role":"Finance User","write":1}
+ ],
+ "sort_field":"period_start","sort_order":"DESC","track_changes":1
+}
