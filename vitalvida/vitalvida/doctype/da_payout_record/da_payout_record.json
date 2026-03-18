@@ -1,0 +1,42 @@
+{
+ "actions":[],"creation":"2026-03-16 00:00:00.000000","doctype":"DocType","engine":"InnoDB",
+ "field_order":[
+  "order","delivery_agent","column_break_1","status","flagged",
+  "section_break_amounts","delivery_bonus_amount","fasttrack_bonus_amount","total_payout_amount",
+  "section_break_compliance","otp_submitted","photo_submitted","photo_attachment","pos_amount_matched","compliance_score",
+  "section_break_approval","finance_approved_by","finance_approved_at","column_break_a","ceo_approved_by","ceo_approved_at","rejection_reason"
+ ],
+ "fields":[
+  {"fieldname":"order","fieldtype":"Link","label":"Order","options":"VV Order","reqd":1,"in_list_view":1,"unique":1,"in_create":0},
+  {"fieldname":"delivery_agent","fieldtype":"Link","label":"Delivery Agent","options":"Delivery Agent","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"column_break_1","fieldtype":"Column Break","in_create":0},
+  {"fieldname":"status","fieldtype":"Select","label":"Status","options":"Draft\nIntent Marked\nFinance Approved\nCEO Approved\nPaid\nRejected","default":"Draft","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"flagged","fieldtype":"Check","label":"Flagged","default":"0","description":"Compliance score below minimum","in_list_view":1,"in_create":0},
+  {"fieldname":"section_break_amounts","fieldtype":"Section Break","label":"Amounts","in_create":0},
+  {"fieldname":"delivery_bonus_amount","fieldtype":"Currency","label":"Delivery Bonus","reqd":1,"in_create":0},
+  {"fieldname":"fasttrack_bonus_amount","fieldtype":"Currency","label":"Fast-Track Bonus","in_create":0},
+  {"fieldname":"total_payout_amount","fieldtype":"Currency","label":"Total Payout","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"section_break_compliance","fieldtype":"Section Break","label":"Compliance Evidence","in_create":0},
+  {"fieldname":"otp_submitted","fieldtype":"Check","label":"OTP Submitted","in_create":0},
+  {"fieldname":"photo_submitted","fieldtype":"Check","label":"Photo Submitted","in_create":0},
+  {"fieldname":"photo_attachment","fieldtype":"Attach Image","label":"Delivery Photo","in_create":0},
+  {"fieldname":"pos_amount_matched","fieldtype":"Check","label":"POS Amount Matched","in_create":0},
+  {"fieldname":"compliance_score","fieldtype":"Percent","label":"Compliance Score","read_only":1,"reqd":1,"in_create":0},
+  {"fieldname":"section_break_approval","fieldtype":"Section Break","label":"Approval Chain","in_create":0},
+  {"fieldname":"finance_approved_by","fieldtype":"Link","label":"Finance Approved By","options":"User","read_only":1,"in_create":0},
+  {"fieldname":"finance_approved_at","fieldtype":"Datetime","label":"Finance Approved At","read_only":1,"in_create":0},
+  {"fieldname":"column_break_a","fieldtype":"Column Break","in_create":0},
+  {"fieldname":"ceo_approved_by","fieldtype":"Link","label":"CEO Approved By","options":"User","read_only":1,"in_create":0},
+  {"fieldname":"ceo_approved_at","fieldtype":"Datetime","label":"CEO Approved At","read_only":1,"in_create":0},
+  {"fieldname":"rejection_reason","fieldtype":"Text","label":"Rejection Reason","in_create":0}
+ ],
+ "modified":"2026-03-16 00:00:00.000000","modified_by":"Administrator","module":"Vitalvida",
+ "name":"DA Payout Record","owner":"Administrator",
+ "permissions":[
+  {"create":1,"delete":0,"read":1,"report":1,"role":"System Manager","write":1},
+  {"create":1,"delete":0,"read":1,"role":"Delivery Agent","write":0},
+  {"read":1,"role":"Finance User","write":1},
+  {"read":1,"role":"CEO","write":1}
+ ],
+ "sort_field":"modified","sort_order":"DESC","track_changes":1
+}

@@ -1,0 +1,246 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:agent_name",
+ "creation": "2026-03-08 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "agent_name",
+  "phone",
+  "column_break_1",
+  "state",
+  "zone",
+  "active",
+  "section_break_stats",
+  "total_orders",
+  "success_rate",
+  "total_earned",
+  "section_break_dsr",
+  "dsr_strict",
+  "dsr_adjusted",
+  "column_break_dsr",
+  "shrinkage_rate",
+  "is_double_risk",
+  "dsr_colour",
+  "section_break_strike",
+  "strike_count",
+  "strike_status",
+  "column_break_partner",
+  "partnership_level"
+ ],
+ "fields": [
+  {
+   "fieldname": "agent_name",
+   "fieldtype": "Data",
+   "label": "Agent Name",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "phone",
+   "fieldtype": "Data",
+   "label": "Phone",
+   "reqd": 1,
+   "description": "234XXXXXXXXXX format",
+   "in_list_view": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break",
+   "in_create": 0
+  },
+  {
+   "fieldname": "state",
+   "fieldtype": "Data",
+   "label": "State",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "zone",
+   "fieldtype": "Link",
+   "label": "Zone",
+   "options": "Geographic Zone",
+   "description": "Gap 7: Geographic delivery zone for this DA",
+   "in_create": 0
+  },
+  {
+   "fieldname": "active",
+   "fieldtype": "Check",
+   "label": "Active",
+   "default": "1",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "section_break_stats",
+   "fieldtype": "Section Break",
+   "label": "Performance Stats",
+   "in_create": 0
+  },
+  {
+   "fieldname": "total_orders",
+   "fieldtype": "Int",
+   "label": "Total Orders",
+   "read_only": 1,
+   "default": "0",
+   "in_create": 0
+  },
+  {
+   "fieldname": "success_rate",
+   "fieldtype": "Percent",
+   "label": "Success Rate",
+   "read_only": 1,
+   "description": "M16: Paid / Assigned x 100 (equals DSR Strict)",
+   "default": "0",
+   "in_create": 0
+  },
+  {
+   "fieldname": "total_earned",
+   "fieldtype": "Currency",
+   "label": "Total Earned",
+   "read_only": 1,
+   "default": "0",
+   "description": "M26: Cumulative payout amount after CEO approval",
+   "in_create": 0
+  },
+  {
+   "fieldname": "section_break_dsr",
+   "fieldtype": "Section Break",
+   "label": "DSR \u2014 Delivery Success Rate",
+   "in_create": 0
+  },
+  {
+   "fieldname": "dsr_strict",
+   "fieldtype": "Percent",
+   "label": "DSR Strict",
+   "read_only": 1,
+   "description": "Paid / Assigned x 100",
+   "default": "0",
+   "in_create": 0
+  },
+  {
+   "fieldname": "dsr_adjusted",
+   "fieldtype": "Percent",
+   "label": "DSR Adjusted",
+   "read_only": 1,
+   "description": "Paid / (Assigned - Customer_Cancelled) x 100",
+   "default": "0",
+   "in_create": 0
+  },
+  {
+   "fieldname": "column_break_dsr",
+   "fieldtype": "Column Break",
+   "in_create": 0
+  },
+  {
+   "fieldname": "shrinkage_rate",
+   "fieldtype": "Percent",
+   "label": "Shrinkage Rate",
+   "read_only": 1,
+   "description": "Total Variance / Total Issued x 100",
+   "default": "0",
+   "in_create": 0
+  },
+  {
+   "fieldname": "is_double_risk",
+   "fieldtype": "Check",
+   "label": "Double Risk",
+   "read_only": 1,
+   "description": "Auto-set when DSR >= 85% AND Shrinkage >= 5%",
+   "default": "0",
+   "in_create": 0
+  },
+  {
+   "fieldname": "dsr_colour",
+   "fieldtype": "Data",
+   "label": "DSR Colour",
+   "read_only": 1,
+   "hidden": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "section_break_strike",
+   "fieldtype": "Section Break",
+   "label": "Strike & Status",
+   "in_create": 0
+  },
+  {
+   "fieldname": "strike_count",
+   "fieldtype": "Int",
+   "label": "Strike Count",
+   "default": "0",
+   "read_only": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "strike_status",
+   "fieldtype": "Select",
+   "options": "\nActive\nSuspended",
+   "label": "Strike Status",
+   "default": "Active",
+   "in_create": 0
+  },
+  {
+   "fieldname": "column_break_partner",
+   "fieldtype": "Column Break",
+   "in_create": 0
+  },
+  {
+   "fieldname": "partnership_level",
+   "fieldtype": "Data",
+   "label": "Partnership Level",
+   "read_only": 1,
+   "in_create": 0
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-03-15 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Vitalvida",
+ "name": "Delivery Agent",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "read": 1,
+   "role": "Logistics User",
+   "write": 1,
+   "export": 1,
+   "report": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "read": 1,
+   "role": "Delivery Agent",
+   "write": 0
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "agent_name",
+ "sort_order": "ASC",
+ "title_field": "agent_name",
+ "track_changes": 1
+}

@@ -1,0 +1,20 @@
+{
+ "actions":[],"creation":"2026-03-16 00:00:00.000000","doctype":"DocType","engine":"InnoDB",
+ "istable":1,
+ "field_order":["employee","employee_name","base_salary","commission_earned","bonuses","gross_pay","paye_deduction","pension_deduction","other_deductions","salary_deductions_m26","net_pay"],
+ "fields":[
+  {"fieldname":"employee","fieldtype":"Link","label":"Employee","options":"VV Employee","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"employee_name","fieldtype":"Data","label":"Name","read_only":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"base_salary","fieldtype":"Currency","label":"Base Salary","in_list_view":1,"in_create":0},
+  {"fieldname":"commission_earned","fieldtype":"Currency","label":"Commission","in_list_view":1,"in_create":0},
+  {"fieldname":"bonuses","fieldtype":"Currency","label":"Bonuses","in_create":0},
+  {"fieldname":"gross_pay","fieldtype":"Currency","label":"Gross Pay","in_list_view":1,"in_create":0},
+  {"fieldname":"paye_deduction","fieldtype":"Currency","label":"PAYE","in_create":0},
+  {"fieldname":"pension_deduction","fieldtype":"Currency","label":"Pension","in_create":0},
+  {"fieldname":"other_deductions","fieldtype":"Currency","label":"Other Deductions","in_create":0},
+  {"fieldname":"salary_deductions_m26","fieldtype":"Currency","label":"M26 Deductions","description":"From Salary Deduction engine","in_create":0},
+  {"fieldname":"net_pay","fieldtype":"Currency","label":"Net Pay","in_list_view":1,"in_create":0}
+ ],
+ "modified":"2026-03-16 00:00:00.000000","modified_by":"Administrator","module":"Vitalvida",
+ "name":"Payslip","owner":"Administrator","permissions":[],"sort_field":"employee_name","sort_order":"ASC"
+}

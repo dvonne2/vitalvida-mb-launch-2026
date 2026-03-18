@@ -1,0 +1,17 @@
+{
+ "actions":[],"creation":"2026-03-16 00:00:00.000000","doctype":"DocType","engine":"InnoDB",
+ "field_order":["from_da","to_da","distance_km","column_break_1","travel_time_minutes","transport_cost","route_quality"],
+ "fields":[
+  {"fieldname":"from_da","fieldtype":"Link","label":"From DA","options":"Delivery Agent","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"to_da","fieldtype":"Link","label":"To DA","options":"Delivery Agent","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"distance_km","fieldtype":"Float","label":"Distance (km)","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"column_break_1","fieldtype":"Column Break","in_create":0},
+  {"fieldname":"travel_time_minutes","fieldtype":"Int","label":"Travel Time (min)","in_create":0},
+  {"fieldname":"transport_cost","fieldtype":"Currency","label":"Transport Cost","in_create":0},
+  {"fieldname":"route_quality","fieldtype":"Select","label":"Route Quality","options":"Good\nFair\nPoor","default":"Good","in_create":0}
+ ],
+ "modified":"2026-03-16 00:00:00.000000","modified_by":"Administrator","module":"Vitalvida",
+ "name":"DA Distance Matrix","owner":"Administrator",
+ "permissions":[{"create":1,"delete":1,"read":1,"role":"System Manager","write":1},{"read":1,"role":"Logistics User"}],
+ "sort_field":"distance_km","sort_order":"ASC","track_changes":0
+}

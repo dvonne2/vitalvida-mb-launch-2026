@@ -1,0 +1,22 @@
+{
+ "actions":[],"creation":"2026-03-16 00:00:00.000000","doctype":"DocType","engine":"InnoDB",
+ "field_order":["einvoice","action","status_code","column_break_1","api_endpoint","request_hash","timestamp",
+  "section_break_detail","request_summary","response_summary","error_detail"],
+ "fields":[
+  {"fieldname":"einvoice","fieldtype":"Link","label":"eInvoice","options":"FIRS eInvoice","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"action","fieldtype":"Select","label":"Action","options":"Validate\nSign\nStatus Check\nCredit Note","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"status_code","fieldtype":"Int","label":"HTTP Status","in_list_view":1,"in_create":0},
+  {"fieldname":"column_break_1","fieldtype":"Column Break","in_create":0},
+  {"fieldname":"api_endpoint","fieldtype":"Data","label":"API Endpoint","in_create":0},
+  {"fieldname":"request_hash","fieldtype":"Data","label":"Request Hash","in_create":0},
+  {"fieldname":"timestamp","fieldtype":"Datetime","label":"Timestamp","read_only":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"section_break_detail","fieldtype":"Section Break","label":"Detail","in_create":0,"collapsible":1},
+  {"fieldname":"request_summary","fieldtype":"Text","label":"Request Summary","in_create":0},
+  {"fieldname":"response_summary","fieldtype":"Text","label":"Response Summary","in_create":0},
+  {"fieldname":"error_detail","fieldtype":"Text","label":"Error Detail","in_create":0}
+ ],
+ "modified":"2026-03-16 00:00:00.000000","modified_by":"Administrator","module":"Vitalvida",
+ "name":"FIRS Audit Log","owner":"Administrator",
+ "permissions":[{"read":1,"role":"System Manager","report":1,"export":1},{"read":1,"role":"Finance User","report":1}],
+ "sort_field":"timestamp","sort_order":"DESC","track_changes":0
+}

@@ -1,0 +1,29 @@
+{
+ "actions":[],"creation":"2026-03-16 00:00:00.000000","doctype":"DocType","engine":"InnoDB",
+ "field_order":["delivery_agent","status","column_break_1","initiated_by","initiated_at","processed_by","processed_at",
+  "section_break_items","items",
+  "section_break_approval","approved_by","approved_at","rejection_reason"],
+ "fields":[
+  {"fieldname":"delivery_agent","fieldtype":"Link","label":"Delivery Agent","options":"Delivery Agent","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"status","fieldtype":"Select","label":"Status","options":"Draft\nPending Inspection\nInspected\nApproved\nRejected\nCompleted","default":"Draft","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"column_break_1","fieldtype":"Column Break","in_create":0},
+  {"fieldname":"initiated_by","fieldtype":"Link","label":"Initiated By","options":"User","read_only":1,"in_create":0},
+  {"fieldname":"initiated_at","fieldtype":"Datetime","label":"Initiated At","read_only":1,"in_create":0},
+  {"fieldname":"processed_by","fieldtype":"Link","label":"Processed By","options":"User","read_only":1,"in_create":0},
+  {"fieldname":"processed_at","fieldtype":"Datetime","label":"Processed At","read_only":1,"in_create":0},
+  {"fieldname":"section_break_items","fieldtype":"Section Break","label":"Return Items","in_create":0},
+  {"fieldname":"items","fieldtype":"Table","label":"Items","options":"Return Item","in_create":0},
+  {"fieldname":"section_break_approval","fieldtype":"Section Break","label":"Approval","in_create":0},
+  {"fieldname":"approved_by","fieldtype":"Link","label":"Approved By","options":"User","read_only":1,"in_create":0},
+  {"fieldname":"approved_at","fieldtype":"Datetime","label":"Approved At","read_only":1,"in_create":0},
+  {"fieldname":"rejection_reason","fieldtype":"Text","label":"Rejection Reason","in_create":0}
+ ],
+ "modified":"2026-03-16 00:00:00.000000","modified_by":"Administrator","module":"Vitalvida",
+ "name":"DA Stock Return","owner":"Administrator",
+ "permissions":[
+  {"create":1,"delete":0,"read":1,"report":1,"role":"System Manager","write":1},
+  {"create":1,"read":1,"role":"Logistics User","write":1},
+  {"create":1,"read":1,"role":"Delivery Agent","write":0}
+ ],
+ "sort_field":"modified","sort_order":"DESC","track_changes":1
+}

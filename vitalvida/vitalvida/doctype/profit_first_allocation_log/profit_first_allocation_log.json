@@ -1,0 +1,17 @@
+{
+ "actions":[],"creation":"2026-03-16 00:00:00.000000","doctype":"DocType","engine":"InnoDB",
+ "field_order":["payment_ref","order","bucket","column_break_1","allocated_amount","allocation_percentage","allocated_at"],
+ "fields":[
+  {"fieldname":"payment_ref","fieldtype":"Data","label":"Payment Reference","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"order","fieldtype":"Link","label":"Order","options":"VV Order","in_list_view":1,"in_create":0},
+  {"fieldname":"bucket","fieldtype":"Link","label":"Bucket","options":"Profit First Bucket","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"column_break_1","fieldtype":"Column Break","in_create":0},
+  {"fieldname":"allocated_amount","fieldtype":"Currency","label":"Allocated Amount","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"allocation_percentage","fieldtype":"Percent","label":"Allocation %","in_create":0},
+  {"fieldname":"allocated_at","fieldtype":"Datetime","label":"Allocated At","read_only":1,"in_create":0}
+ ],
+ "modified":"2026-03-16 00:00:00.000000","modified_by":"Administrator","module":"Vitalvida",
+ "name":"Profit First Allocation Log","owner":"Administrator",
+ "permissions":[{"read":1,"role":"System Manager","report":1,"export":1}],
+ "sort_field":"allocated_at","sort_order":"DESC","track_changes":0
+}

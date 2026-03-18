@@ -1,0 +1,17 @@
+{
+ "actions":[],"creation":"2026-03-16 00:00:00.000000","doctype":"DocType","engine":"InnoDB",
+ "field_order":["zone_code","zone_name","states_included","column_break_1","hub_da","avg_transport_cost_per_km","is_active"],
+ "fields":[
+  {"fieldname":"zone_code","fieldtype":"Data","label":"Zone Code","reqd":1,"unique":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"zone_name","fieldtype":"Data","label":"Zone Name","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"states_included","fieldtype":"Small Text","label":"States Included","reqd":1,"description":"Comma-separated state names e.g. Lagos,Ogun,Oyo","in_create":0},
+  {"fieldname":"column_break_1","fieldtype":"Column Break","in_create":0},
+  {"fieldname":"hub_da","fieldtype":"Link","label":"Hub DA","options":"Delivery Agent","description":"Primary DA for this zone","in_create":0},
+  {"fieldname":"avg_transport_cost_per_km","fieldtype":"Currency","label":"Avg Transport Cost/km","default":"0","in_create":0},
+  {"fieldname":"is_active","fieldtype":"Check","label":"Active","default":"1","in_list_view":1,"in_create":0}
+ ],
+ "modified":"2026-03-16 00:00:00.000000","modified_by":"Administrator","module":"Vitalvida",
+ "name":"Geographic Zone","owner":"Administrator",
+ "permissions":[{"create":1,"delete":1,"read":1,"role":"System Manager","write":1},{"read":1,"role":"Logistics User","write":1}],
+ "sort_field":"zone_code","sort_order":"ASC","title_field":"zone_name","track_changes":1
+}

@@ -1,0 +1,186 @@
+{
+ "actions": [],
+ "autoname": "format:PI-{order}-{YYYY}-{#####}",
+ "creation": "2026-03-09 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "order",
+  "payment_reference",
+  "column_break_1",
+  "status",
+  "expires_at",
+  "section_break_amounts",
+  "expected_amount",
+  "customer_phone",
+  "column_break_2",
+  "matched_amount",
+  "amount_variance",
+  "section_break_match",
+  "matched_transaction_id",
+  "matched_at",
+  "match_method",
+  "column_break_3",
+  "review_required",
+  "confirmed_by",
+  "confirmed_at"
+ ],
+ "fields": [
+  {
+   "fieldname": "order",
+   "fieldtype": "Link",
+   "label": "VV Order",
+   "options": "VV Order",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "payment_reference",
+   "fieldtype": "Data",
+   "label": "Payment Reference",
+   "unique": 1,
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Unpaid\nPending Match\nMatched\nConfirmed\nOverpaid\nUnderpaid",
+   "default": "Unpaid",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "expires_at",
+   "fieldtype": "Datetime",
+   "label": "Expires At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_amounts",
+   "fieldtype": "Section Break",
+   "label": "Amounts"
+  },
+  {
+   "fieldname": "expected_amount",
+   "fieldtype": "Currency",
+   "label": "Expected Amount",
+   "read_only": 1
+  },
+  {
+   "fieldname": "customer_phone",
+   "fieldtype": "Data",
+   "label": "Customer Phone",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "matched_amount",
+   "fieldtype": "Currency",
+   "label": "Matched Amount"
+  },
+  {
+   "fieldname": "amount_variance",
+   "fieldtype": "Currency",
+   "label": "Amount Variance"
+  },
+  {
+   "fieldname": "section_break_match",
+   "fieldtype": "Section Break",
+   "label": "Match Details"
+  },
+  {
+   "fieldname": "matched_transaction_id",
+   "fieldtype": "Data",
+   "label": "Matched Transaction ID"
+  },
+  {
+   "fieldname": "matched_at",
+   "fieldtype": "Datetime",
+   "label": "Matched At"
+  },
+  {
+   "fieldname": "match_method",
+   "fieldtype": "Select",
+   "label": "Match Method",
+   "options": "\nExact Reference\nPartial Reference\nAmount+Phone+Window\nManual"
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "review_required",
+   "fieldtype": "Check",
+   "label": "Review Required"
+  },
+  {
+   "fieldname": "confirmed_by",
+   "fieldtype": "Link",
+   "label": "Confirmed By",
+   "options": "User"
+  },
+  {
+   "fieldname": "confirmed_at",
+   "fieldtype": "Datetime",
+   "label": "Confirmed At"
+  }
+ ],
+ "links": [],
+ "modified": "2026-03-09 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Vitalvida",
+ "name": "Payment Intent",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 0,
+   "read": 1,
+   "report": 0,
+   "role": "Telesales User",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 0,
+   "read": 0,
+   "report": 0,
+   "role": "Delivery Agent",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}
