@@ -48,6 +48,7 @@
   "expected_delivery_date",
   "delivered_at",
   "paid_at",
+  "payment_confirmed",
   "payment_confirmed_at",
   "section_break_notes",
   "reschedule_note",
@@ -105,7 +106,9 @@
    "fieldtype": "Data",
    "label": "Customer Phone",
    "reqd": 1,
-   "description": "Normalised 234XXXXXXXXXX format \u2014 no + prefix, no spaces"
+   "description": "Normalised 234XXXXXXXXXX format \u2014 no + prefix, no spaces",
+   "in_list_view": 1,
+   "in_standard_filter": 1
   },
   {
    "fieldname": "address",
@@ -128,7 +131,8 @@
    "fieldname": "telesales_rep",
    "fieldtype": "Link",
    "label": "Telesales Rep",
-   "options": "Telesales Closer"
+   "options": "Telesales Closer",
+   "in_standard_filter": 1
   },
   {
    "fieldname": "brand",
@@ -136,7 +140,8 @@
    "label": "Brand",
    "options": "FHG\nIR\nGeneral",
    "default": "General",
-   "in_list_view": 1
+   "in_list_view": 1,
+   "in_standard_filter": 1
   },
   {
    "fieldname": "media_buyer",
@@ -280,7 +285,8 @@
    "fieldtype": "Currency",
    "label": "Total Payable",
    "read_only": 1,
-   "description": "Auto-computed: product_amount + delivery_fee"
+   "description": "Auto-computed: product_amount + delivery_fee",
+   "in_list_view": 1
   },
   {
    "fieldname": "section_break_delivery",
@@ -331,6 +337,17 @@
    "fieldtype": "Datetime",
    "label": "Paid At",
    "read_only": 1
+  },
+  {
+   "fieldname": "payment_confirmed",
+   "fieldtype": "Check",
+   "label": "Payment Confirmed",
+   "default": "0",
+   "read_only": 1,
+   "in_list_view": 0,
+   "in_standard_filter": 1,
+   "in_create": 0,
+   "description": "Set by Moniepoint webhook or Finance manual confirm. Does NOT mean order is Paid \u2014 delivery must also be confirmed."
   },
   {
    "fieldname": "payment_confirmed_at",

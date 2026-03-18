@@ -5,27 +5,175 @@
  "engine": "InnoDB",
  "issingle": 1,
  "field_order": [
-  "section_break_meta", "meta_token", "meta_app_id", "meta_phone_id",
-  "section_break_channels", "transactional_phone_id", "da_phone_id", "column_break_ch", "promo_phone_id", "payment_phone_id",
-  "section_break_webhook", "webhook_verify_token", "fallback_phone",
-  "section_break_rate", "min_message_interval_seconds"
+  "section_break_provider",
+  "whatsapp_provider",
+  "section_break_ebulk",
+  "ebulksms_username",
+  "ebulksms_api_key",
+  "section_break_meta",
+  "meta_token",
+  "meta_app_id",
+  "meta_phone_id",
+  "section_break_channels",
+  "transactional_phone_id",
+  "da_phone_id",
+  "column_break_ch",
+  "promo_phone_id",
+  "payment_phone_id",
+  "section_break_webhook",
+  "webhook_verify_token",
+  "fallback_phone",
+  "section_break_rate",
+  "min_message_interval_seconds"
  ],
  "fields": [
-  {"fieldname": "section_break_meta", "fieldtype": "Section Break", "label": "Meta WhatsApp API", "in_create": 0},
-  {"fieldname": "meta_token", "fieldtype": "Password", "label": "Meta API Token", "reqd": 1, "in_create": 0, "description": "Bearer token for WhatsApp Cloud API. Never logged."},
-  {"fieldname": "meta_app_id", "fieldtype": "Data", "label": "Meta App ID", "reqd": 1, "in_create": 0},
-  {"fieldname": "meta_phone_id", "fieldtype": "Data", "label": "Default Phone Number ID", "reqd": 1, "in_create": 0, "description": "Fallback phone_number_id if channel-specific ID not set"},
-  {"fieldname": "section_break_channels", "fieldtype": "Section Break", "label": "Channel Phone Number IDs", "in_create": 0, "description": "Each sender channel can use a different WhatsApp phone number ID"},
-  {"fieldname": "transactional_phone_id", "fieldtype": "Data", "label": "Transactional Phone ID", "in_create": 0, "description": "For order updates, confirmations, telesales notifications"},
-  {"fieldname": "da_phone_id", "fieldtype": "Data", "label": "DA Phone ID", "in_create": 0, "description": "For delivery agent notifications"},
-  {"fieldname": "column_break_ch", "fieldtype": "Column Break", "in_create": 0},
-  {"fieldname": "promo_phone_id", "fieldtype": "Data", "label": "Promo Phone ID", "in_create": 0, "description": "For marketing campaigns"},
-  {"fieldname": "payment_phone_id", "fieldtype": "Data", "label": "Payment Phone ID", "in_create": 0, "description": "For payment confirmations — fires immediately, no rate limiting"},
-  {"fieldname": "section_break_webhook", "fieldtype": "Section Break", "label": "Webhook & Fallback", "in_create": 0},
-  {"fieldname": "webhook_verify_token", "fieldtype": "Data", "label": "Webhook Verify Token", "reqd": 1, "in_create": 0, "description": "Token for Meta webhook hub.verify_token handshake"},
-  {"fieldname": "fallback_phone", "fieldtype": "Data", "label": "Fallback Phone (Owner)", "reqd": 1, "in_create": 0, "description": "Owner/admin phone for failure alerts and Owner-type notifications. Format: 2348XXXXXXXXX"},
-  {"fieldname": "section_break_rate", "fieldtype": "Section Break", "label": "Rate Limiting", "in_create": 0},
-  {"fieldname": "min_message_interval_seconds", "fieldtype": "Int", "label": "Min Message Interval (seconds)", "default": "180", "in_create": 0, "description": "Minimum seconds between messages on same channel. Payment channel bypasses this. Default 180 (3 min)."}
+  {
+   "fieldname": "section_break_provider",
+   "fieldtype": "Section Break",
+   "label": "WhatsApp Provider",
+   "in_create": 0
+  },
+  {
+   "fieldname": "whatsapp_provider",
+   "fieldtype": "Select",
+   "label": "Active Provider",
+   "options": "eBulkSMS\nMeta WhatsApp Cloud API",
+   "default": "eBulkSMS",
+   "reqd": 1,
+   "in_create": 0,
+   "description": "Which WhatsApp API to use for sending messages. Switch anytime \u2014 takes effect immediately."
+  },
+  {
+   "fieldname": "section_break_ebulk",
+   "fieldtype": "Section Break",
+   "label": "eBulkSMS Settings",
+   "in_create": 0,
+   "depends_on": "eval:doc.whatsapp_provider=='eBulkSMS'"
+  },
+  {
+   "fieldname": "ebulksms_username",
+   "fieldtype": "Data",
+   "label": "eBulkSMS Username",
+   "in_create": 0,
+   "description": "Your eBulkSMS account email/username"
+  },
+  {
+   "fieldname": "ebulksms_api_key",
+   "fieldtype": "Password",
+   "label": "eBulkSMS API Key",
+   "in_create": 0,
+   "description": "API key from eBulkSMS dashboard. Never logged."
+  },
+  {
+   "fieldname": "section_break_meta",
+   "fieldtype": "Section Break",
+   "label": "Meta WhatsApp API",
+   "in_create": 0,
+   "depends_on": "eval:doc.whatsapp_provider=='Meta WhatsApp Cloud API'"
+  },
+  {
+   "fieldname": "meta_token",
+   "fieldtype": "Password",
+   "label": "Meta API Token",
+   "reqd": 0,
+   "in_create": 0,
+   "description": "Bearer token for WhatsApp Cloud API. Never logged.",
+   "mandatory_depends_on": "eval:doc.whatsapp_provider=='Meta WhatsApp Cloud API'"
+  },
+  {
+   "fieldname": "meta_app_id",
+   "fieldtype": "Data",
+   "label": "Meta App ID",
+   "reqd": 0,
+   "in_create": 0,
+   "mandatory_depends_on": "eval:doc.whatsapp_provider=='Meta WhatsApp Cloud API'"
+  },
+  {
+   "fieldname": "meta_phone_id",
+   "fieldtype": "Data",
+   "label": "Default Phone Number ID",
+   "reqd": 0,
+   "in_create": 0,
+   "description": "Fallback phone_number_id if channel-specific ID not set",
+   "mandatory_depends_on": "eval:doc.whatsapp_provider=='Meta WhatsApp Cloud API'"
+  },
+  {
+   "fieldname": "section_break_channels",
+   "fieldtype": "Section Break",
+   "label": "Channel Phone Number IDs",
+   "in_create": 0,
+   "description": "Each sender channel can use a different WhatsApp phone number ID"
+  },
+  {
+   "fieldname": "transactional_phone_id",
+   "fieldtype": "Data",
+   "label": "Transactional Phone ID",
+   "in_create": 0,
+   "description": "For order updates, confirmations, telesales notifications"
+  },
+  {
+   "fieldname": "da_phone_id",
+   "fieldtype": "Data",
+   "label": "DA Phone ID",
+   "in_create": 0,
+   "description": "For delivery agent notifications"
+  },
+  {
+   "fieldname": "column_break_ch",
+   "fieldtype": "Column Break",
+   "in_create": 0
+  },
+  {
+   "fieldname": "promo_phone_id",
+   "fieldtype": "Data",
+   "label": "Promo Phone ID",
+   "in_create": 0,
+   "description": "For marketing campaigns"
+  },
+  {
+   "fieldname": "payment_phone_id",
+   "fieldtype": "Data",
+   "label": "Payment Phone ID",
+   "in_create": 0,
+   "description": "For payment confirmations \u2014 fires immediately, no rate limiting"
+  },
+  {
+   "fieldname": "section_break_webhook",
+   "fieldtype": "Section Break",
+   "label": "Webhook & Fallback",
+   "in_create": 0
+  },
+  {
+   "fieldname": "webhook_verify_token",
+   "fieldtype": "Data",
+   "label": "Webhook Verify Token",
+   "reqd": 0,
+   "in_create": 0,
+   "description": "Token for Meta webhook hub.verify_token handshake",
+   "mandatory_depends_on": "eval:doc.whatsapp_provider=='Meta WhatsApp Cloud API'"
+  },
+  {
+   "fieldname": "fallback_phone",
+   "fieldtype": "Data",
+   "label": "Fallback Phone (Owner)",
+   "reqd": 1,
+   "in_create": 0,
+   "description": "Owner/admin phone for failure alerts and Owner-type notifications. Format: 2348XXXXXXXXX"
+  },
+  {
+   "fieldname": "section_break_rate",
+   "fieldtype": "Section Break",
+   "label": "Rate Limiting",
+   "in_create": 0
+  },
+  {
+   "fieldname": "min_message_interval_seconds",
+   "fieldtype": "Int",
+   "label": "Min Message Interval (seconds)",
+   "default": "180",
+   "in_create": 0,
+   "description": "Minimum seconds between messages on same channel. Payment channel bypasses this. Default 180 (3 min)."
+  }
  ],
  "modified": "2026-03-16 00:00:00.000000",
  "modified_by": "Administrator",
@@ -33,7 +181,13 @@
  "name": "VV Notification Settings",
  "owner": "Administrator",
  "permissions": [
-  {"create": 1, "delete": 0, "read": 1, "role": "System Manager", "write": 1}
+  {
+   "create": 1,
+   "delete": 0,
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  }
  ],
  "sort_field": "creation",
  "sort_order": "DESC"

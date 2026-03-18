@@ -2,6 +2,67 @@ import frappe
 from frappe.utils import now_datetime, add_days
 
 
+# ─── VV Order doc_event: check dual-gate on Delivered ─────────────────────────
+
+def on_vv_order_update(doc, method):
+    """
+    Fires on every VV Order save. Handles three scenarios:
+
+    1. DA marks Delivered + payment already confirmed → auto-finalize to Paid
+    2. Finance manually transitions Delivered → Paid → ensure payment_confirmed + deduct stock
+    3. Normal Delivered with no payment yet → just stamp delivered_at, wait
+    """
+    if not doc.get_doc_before_save():
+        return  # New doc, skip
+
+    old_status = doc.get_doc_before_save().get("order_status")
+    new_status = doc.order_status
+
+    if old_status == new_status:
+        return  # No status change
+
+    # ── Scenario: Just became Delivered ───────────────────────────────
+    if new_status == "Delivered":
+        # Stamp delivered_at
+        if not doc.delivered_at:
+            doc.delivered_at = now_datetime()
+            doc.db_set("delivered_at", doc.delivered_at)
+
+        # Check if payment was already confirmed (PBD scenario)
+        if doc.payment_confirmed:
+            # Both gates met → finalize to Paid + deduct stock
+            frappe.enqueue(
+                "vitalvida.reconciliation._finalize_paid_order",
+                queue="short", timeout=60,
+                order_name=doc.name,
+            )
+
+    # ── Scenario: Finance manually set to Paid via workflow ──────────
+    if new_status == "Paid" and old_status == "Delivered":
+        # Finance confirmed payment through workflow button
+        now = now_datetime()
+        if not doc.payment_confirmed:
+            doc.payment_confirmed = 1
+            doc.db_set("payment_confirmed", 1)
+        if not doc.paid_at:
+            doc.paid_at = now
+            doc.db_set("paid_at", now)
+        if not doc.payment_confirmed_at:
+            doc.payment_confirmed_at = now
+            doc.db_set("payment_confirmed_at", now)
+
+        # Deduct stock directly (status already Paid via workflow,
+        # so _finalize_paid_order would skip it — we call deduction here)
+        try:
+            from vitalvida.deduction import deduct_on_payment
+            deduct_on_payment(doc.name)
+        except Exception as e:
+            frappe.log_error(
+                f"M13 deduction failed on Finance manual confirm for {doc.name}: {str(e)}",
+                "M13 Deduction Error"
+            )
+
+
 # Statuses that block matching — order already terminal
 TERMINAL_STATUSES = ["Paid", "Cancelled", "Returned"]
 
@@ -321,49 +382,130 @@ def _log_unmatched(webhook):
     _alert_finance(webhook_name, None, "PaymentUnmatched")
 
 
-# ─── Mark Order Paid ───────────────────────────────────────────────────────────
+# ─── DUAL-GATE: Payment Confirmed + Delivered = Paid ──────────────────────────
+#
+# Real-world scenarios:
+#   COD: DA delivers → Delivered → customer pays → Moniepoint confirms → Paid
+#   PBD: Customer pays early → payment_confirmed=1 → DA delivers → auto-Paid
+#
+# Stock deduction ONLY in _finalize_paid_order() — requires BOTH gates.
+# ──────────────────────────────────────────────────────────────────────────────
 
 def _mark_order_paid(order_name):
     """
-    Shared helper — used by auto-confirm and manual Finance confirm.
-    Sets order status to Paid, stamps payment_confirmed_at,
-    fires two notifications.
+    Called by auto-confirm (Tier 1) and manual Finance confirm.
+    Sets payment_confirmed = 1. Does NOT automatically set status to Paid.
+    If order is already Delivered → finalizes to Paid + deducts stock.
+    If order is NOT yet Delivered → records payment, waits for delivery.
     """
     now = now_datetime()
 
+    order_status = frappe.db.get_value("VV Order", order_name, "order_status")
+
+    # Already Paid — skip (idempotent)
+    if order_status == "Paid":
+        return
+
+    # Gate 1: Record payment confirmation
     frappe.db.set_value("VV Order", order_name, {
-        "order_status": "Paid",
+        "payment_confirmed": 1,
         "paid_at": now,
         "payment_confirmed_at": now,
     })
     frappe.db.commit()
 
-    # M13: trigger stock deduction from DA warehouse on payment confirmed
+    # Gate 2: Check if already delivered
+    if order_status == "Delivered":
+        # Both gates met → finalize
+        _finalize_paid_order(order_name)
+    else:
+        # Payment received but not delivered yet (PBD scenario)
+        # Notify owner that payment arrived early
+        try:
+            from vitalvida.notifications import send_notification
+            order = frappe.get_doc("VV Order", order_name)
+            send_notification(
+                order,
+                event="PaymentReceivedEarly",
+                recipient_type="Owner",
+            )
+        except Exception:
+            pass  # Notification failure should never block payment recording
+
+
+def on_order_status_change(order_name, new_status):
+    """
+    Called from doc_events when VV Order status changes.
+    If order just became Delivered and payment was already confirmed → finalize.
+    """
+    if new_status != "Delivered":
+        return
+
+    payment_confirmed = frappe.db.get_value(
+        "VV Order", order_name, "payment_confirmed")
+
+    if payment_confirmed:
+        # Both gates met — customer paid before delivery
+        _finalize_paid_order(order_name)
+
+
+def _finalize_paid_order(order_name):
+    """
+    THE ONLY FUNCTION THAT DEDUCTS STOCK.
+    Called ONLY when both conditions are true:
+      1. payment_confirmed = 1  (money in bank)
+      2. order was Delivered     (product in customer hands)
+
+    Sets status to Paid, deducts from DA warehouse, fires notifications.
+    """
+    now = now_datetime()
+
+    # Double-check both gates (defensive)
+    order = frappe.db.get_value("VV Order", order_name,
+        ["order_status", "payment_confirmed"], as_dict=True)
+    if not order:
+        return
+    if order.order_status == "Paid":
+        return  # Already finalized
+    if not order.payment_confirmed:
+        frappe.log_error(
+            f"_finalize_paid_order called for {order_name} but payment_confirmed=0. Blocked.",
+            "M11 Dual-Gate Error"
+        )
+        return
+
+    # ── Set status to Paid ────────────────────────────────────────────
+    frappe.db.set_value("VV Order", order_name, {
+        "order_status": "Paid",
+    })
+    frappe.db.commit()
+
+    # ── M13: Deduct stock from DA warehouse ───────────────────────────
     try:
         from vitalvida.deduction import deduct_on_payment
         deduct_on_payment(order_name)
     except Exception as e:
         frappe.log_error(
-            f"M13 deduction call failed for order {order_name}: {str(e)}",
+            f"M13 deduction failed for order {order_name}: {str(e)}",
             "M13 Deduction Error"
         )
 
-    # Fire notifications
+    # ── Fire notifications ────────────────────────────────────────────
     try:
         from vitalvida.notifications import send_notification
-        order = frappe.get_doc("VV Order", order_name)
+        order_doc = frappe.get_doc("VV Order", order_name)
 
-        # Customer — Payment channel (immediate, bypasses queue)
+        # Customer — Payment confirmed
         send_notification(
-            order,
+            order_doc,
             event="Paid",
             recipient_type="Customer",
             sender_channel="Payment"
         )
 
-        # Owner — Transactional channel
+        # Owner — Payment confirmed
         send_notification(
-            order,
+            order_doc,
             event="Paid",
             recipient_type="Owner",
             sender_channel="Transactional"

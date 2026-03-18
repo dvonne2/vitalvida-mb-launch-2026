@@ -14,7 +14,8 @@ override_whitelisted_methods = {
     "vitalvida.media_buyer.get_affiliate_summary": "vitalvida.media_buyer.get_affiliate_summary",
     "vitalvida.media_buyer.mark_batch_paid": "vitalvida.media_buyer.mark_batch_paid",
     "vitalvida.media_buyer.approve_all_reports": "vitalvida.media_buyer.approve_all_reports",
-    "vitalvida.media_buyer.validate_commission_coverage": "vitalvida.media_buyer.validate_commission_coverage"
+    "vitalvida.media_buyer.validate_commission_coverage": "vitalvida.media_buyer.validate_commission_coverage",
+    "vitalvida.notifications.send_broadcast": "vitalvida.notifications.send_broadcast"
 }
 
 fixtures = [
@@ -33,6 +34,9 @@ fixtures = [
 # M21: Auto-create FIRS eInvoice on Sales Invoice submit
 # M31: Auto-provision role on LMS course completion
 doc_events = {
+    "VV Order": {
+        "on_update": "vitalvida.reconciliation.on_vv_order_update"
+    },
     "Sales Invoice": {
         "on_submit": "vitalvida.firs.on_sales_invoice_submit"
     },
@@ -60,6 +64,7 @@ scheduler_events = {
         # M16: Every midnight — compute DSR for all DAs and Telesales Closers
         "0 0 * * *": [
             "vitalvida.dsr.run_nightly_dsr",
+            "vitalvida.notifications.reset_daily_counts",
             "vitalvida.telesales_scoring.run_nightly_telesales_scoring"
         ],
         # M18: Every 15 minutes — check Whale/Mini Whale SLA breaches

@@ -18,7 +18,9 @@
   "failed_at",
   "section_errors",
   "error_detail",
-  "provider_response"
+  "provider_response",
+  "channel_code",
+  "message_type"
  ],
  "fields": [
   {
@@ -112,6 +114,24 @@
    "fieldname": "sender_phone_id",
    "fieldtype": "Data",
    "label": "Sender Phone ID"
+  },
+  {
+   "fieldname": "message_type",
+   "fieldtype": "Data",
+   "label": "Message Type",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "in_create": 0,
+   "description": "e.g. ORDER_CONFIRMED, ABANDONED_CART_1"
+  },
+  {
+   "fieldname": "channel_code",
+   "fieldtype": "Link",
+   "label": "Channel",
+   "options": "WhatsApp Channel",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "in_create": 0
   },
   {
    "fieldname": "queued_at",

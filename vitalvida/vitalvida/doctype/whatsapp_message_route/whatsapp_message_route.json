@@ -1,0 +1,23 @@
+{
+ "actions":[],"creation":"2026-03-18 00:00:00.000000","doctype":"DocType","engine":"InnoDB",
+ "field_order":[
+  "message_type","audience_type","column_break_1","channel_code","backup_channel_code","template_name","is_active"
+ ],
+ "fields":[
+  {"fieldname":"message_type","fieldtype":"Data","label":"Message Type","reqd":1,"unique":1,"in_list_view":1,"in_standard_filter":1,"in_create":0,
+   "description":"e.g. ORDER_CONFIRMED, ABANDONED_CART_1, AGENT_ASSIGNMENT, NEWSLETTER_EDUCATION"},
+  {"fieldname":"audience_type","fieldtype":"Select","label":"Audience","reqd":1,"in_list_view":1,"in_standard_filter":1,"in_create":0,
+   "options":"Customer\nDelivery Agent\nTelesales\nOwner\nAll"},
+  {"fieldname":"column_break_1","fieldtype":"Column Break","in_create":0},
+  {"fieldname":"channel_code","fieldtype":"Link","label":"Primary Channel","options":"WhatsApp Channel","reqd":1,"in_list_view":1,"in_create":0},
+  {"fieldname":"backup_channel_code","fieldtype":"Link","label":"Backup Channel","options":"WhatsApp Channel","in_create":0,
+   "description":"Used if primary channel is inactive or at daily limit"},
+  {"fieldname":"template_name","fieldtype":"Link","label":"Template","options":"Message Template","in_create":0,
+   "description":"Optional: lock this route to a specific template"},
+  {"fieldname":"is_active","fieldtype":"Check","label":"Active","default":"1","in_list_view":1,"in_create":0}
+ ],
+ "modified":"2026-03-18 00:00:00.000000","modified_by":"Administrator","module":"Vitalvida",
+ "name":"WhatsApp Message Route","owner":"Administrator",
+ "permissions":[{"create":1,"delete":1,"read":1,"role":"System Manager","write":1}],
+ "sort_field":"message_type","sort_order":"ASC","track_changes":1
+}

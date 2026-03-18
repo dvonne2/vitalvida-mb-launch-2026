@@ -3,6 +3,14 @@ import frappe
 
 def deduct_on_payment(order_name):
     try:
+        # 0. Guard against double-deduction
+        already_deducted = frappe.db.exists("DA Stock Entry", {
+            "order": order_name,
+            "entry_type": "Deduction",
+        })
+        if already_deducted:
+            return  # Stock already deducted for this order — idempotent
+
         # 1. Load the VV Order
         order = frappe.get_doc("VV Order", order_name)
 
