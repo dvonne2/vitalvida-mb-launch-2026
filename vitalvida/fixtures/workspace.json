@@ -15,6 +15,7 @@
   "modified": "2026-03-19 07:33:03.303785",
   "module": "Vitalvida",
   "name": "Telesales Hub",
+  "type": "Workspace",
   "number_cards": [
    {
     "label": null,
@@ -118,6 +119,7 @@
   "modified": "2026-03-19 07:33:03.474274",
   "module": "Vitalvida",
   "name": "Operations Command Centre",
+  "type": "Workspace",
   "number_cards": [
    {
     "label": null,
@@ -292,6 +294,7 @@
   "modified": "2026-03-19 07:33:03.581544",
   "module": "Vitalvida",
   "name": "Finance Hub",
+  "type": "Workspace",
   "number_cards": [
    {
     "label": null,
@@ -422,6 +425,7 @@
   "modified": "2026-03-19 07:33:03.675687",
   "module": "Vitalvida",
   "name": "Inventory Hub",
+  "type": "Workspace",
   "number_cards": [
    {
     "label": null,
@@ -494,6 +498,7 @@
   "modified": "2026-03-19 07:33:03.736013",
   "module": "Vitalvida",
   "name": "HR & Payroll Hub",
+  "type": "Workspace",
   "number_cards": [
    {
     "label": null,
@@ -599,6 +604,7 @@
   "modified": "2026-03-19 07:33:03.803836",
   "module": "Vitalvida",
   "name": "CEO Command Center",
+  "type": "Workspace",
   "number_cards": [
    {
     "label": null,
@@ -863,6 +869,7 @@
   "modified": "2026-03-19 07:31:59.213851",
   "module": "Vitalvida",
   "name": "Investor Space",
+  "type": "Workspace",
   "number_cards": [],
   "parent_page": null,
   "public": 1,
@@ -896,6 +903,7 @@
   "modified": "2026-03-19 08:58:48.001126",
   "module": "Vitalvida",
   "name": "Media Buyers Space",
+  "type": "Workspace",
   "number_cards": [
    {
     "label": null,

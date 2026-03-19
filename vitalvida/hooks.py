@@ -122,3 +122,5 @@ scheduler_events = {
 
 export_python_type_annotations = True
 require_type_annotated_api_methods = True
+#app_include_js = "/assets/vitalvida/js/vitalvida_desk.js"
+app_include_js = "/assets/vitalvida/js/theme_picker.js"
