@@ -1,0 +1,1011 @@
+[
+ {
+  "charts": [],
+  "content": "[{\"id\": \"hKZDUTqQge\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Key Metrics</b></span>\", \"col\": 12}}, {\"id\": \"HmeHhwRb3J\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"My Pending Orders\", \"col\": 3}}, {\"id\": \"5cEV2cPBkQ\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Confirmed Today\", \"col\": 3}}, {\"id\": \"ZiYLl5DIBP\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"My Paid Orders MTD\", \"col\": 3}}, {\"id\": \"3NneT2lCPB\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Cart Recovery Queue\", \"col\": 3}}, {\"id\": \"UoRzhEn6sj\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Reports</b></span>\", \"col\": 12}}, {\"id\": \"9DzBZm1u3l\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Telesales Performance League\", \"col\": 3}}, {\"id\": \"I6PjSpYX6q\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Order Status Breakdown\", \"col\": 3}}]",
+  "custom_blocks": [],
+  "docstatus": 0,
+  "doctype": "Workspace",
+  "for_user": null,
+  "hide_custom": 0,
+  "icon": null,
+  "indicator_color": "green",
+  "is_hidden": 0,
+  "label": "Telesales Hub",
+  "links": [],
+  "modified": "2026-03-19 07:33:03.303785",
+  "module": "Vitalvida",
+  "name": "Telesales Hub",
+  "number_cards": [
+   {
+    "label": null,
+    "number_card_name": "My Pending Orders",
+    "parent": "Telesales Hub",
+    "parentfield": "number_cards",
+    "parenttype": "Workspace"
+   },
+   {
+    "label": null,
+    "number_card_name": "Confirmed Today",
+    "parent": "Telesales Hub",
+    "parentfield": "number_cards",
+    "parenttype": "Workspace"
+   },
+   {
+    "label": null,
+    "number_card_name": "My Paid Orders MTD",
+    "parent": "Telesales Hub",
+    "parentfield": "number_cards",
+    "parenttype": "Workspace"
+   },
+   {
+    "label": null,
+    "number_card_name": "Cart Recovery Queue",
+    "parent": "Telesales Hub",
+    "parentfield": "number_cards",
+    "parenttype": "Workspace"
+   }
+  ],
+  "parent_page": null,
+  "public": 1,
+  "quick_lists": [],
+  "restrict_to_domain": null,
+  "roles": [
+   {
+    "parent": "Telesales Hub",
+    "parentfield": "roles",
+    "parenttype": "Workspace",
+    "role": "Telesales User"
+   },
+   {
+    "parent": "Telesales Hub",
+    "parentfield": "roles",
+    "parenttype": "Workspace",
+    "role": "Sales Manager"
+   }
+  ],
+  "sequence_id": 0.0,
+  "shortcuts": [
+   {
+    "color": null,
+    "doc_view": "",
+    "format": null,
+    "icon": null,
+    "kanban_board": null,
+    "label": "Telesales Performance League",
+    "link_to": "Telesales Performance League",
+    "parent": "Telesales Hub",
+    "parentfield": "shortcuts",
+    "parenttype": "Workspace",
+    "report_ref_doctype": "Telesales Closer",
+    "restrict_to_domain": null,
+    "stats_filter": null,
+    "type": "Report",
+    "url": null
+   },
+   {
+    "color": null,
+    "doc_view": "",
+    "format": null,
+    "icon": null,
+    "kanban_board": null,
+    "label": "Order Status Breakdown",
+    "link_to": "Order Status Breakdown",
+    "parent": "Telesales Hub",
+    "parentfield": "shortcuts",
+    "parenttype": "Workspace",
+    "report_ref_doctype": "VV Order",
+    "restrict_to_domain": null,
+    "stats_filter": null,
+    "type": "Report",
+    "url": null
+   }
+  ],
+  "title": "Telesales Hub"
+ },
+ {
+  "charts": [],
+  "content": "[{\"id\": \"K6BthPqeK6\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Key Metrics</b></span>\", \"col\": 12}}, {\"id\": \"lX4Tv9J1mn\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Orders Today\", \"col\": 3}}, {\"id\": \"KLcta1Ogfw\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Pending Confirmation\", \"col\": 3}}, {\"id\": \"XrksK7XXAi\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Assigned Not Dispatched\", \"col\": 3}}, {\"id\": \"lI9iGb9uN7\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Out for Delivery\", \"col\": 3}}, {\"id\": \"CvYmN8wyGH\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Delivered Awaiting Payment\", \"col\": 3}}, {\"id\": \"karElfE3Qs\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Paid Today\", \"col\": 3}}, {\"id\": \"4NzPWxV5K1\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Reports</b></span>\", \"col\": 12}}, {\"id\": \"5QKEICPm1s\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Order Status Breakdown\", \"col\": 3}}, {\"id\": \"aSpgEGJjPx\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Revenue Dashboard\", \"col\": 3}}, {\"id\": \"9CTIzXsN4h\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"DA Performance League\", \"col\": 3}}, {\"id\": \"MnKKiua6Zb\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"State Performance Dashboard\", \"col\": 3}}, {\"id\": \"bxenOQuGGD\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"National Inventory Dashboard\", \"col\": 3}}]",
+  "custom_blocks": [],
+  "docstatus": 0,
+  "doctype": "Workspace",
+  "for_user": null,
+  "hide_custom": 0,
+  "icon": null,
+  "indicator_color": "green",
+  "is_hidden": 0,
+  "label": "Operations Command Centre",
+  "links": [],
+  "modified": "2026-03-19 07:33:03.474274",
+  "module": "Vitalvida",
+  "name": "Operations Command Centre",
+  "number_cards": [
+   {
+    "label": null,
+    "number_card_name": "Orders Today",
+    "parent": "Operations Command Centre",
+    "parentfield": "number_cards",
+    "parenttype": "Workspace"
+   },
+   {
+    "label": null,
+    "number_card_name": "Pending Confirmation",
+    "parent": "Operations Command Centre",
+    "parentfield": "number_cards",
+    "parenttype": "Workspace"
+   },
+   {
+    "label": null,
+    "number_card_name": "Assigned Not Dispatched",
+    "parent": "Operations Command Centre",
+    "parentfield": "number_cards",
+    "parenttype": "Workspace"
+   },
+   {
+    "label": null,
+    "number_card_name": "Out for Delivery",
+    "parent": "Operations Command Centre",
+    "parentfield": "number_cards",
+    "parenttype": "Workspace"
+   },
+   {
+    "label": null,
+    "number_card_name": "Delivered Awaiting Payment",
+    "parent": "Operations Command Centre",
+    "parentfield": "number_cards",
+    "parenttype": "Workspace"
+   },
+   {
+    "label": null,
+    "number_card_name": "Paid Today",
+    "parent": "Operations Command Centre",
+    "parentfield": "number_cards",
+    "parenttype": "Workspace"
+   }
+  ],
+  "parent_page": null,
+  "public": 1,
+  "quick_lists": [],
+  "restrict_to_domain": null,
+  "roles": [
+   {
+    "parent": "Operations Command Centre",
+    "parentfield": "roles",
+    "parenttype": "Workspace",
+    "role": "Logistics User"
+   },
+   {
+    "parent": "Operations Command Centre",
+    "parentfield": "roles",
+    "parenttype": "Workspace",
+    "role": "Sales Manager"
+   },
+   {
+    "parent": "Operations Command Centre",
+    "parentfield": "roles",
+    "parenttype": "Workspace",
+    "role": "System Manager"
+   }
+  ],
+  "sequence_id": 0.0,
+  "shortcuts": [
+   {
+    "color": null,
+    "doc_view": "",
+    "format": null,
+    "icon": null,
+    "kanban_board": null,
+    "label": "Order Status Breakdown",
+    "link_to": "Order Status Breakdown",
+    "parent": "Operations Command Centre",
+    "parentfield": "shortcuts",
+    "parenttype": "Workspace",
+    "report_ref_doctype": "VV Order",
+    "restrict_to_domain": null,
+    "stats_filter": null,
+    "type": "Report",
+    "url": null
+   },
+   {
+    "color": null,
+    "doc_view": "",
+    "format": null,
+    "icon": null,
+    "kanban_board": null,
+    "label": "Revenue Dashboard",
+    "link_to": "Revenue Dashboard",
+    "parent": "Operations Command Centre",
+    "parentfield": "shortcuts",
+    "parenttype": "Workspace",
+    "report_ref_doctype": "VV Order",
+    "restrict_to_domain": null,
+    "stats_filter": null,
+    "type": "Report",
+    "url": null
+   },
+   {
+    "color": null,
+    "doc_view": "",
+    "format": null,
+    "icon": null,
+    "kanban_board": null,
+    "label": "DA Performance League",
+    "link_to": "DA Performance League",
+    "parent": "Operations Command Centre",
+    "parentfield": "shortcuts",
+    "parenttype": "Workspace",
+    "report_ref_doctype": "Delivery Agent",
+    "restrict_to_domain": null,
+    "stats_filter": null,
+    "type": "Report",
+    "url": null
+   },
+   {
+    "color": null,
+    "doc_view": "",
+    "format": null,
+    "icon": null,
+    "kanban_board": null,
+    "label": "State Performance Dashboard",
+    "link_to": "State Performance Dashboard",
+    "parent": "Operations Command Centre",
+    "parentfield": "shortcuts",
+    "parenttype": "Workspace",
+    "report_ref_doctype": "VV Order",
+    "restrict_to_domain": null,
+    "stats_filter": null,
+    "type": "Report",
+    "url": null
+   },
+   {
+    "color": null,
+    "doc_view": "",
+    "format": null,
+    "icon": null,
+    "kanban_board": null,
+    "label": "National Inventory Dashboard",
+    "link_to": "National Inventory Dashboard",
+    "parent": "Operations Command Centre",
+    "parentfield": "shortcuts",
+    "parenttype": "Workspace",
+    "report_ref_doctype": "DA Warehouse",
+    "restrict_to_domain": null,
+    "stats_filter": null,
+    "type": "Report",
+    "url": null
+   }
+  ],
+  "title": "Operations Command Centre"
+ },
+ {
+  "charts": [],
+  "content": "[{\"id\": \"jXzzzYTnkX\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Key Metrics</b></span>\", \"col\": 12}}, {\"id\": \"K0QefDmqDF\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Revenue Today\", \"col\": 3}}, {\"id\": \"EZCqV8CBKd\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Revenue This Month\", \"col\": 3}}, {\"id\": \"ViTaqyon5k\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Unresolved Fraud Flags\", \"col\": 3}}, {\"id\": \"YeVRiQymLp\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Reports</b></span>\", \"col\": 12}}, {\"id\": \"JQuvyRMLKz\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Revenue Dashboard\", \"col\": 3}}, {\"id\": \"aVtr90hVH0\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Product Revenue Breakdown\", \"col\": 3}}, {\"id\": \"JbnwCdw1Zv\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Payroll Analytics\", \"col\": 3}}, {\"id\": \"wYZQyxyeeh\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Media Buyer Dashboard\", \"col\": 3}}]",
+  "custom_blocks": [],
+  "docstatus": 0,
+  "doctype": "Workspace",
+  "for_user": null,
+  "hide_custom": 0,
+  "icon": null,
+  "indicator_color": "green",
+  "is_hidden": 0,
+  "label": "Finance Hub",
+  "links": [],
+  "modified": "2026-03-19 07:33:03.581544",
+  "module": "Vitalvida",
+  "name": "Finance Hub",
+  "number_cards": [
+   {
+    "label": null,
+    "number_card_name": "Revenue Today",
+    "parent": "Finance Hub",
+    "parentfield": "number_cards",
+    "parenttype": "Workspace"
+   },
+   {
+    "label": null,
+    "number_card_name": "Revenue This Month",
+    "parent": "Finance Hub",
+    "parentfield": "number_cards",
+    "parenttype": "Workspace"
+   },
+   {
+    "label": null,
+    "number_card_name": "Unresolved Fraud Flags",
+    "parent": "Finance Hub",
+    "parentfield": "number_cards",
+    "parenttype": "Workspace"
+   }
+  ],
+  "parent_page": null,
+  "public": 1,
+  "quick_lists": [],
+  "restrict_to_domain": null,
+  "roles": [
+   {
+    "parent": "Finance Hub",
+    "parentfield": "roles",
+    "parenttype": "Workspace",
+    "role": "Finance User"
+   },
+   {
+    "parent": "Finance Hub",
+    "parentfield": "roles",
+    "parenttype": "Workspace",
+    "role": "CEO"
+   }
+  ],
+  "sequence_id": 0.0,
+  "shortcuts": [
+   {
+    "color": null,
+    "doc_view": "",
+    "format": null,
+    "icon": null,
+    "kanban_board": null,
+    "label": "Revenue Dashboard",
+    "link_to": "Revenue Dashboard",
+    "parent": "Finance Hub",
+    "parentfield": "shortcuts",
+    "parenttype": "Workspace",
+    "report_ref_doctype": "VV Order",
+    "restrict_to_domain": null,
+    "stats_filter": null,
+    "type": "Report",
+    "url": null
+   },
+   {
+    "color": null,
+    "doc_view": "",
+    "format": null,
+    "icon": null,
+    "kanban_board": null,
+    "label": "Product Revenue Breakdown",
+    "link_to": "Product Revenue Breakdown",
+    "parent": "Finance Hub",
+    "parentfield": "shortcuts",
+    "parenttype": "Workspace",
+    "report_ref_doctype": "VV Order",
+    "restrict_to_domain": null,
+    "stats_filter": null,
+    "type": "Report",
+    "url": null
+   },
+   {
+    "color": null,
+    "doc_view": "",
+    "format": null,
+    "icon": null,
+    "kanban_board": null,
+    "label": "Payroll Analytics",
+    "link_to": "Payroll Analytics",
+    "parent": "Finance Hub",
+    "parentfield": "shortcuts",
+    "parenttype": "Workspace",
+    "report_ref_doctype": "Monthly Payroll Run",
+    "restrict_to_domain": null,
+    "stats_filter": null,
+    "type": "Report",
+    "url": null
+   },
+   {
+    "color": null,
+    "doc_view": "",
+    "format": null,
+    "icon": null,
+    "kanban_board": null,
+    "label": "Media Buyer Dashboard",
+    "link_to": "Media Buyer Dashboard",
+    "parent": "Finance Hub",
+    "parentfield": "shortcuts",
+    "parenttype": "Workspace",
+    "report_ref_doctype": "VV Media Buyer Weekly Report",
+    "restrict_to_domain": null,
+    "stats_filter": null,
+    "type": "Report",
+    "url": null
+   }
+  ],
+  "title": "Finance Hub"
+ },
+ {
+  "charts": [],
+  "content": "[{\"id\": \"rZx5ceV8ev\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Key Metrics</b></span>\", \"col\": 12}}, {\"id\": \"eaJasDH5OM\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Pending Stock Counts\", \"col\": 3}}, {\"id\": \"vfd5s15OYd\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Movements Today\", \"col\": 3}}, {\"id\": \"EkgHiyBiSj\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Reports</b></span>\", \"col\": 12}}, {\"id\": \"Ml1m604FWh\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"National Inventory Dashboard\", \"col\": 3}}]",
+  "custom_blocks": [],
+  "docstatus": 0,
+  "doctype": "Workspace",
+  "for_user": null,
+  "hide_custom": 0,
+  "icon": null,
+  "indicator_color": "green",
+  "is_hidden": 0,
+  "label": "Inventory Hub",
+  "links": [],
+  "modified": "2026-03-19 07:33:03.675687",
+  "module": "Vitalvida",
+  "name": "Inventory Hub",
+  "number_cards": [
+   {
+    "label": null,
+    "number_card_name": "Pending Stock Counts",
+    "parent": "Inventory Hub",
+    "parentfield": "number_cards",
+    "parenttype": "Workspace"
+   },
+   {
+    "label": null,
+    "number_card_name": "Movements Today",
+    "parent": "Inventory Hub",
+    "parentfield": "number_cards",
+    "parenttype": "Workspace"
+   }
+  ],
+  "parent_page": null,
+  "public": 1,
+  "quick_lists": [],
+  "restrict_to_domain": null,
+  "roles": [
+   {
+    "parent": "Inventory Hub",
+    "parentfield": "roles",
+    "parenttype": "Workspace",
+    "role": "Logistics User"
+   },
+   {
+    "parent": "Inventory Hub",
+    "parentfield": "roles",
+    "parenttype": "Workspace",
+    "role": "System Manager"
+   }
+  ],
+  "sequence_id": 0.0,
+  "shortcuts": [
+   {
+    "color": null,
+    "doc_view": "",
+    "format": null,
+    "icon": null,
+    "kanban_board": null,
+    "label": "National Inventory Dashboard",
+    "link_to": "National Inventory Dashboard",
+    "parent": "Inventory Hub",
+    "parentfield": "shortcuts",
+    "parenttype": "Workspace",
+    "report_ref_doctype": "DA Warehouse",
+    "restrict_to_domain": null,
+    "stats_filter": null,
+    "type": "Report",
+    "url": null
+   }
+  ],
+  "title": "Inventory Hub"
+ },
+ {
+  "charts": [],
+  "content": "[{\"id\": \"66R4lrVM0E\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Key Metrics</b></span>\", \"col\": 12}}, {\"id\": \"9Hhl0EhJaQ\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Active Employees\", \"col\": 3}}, {\"id\": \"u95nfWX0R1\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Reports</b></span>\", \"col\": 12}}, {\"id\": \"EZhDuDDOnr\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Payroll Analytics\", \"col\": 3}}, {\"id\": \"zMS3lCcHZq\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"DA Performance League\", \"col\": 3}}, {\"id\": \"ooPTVMr1XL\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Telesales Performance League\", \"col\": 3}}]",
+  "custom_blocks": [],
+  "docstatus": 0,
+  "doctype": "Workspace",
+  "for_user": null,
+  "hide_custom": 0,
+  "icon": null,
+  "indicator_color": "green",
+  "is_hidden": 0,
+  "label": "HR & Payroll Hub",
+  "links": [],
+  "modified": "2026-03-19 07:33:03.736013",
+  "module": "Vitalvida",
+  "name": "HR & Payroll Hub",
+  "number_cards": [
+   {
+    "label": null,
+    "number_card_name": "Active Employees",
+    "parent": "HR & Payroll Hub",
+    "parentfield": "number_cards",
+    "parenttype": "Workspace"
+   }
+  ],
+  "parent_page": null,
+  "public": 1,
+  "quick_lists": [],
+  "restrict_to_domain": null,
+  "roles": [
+   {
+    "parent": "HR & Payroll Hub",
+    "parentfield": "roles",
+    "parenttype": "Workspace",
+    "role": "HR Manager"
+   },
+   {
+    "parent": "HR & Payroll Hub",
+    "parentfield": "roles",
+    "parenttype": "Workspace",
+    "role": "Finance User"
+   },
+   {
+    "parent": "HR & Payroll Hub",
+    "parentfield": "roles",
+    "parenttype": "Workspace",
+    "role": "CEO"
+   }
+  ],
+  "sequence_id": 0.0,
+  "shortcuts": [
+   {
+    "color": null,
+    "doc_view": "",
+    "format": null,
+    "icon": null,
+    "kanban_board": null,
+    "label": "Payroll Analytics",
+    "link_to": "Payroll Analytics",
+    "parent": "HR & Payroll Hub",
+    "parentfield": "shortcuts",
+    "parenttype": "Workspace",
+    "report_ref_doctype": "Monthly Payroll Run",
+    "restrict_to_domain": null,
+    "stats_filter": null,
+    "type": "Report",
+    "url": null
+   },
+   {
+    "color": null,
+    "doc_view": "",
+    "format": null,
+    "icon": null,
+    "kanban_board": null,
+    "label": "DA Performance League",
+    "link_to": "DA Performance League",
+    "parent": "HR & Payroll Hub",
+    "parentfield": "shortcuts",
+    "parenttype": "Workspace",
+    "report_ref_doctype": "Delivery Agent",
+    "restrict_to_domain": null,
+    "stats_filter": null,
+    "type": "Report",
+    "url": null
+   },
+   {
+    "color": null,
+    "doc_view": "",
+    "format": null,
+    "icon": null,
+    "kanban_board": null,
+    "label": "Telesales Performance League",
+    "link_to": "Telesales Performance League",
+    "parent": "HR & Payroll Hub",
+    "parentfield": "shortcuts",
+    "parenttype": "Workspace",
+    "report_ref_doctype": "Telesales Closer",
+    "restrict_to_domain": null,
+    "stats_filter": null,
+    "type": "Report",
+    "url": null
+   }
+  ],
+  "title": "HR & Payroll Hub"
+ },
+ {
+  "charts": [],
+  "content": "[{\"id\": \"RIOetsXJEy\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Key Metrics</b></span>\", \"col\": 12}}, {\"id\": \"8Y1SYkskhG\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Orders Today\", \"col\": 3}}, {\"id\": \"IENS9eQevT\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Paid Today\", \"col\": 3}}, {\"id\": \"MmV9WfDMnZ\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Revenue Today\", \"col\": 3}}, {\"id\": \"7LolGaMQVj\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Revenue This Month\", \"col\": 3}}, {\"id\": \"5mSs0qzwtO\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Pending Confirmation\", \"col\": 3}}, {\"id\": \"l9FcIVwdKN\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Confirmed Today\", \"col\": 3}}, {\"id\": \"JXWft17fRq\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Out for Delivery\", \"col\": 3}}, {\"id\": \"ZfWvvNtcEy\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Delivered Awaiting Payment\", \"col\": 3}}, {\"id\": \"aBF2xISQFk\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Active Employees\", \"col\": 3}}, {\"id\": \"EFP5Mt1IW7\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Unresolved Fraud Flags\", \"col\": 3}}, {\"id\": \"Itj6fhLULH\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Reports</b></span>\", \"col\": 12}}, {\"id\": \"IS8Fw3Zl2T\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Revenue Dashboard\", \"col\": 3}}, {\"id\": \"kpZGfA8tMq\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Product Revenue Breakdown\", \"col\": 3}}, {\"id\": \"hxNYjZsMtU\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"State Performance Dashboard\", \"col\": 3}}, {\"id\": \"x9hVrK2dzZ\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"DA Performance League\", \"col\": 3}}, {\"id\": \"4PZKidVjSj\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Telesales Performance League\", \"col\": 3}}, {\"id\": \"59rtlCQV3n\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Media Buyer Dashboard\", \"col\": 3}}, {\"id\": \"wgojziJrbU\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"National Inventory Dashboard\", \"col\": 3}}, {\"id\": \"n8YW5supV8\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Order Status Breakdown\", \"col\": 3}}, {\"id\": \"jprVW8ZxaK\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Payroll Analytics\", \"col\": 3}}]",
+  "custom_blocks": [],
+  "docstatus": 0,
+  "doctype": "Workspace",
+  "for_user": null,
+  "hide_custom": 0,
+  "icon": null,
+  "indicator_color": "green",
+  "is_hidden": 0,
+  "label": "CEO Command Center",
+  "links": [],
+  "modified": "2026-03-19 07:33:03.803836",
+  "module": "Vitalvida",
+  "name": "CEO Command Center",
+  "number_cards": [
+   {
+    "label": null,
+    "number_card_name": "Orders Today",
+    "parent": "CEO Command Center",
+    "parentfield": "number_cards",
+    "parenttype": "Workspace"
+   },
+   {
+    "label": null,
+    "number_card_name": "Paid Today",
+    "parent": "CEO Command Center",
+    "parentfield": "number_cards",
+    "parenttype": "Workspace"
+   },
+   {
+    "label": null,
+    "number_card_name": "Revenue Today",
+    "parent": "CEO Command Center",
+    "parentfield": "number_cards",
+    "parenttype": "Workspace"
+   },
+   {
+    "label": null,
+    "number_card_name": "Revenue This Month",
+    "parent": "CEO Command Center",
+    "parentfield": "number_cards",
+    "parenttype": "Workspace"
+   },
+   {
+    "label": null,
+    "number_card_name": "Pending Confirmation",
+    "parent": "CEO Command Center",
+    "parentfield": "number_cards",
+    "parenttype": "Workspace"
+   },
+   {
+    "label": null,
+    "number_card_name": "Confirmed Today",
+    "parent": "CEO Command Center",
+    "parentfield": "number_cards",
+    "parenttype": "Workspace"
+   },
+   {
+    "label": null,
+    "number_card_name": "Out for Delivery",
+    "parent": "CEO Command Center",
+    "parentfield": "number_cards",
+    "parenttype": "Workspace"
+   },
+   {
+    "label": null,
+    "number_card_name": "Delivered Awaiting Payment",
+    "parent": "CEO Command Center",
+    "parentfield": "number_cards",
+    "parenttype": "Workspace"
+   },
+   {
+    "label": null,
+    "number_card_name": "Active Employees",
+    "parent": "CEO Command Center",
+    "parentfield": "number_cards",
+    "parenttype": "Workspace"
+   },
+   {
+    "label": null,
+    "number_card_name": "Unresolved Fraud Flags",
+    "parent": "CEO Command Center",
+    "parentfield": "number_cards",
+    "parenttype": "Workspace"
+   }
+  ],
+  "parent_page": null,
+  "public": 1,
+  "quick_lists": [],
+  "restrict_to_domain": null,
+  "roles": [
+   {
+    "parent": "CEO Command Center",
+    "parentfield": "roles",
+    "parenttype": "Workspace",
+    "role": "CEO"
+   },
+   {
+    "parent": "CEO Command Center",
+    "parentfield": "roles",
+    "parenttype": "Workspace",
+    "role": "System Manager"
+   }
+  ],
+  "sequence_id": 0.0,
+  "shortcuts": [
+   {
+    "color": null,
+    "doc_view": "",
+    "format": null,
+    "icon": null,
+    "kanban_board": null,
+    "label": "Revenue Dashboard",
+    "link_to": "Revenue Dashboard",
+    "parent": "CEO Command Center",
+    "parentfield": "shortcuts",
+    "parenttype": "Workspace",
+    "report_ref_doctype": "VV Order",
+    "restrict_to_domain": null,
+    "stats_filter": null,
+    "type": "Report",
+    "url": null
+   },
+   {
+    "color": null,
+    "doc_view": "",
+    "format": null,
+    "icon": null,
+    "kanban_board": null,
+    "label": "Product Revenue Breakdown",
+    "link_to": "Product Revenue Breakdown",
+    "parent": "CEO Command Center",
+    "parentfield": "shortcuts",
+    "parenttype": "Workspace",
+    "report_ref_doctype": "VV Order",
+    "restrict_to_domain": null,
+    "stats_filter": null,
+    "type": "Report",
+    "url": null
+   },
+   {
+    "color": null,
+    "doc_view": "",
+    "format": null,
+    "icon": null,
+    "kanban_board": null,
+    "label": "State Performance Dashboard",
+    "link_to": "State Performance Dashboard",
+    "parent": "CEO Command Center",
+    "parentfield": "shortcuts",
+    "parenttype": "Workspace",
+    "report_ref_doctype": "VV Order",
+    "restrict_to_domain": null,
+    "stats_filter": null,
+    "type": "Report",
+    "url": null
+   },
+   {
+    "color": null,
+    "doc_view": "",
+    "format": null,
+    "icon": null,
+    "kanban_board": null,
+    "label": "DA Performance League",
+    "link_to": "DA Performance League",
+    "parent": "CEO Command Center",
+    "parentfield": "shortcuts",
+    "parenttype": "Workspace",
+    "report_ref_doctype": "Delivery Agent",
+    "restrict_to_domain": null,
+    "stats_filter": null,
+    "type": "Report",
+    "url": null
+   },
+   {
+    "color": null,
+    "doc_view": "",
+    "format": null,
+    "icon": null,
+    "kanban_board": null,
+    "label": "Telesales Performance League",
+    "link_to": "Telesales Performance League",
+    "parent": "CEO Command Center",
+    "parentfield": "shortcuts",
+    "parenttype": "Workspace",
+    "report_ref_doctype": "Telesales Closer",
+    "restrict_to_domain": null,
+    "stats_filter": null,
+    "type": "Report",
+    "url": null
+   },
+   {
+    "color": null,
+    "doc_view": "",
+    "format": null,
+    "icon": null,
+    "kanban_board": null,
+    "label": "Media Buyer Dashboard",
+    "link_to": "Media Buyer Dashboard",
+    "parent": "CEO Command Center",
+    "parentfield": "shortcuts",
+    "parenttype": "Workspace",
+    "report_ref_doctype": "VV Media Buyer Weekly Report",
+    "restrict_to_domain": null,
+    "stats_filter": null,
+    "type": "Report",
+    "url": null
+   },
+   {
+    "color": null,
+    "doc_view": "",
+    "format": null,
+    "icon": null,
+    "kanban_board": null,
+    "label": "National Inventory Dashboard",
+    "link_to": "National Inventory Dashboard",
+    "parent": "CEO Command Center",
+    "parentfield": "shortcuts",
+    "parenttype": "Workspace",
+    "report_ref_doctype": "DA Warehouse",
+    "restrict_to_domain": null,
+    "stats_filter": null,
+    "type": "Report",
+    "url": null
+   },
+   {
+    "color": null,
+    "doc_view": "",
+    "format": null,
+    "icon": null,
+    "kanban_board": null,
+    "label": "Order Status Breakdown",
+    "link_to": "Order Status Breakdown",
+    "parent": "CEO Command Center",
+    "parentfield": "shortcuts",
+    "parenttype": "Workspace",
+    "report_ref_doctype": "VV Order",
+    "restrict_to_domain": null,
+    "stats_filter": null,
+    "type": "Report",
+    "url": null
+   },
+   {
+    "color": null,
+    "doc_view": "",
+    "format": null,
+    "icon": null,
+    "kanban_board": null,
+    "label": "Payroll Analytics",
+    "link_to": "Payroll Analytics",
+    "parent": "CEO Command Center",
+    "parentfield": "shortcuts",
+    "parenttype": "Workspace",
+    "report_ref_doctype": "Monthly Payroll Run",
+    "restrict_to_domain": null,
+    "stats_filter": null,
+    "type": "Report",
+    "url": null
+   }
+  ],
+  "title": "CEO Command Center"
+ },
+ {
+  "charts": [],
+  "content": "[]",
+  "custom_blocks": [],
+  "docstatus": 0,
+  "doctype": "Workspace",
+  "for_user": null,
+  "hide_custom": 0,
+  "icon": null,
+  "indicator_color": "green",
+  "is_hidden": 0,
+  "label": "Investor Space",
+  "links": [],
+  "modified": "2026-03-19 07:31:59.213851",
+  "module": "Vitalvida",
+  "name": "Investor Space",
+  "number_cards": [],
+  "parent_page": null,
+  "public": 1,
+  "quick_lists": [],
+  "restrict_to_domain": null,
+  "roles": [
+   {
+    "parent": "Investor Space",
+    "parentfield": "roles",
+    "parenttype": "Workspace",
+    "role": "Investor"
+   }
+  ],
+  "sequence_id": 0.0,
+  "shortcuts": [],
+  "title": "Investor Space"
+ },
+ {
+  "charts": [],
+  "content": "[{\"id\": \"LyP1s6QowK\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>My Performance</b></span>\", \"col\": 12}}, {\"id\": \"Mmp3rwOjGy\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"My Orders Received\", \"col\": 3}}, {\"id\": \"34r7J17g90\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"My Orders This Month\", \"col\": 3}}, {\"id\": \"qMDmJRI9m0\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"My Orders Today\", \"col\": 3}}, {\"id\": \"ScYUez3E2r\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"My Orders Delivered\", \"col\": 3}}, {\"id\": \"qY7s6vJBrt\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"My Delivered This Month\", \"col\": 3}}, {\"id\": \"bJh3TDNO9M\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"My Delivered Today\", \"col\": 3}}, {\"id\": \"kH6eIIC7Uf\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Transactions</b></span>\", \"col\": 12}}, {\"id\": \"ZabMgAkjQ2\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"VV Order\", \"col\": 6}}, {\"id\": \"mfjFAZPjXA\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Reports</b></span>\", \"col\": 12}}, {\"id\": \"xwLAJu9ieW\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Media Buyer Dashboard\", \"col\": 3}}, {\"id\": \"kfQWgHJVRu\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Product Revenue Breakdown\", \"col\": 3}}, {\"id\": \"Sd3f9NwpKl\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"State Performance Dashboard\", \"col\": 3}}]",
+  "custom_blocks": [],
+  "docstatus": 0,
+  "doctype": "Workspace",
+  "for_user": null,
+  "hide_custom": 0,
+  "icon": null,
+  "indicator_color": "green",
+  "is_hidden": 0,
+  "label": "Media Buyers Space",
+  "links": [],
+  "modified": "2026-03-19 08:58:48.001126",
+  "module": "Vitalvida",
+  "name": "Media Buyers Space",
+  "number_cards": [
+   {
+    "label": null,
+    "number_card_name": "My Orders Received",
+    "parent": "Media Buyers Space",
+    "parentfield": "number_cards",
+    "parenttype": "Workspace"
+   },
+   {
+    "label": null,
+    "number_card_name": "My Orders This Month",
+    "parent": "Media Buyers Space",
+    "parentfield": "number_cards",
+    "parenttype": "Workspace"
+   },
+   {
+    "label": null,
+    "number_card_name": "My Orders Today",
+    "parent": "Media Buyers Space",
+    "parentfield": "number_cards",
+    "parenttype": "Workspace"
+   },
+   {
+    "label": null,
+    "number_card_name": "My Orders Delivered",
+    "parent": "Media Buyers Space",
+    "parentfield": "number_cards",
+    "parenttype": "Workspace"
+   },
+   {
+    "label": null,
+    "number_card_name": "My Delivered This Month",
+    "parent": "Media Buyers Space",
+    "parentfield": "number_cards",
+    "parenttype": "Workspace"
+   },
+   {
+    "label": null,
+    "number_card_name": "My Delivered Today",
+    "parent": "Media Buyers Space",
+    "parentfield": "number_cards",
+    "parenttype": "Workspace"
+   }
+  ],
+  "parent_page": null,
+  "public": 1,
+  "quick_lists": [],
+  "restrict_to_domain": null,
+  "roles": [
+   {
+    "parent": "Media Buyers Space",
+    "parentfield": "roles",
+    "parenttype": "Workspace",
+    "role": "Media Buyer Portal"
+   }
+  ],
+  "sequence_id": 0.0,
+  "shortcuts": [
+   {
+    "color": null,
+    "doc_view": "",
+    "format": null,
+    "icon": null,
+    "kanban_board": null,
+    "label": "Media Buyer Dashboard",
+    "link_to": "Media Buyer Dashboard",
+    "parent": "Media Buyers Space",
+    "parentfield": "shortcuts",
+    "parenttype": "Workspace",
+    "report_ref_doctype": "VV Media Buyer Weekly Report",
+    "restrict_to_domain": null,
+    "stats_filter": null,
+    "type": "Report",
+    "url": null
+   },
+   {
+    "color": null,
+    "doc_view": "",
+    "format": null,
+    "icon": null,
+    "kanban_board": null,
+    "label": "Product Revenue Breakdown",
+    "link_to": "Product Revenue Breakdown",
+    "parent": "Media Buyers Space",
+    "parentfield": "shortcuts",
+    "parenttype": "Workspace",
+    "report_ref_doctype": "VV Order",
+    "restrict_to_domain": null,
+    "stats_filter": null,
+    "type": "Report",
+    "url": null
+   },
+   {
+    "color": null,
+    "doc_view": "",
+    "format": null,
+    "icon": null,
+    "kanban_board": null,
+    "label": "State Performance Dashboard",
+    "link_to": "State Performance Dashboard",
+    "parent": "Media Buyers Space",
+    "parentfield": "shortcuts",
+    "parenttype": "Workspace",
+    "report_ref_doctype": "VV Order",
+    "restrict_to_domain": null,
+    "stats_filter": null,
+    "type": "Report",
+    "url": null
+   }
+  ],
+  "title": "Media Buyers Space"
+ }
+]

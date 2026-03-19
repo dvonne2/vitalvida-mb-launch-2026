@@ -1,5 +1,16 @@
 frappe.query_reports["Product Revenue Breakdown"] = {
     filters: [
-        {fieldname:"period",label:__("Period"),fieldtype:"Select",options:"week\nmonth\nall",default:"week"}
-    ]
+        {
+            fieldname: "from_date",
+            label: __("From Date"),
+            fieldtype: "Date",
+            default: frappe.datetime.month_start(),
+        },
+        {
+            fieldname: "to_date",
+            label: __("To Date"),
+            fieldtype: "Date",
+            default: frappe.datetime.get_today(),
+        },
+    ],
 };

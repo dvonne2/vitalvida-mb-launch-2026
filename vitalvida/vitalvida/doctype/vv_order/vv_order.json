@@ -1,8 +1,7 @@
 {
  "actions": [],
- "allow_rename": 0,
  "autoname": "VV-ORD-.YYYY.-.#####",
- "creation": "2026-03-06 00:00:00.000000",
+ "creation": "2026-03-06 00:00:00",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
@@ -57,14 +56,14 @@
  ],
  "fields": [
   {
+   "default": "Partial",
    "fieldname": "order_status",
    "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Order Status",
    "options": "Partial\nPending\nConfirmed\nAssigned\nOut for Delivery\nDelivered\nPaid\nRescheduled\nCancelled\nReturned",
-   "reqd": 1,
-   "default": "Partial",
-   "in_list_view": 1,
-   "in_standard_filter": 1
+   "reqd": 1
   },
   {
    "fieldname": "status_changed_at",
@@ -97,24 +96,23 @@
   {
    "fieldname": "customer_name",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "label": "Customer Name",
-   "reqd": 1,
-   "in_list_view": 1
+   "reqd": 1
   },
   {
+   "description": "Normalised 234XXXXXXXXXX format \u2014 no + prefix, no spaces",
    "fieldname": "customer_phone",
    "fieldtype": "Data",
-   "label": "Customer Phone",
-   "reqd": 1,
-   "description": "Normalised 234XXXXXXXXXX format \u2014 no + prefix, no spaces",
    "in_list_view": 1,
-   "in_standard_filter": 1
+   "in_standard_filter": 1,
+   "label": "Customer Phone",
+   "reqd": 1
   },
   {
    "fieldname": "address",
    "fieldtype": "Data",
-   "label": "Delivery Address",
-   "in_list_view": 0
+   "label": "Delivery Address"
   },
   {
    "fieldname": "column_break_2",
@@ -130,127 +128,113 @@
   {
    "fieldname": "telesales_rep",
    "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Telesales Rep",
-   "options": "Telesales Closer",
-   "in_standard_filter": 1
+   "options": "Telesales Closer"
   },
   {
+   "default": "General",
    "fieldname": "brand",
    "fieldtype": "Select",
-   "label": "Brand",
-   "options": "FHG\nIR\nGeneral",
-   "default": "General",
    "in_list_view": 1,
-   "in_standard_filter": 1
+   "in_standard_filter": 1,
+   "label": "Brand",
+   "options": "FHG\nIR\nGeneral"
   },
   {
+   "description": "M32: Auto-populated from ?ref= UTM parameter on order ingest",
    "fieldname": "media_buyer",
    "fieldtype": "Link",
+   "in_standard_filter": 1,
    "label": "Media Buyer",
    "options": "VV Media Buyer",
-   "read_only": 1,
-   "description": "M32: Auto-populated from ?ref= UTM parameter on order ingest",
-   "in_create": 0,
-   "in_list_view": 1,
-   "in_standard_filter": 1
+   "read_only": 1
   },
   {
    "fieldname": "section_break_affiliate",
    "fieldtype": "Section Break",
-   "label": "Affiliate Attribution",
-   "in_create": 0
+   "label": "Affiliate Attribution"
   },
   {
+   "description": "From ?aff_id= in tracking link",
    "fieldname": "aff_id",
    "fieldtype": "Data",
-   "label": "Affiliate ID",
-   "read_only": 1,
-   "in_create": 0,
-   "description": "From ?aff_id= in tracking link",
    "in_list_view": 1,
-   "in_standard_filter": 1
+   "in_standard_filter": 1,
+   "label": "Affiliate ID",
+   "read_only": 1
   },
   {
    "fieldname": "utm_source",
    "fieldtype": "Data",
+   "in_standard_filter": 1,
    "label": "UTM Source",
-   "read_only": 1,
-   "in_create": 0,
-   "in_standard_filter": 1
+   "read_only": 1
   },
   {
    "fieldname": "utm_campaign",
    "fieldtype": "Data",
+   "in_standard_filter": 1,
    "label": "UTM Campaign",
-   "read_only": 1,
-   "in_create": 0,
-   "in_standard_filter": 1
+   "read_only": 1
   },
   {
    "fieldname": "utm_content",
    "fieldtype": "Data",
    "label": "UTM Content",
-   "read_only": 1,
-   "in_create": 0
+   "read_only": 1
   },
   {
    "fieldname": "click_id",
    "fieldtype": "Data",
    "label": "Click ID",
-   "read_only": 1,
-   "in_create": 0
+   "read_only": 1
   },
   {
    "fieldname": "landing_page_url",
    "fieldtype": "Data",
    "label": "Landing Page URL",
-   "read_only": 1,
-   "in_create": 0
+   "read_only": 1
   },
   {
+   "default": "0",
+   "description": "Set to 1 on creation. Prevents tampering.",
    "fieldname": "attribution_locked",
    "fieldtype": "Check",
    "label": "Attribution Locked",
-   "default": "0",
-   "read_only": 1,
-   "in_create": 0,
-   "description": "Set to 1 on creation. Prevents tampering."
+   "read_only": 1
   },
   {
    "fieldname": "section_break_aff_payout",
    "fieldtype": "Section Break",
-   "label": "Affiliate Payout",
-   "in_create": 0
+   "label": "Affiliate Payout"
   },
   {
    "fieldname": "affiliate_commission_amount",
    "fieldtype": "Currency",
    "label": "Commission Amount",
-   "read_only": 1,
-   "in_create": 0
+   "read_only": 1
   },
   {
    "fieldname": "affiliate_payout_status",
    "fieldtype": "Select",
-   "label": "Payout Status",
-   "options": "\nPending\nApproved\nPaid\nRejected",
-   "in_create": 0,
    "in_list_view": 1,
-   "in_standard_filter": 1
+   "in_standard_filter": 1,
+   "label": "Payout Status",
+   "options": "\nPending\nApproved\nPaid\nRejected"
   },
   {
    "fieldname": "affiliate_payout_batch",
    "fieldtype": "Link",
    "label": "Payout Batch",
    "options": "Affiliate Payout Batch",
-   "read_only": 1,
-   "in_create": 0
+   "read_only": 1
   },
   {
    "fieldname": "affiliate_notes",
    "fieldtype": "Small Text",
-   "label": "Affiliate Notes",
-   "in_create": 0
+   "label": "Affiliate Notes"
   },
   {
    "fieldname": "section_break_package",
@@ -281,12 +265,12 @@
    "reqd": 1
   },
   {
+   "description": "Auto-computed: product_amount + delivery_fee",
    "fieldname": "total_payable",
    "fieldtype": "Currency",
+   "in_list_view": 1,
    "label": "Total Payable",
-   "read_only": 1,
-   "description": "Auto-computed: product_amount + delivery_fee",
-   "in_list_view": 1
+   "read_only": 1
   },
   {
    "fieldname": "section_break_delivery",
@@ -296,18 +280,18 @@
   {
    "fieldname": "delivery_agent",
    "fieldtype": "Link",
-   "label": "Delivery Agent",
-   "options": "Delivery Agent",
    "in_list_view": 1,
-   "in_standard_filter": 1
+   "in_standard_filter": 1,
+   "label": "Delivery Agent",
+   "options": "Delivery Agent"
   },
   {
+   "description": "Auto-filled from Delivery Agent record",
+   "fetch_from": "delivery_agent.phone",
    "fieldname": "da_phone",
    "fieldtype": "Data",
    "label": "DA Phone",
-   "fetch_from": "delivery_agent.phone",
-   "read_only": 1,
-   "description": "Auto-filled from Delivery Agent record"
+   "read_only": 1
   },
   {
    "fieldname": "assigned_at",
@@ -322,9 +306,8 @@
   {
    "fieldname": "expected_delivery_date",
    "fieldtype": "Date",
-   "label": "Expected Delivery Date",
-   "in_create": 0,
-   "in_standard_filter": 1
+   "in_standard_filter": 1,
+   "label": "Expected Delivery Date"
   },
   {
    "fieldname": "delivered_at",
@@ -339,15 +322,13 @@
    "read_only": 1
   },
   {
+   "default": "0",
+   "description": "Set by Moniepoint webhook or Finance manual confirm. Does NOT mean order is Paid \u2014 delivery must also be confirmed.",
    "fieldname": "payment_confirmed",
    "fieldtype": "Check",
-   "label": "Payment Confirmed",
-   "default": "0",
-   "read_only": 1,
-   "in_list_view": 0,
    "in_standard_filter": 1,
-   "in_create": 0,
-   "description": "Set by Moniepoint webhook or Finance manual confirm. Does NOT mean order is Paid \u2014 delivery must also be confirmed."
+   "label": "Payment Confirmed",
+   "read_only": 1
   },
   {
    "fieldname": "payment_confirmed_at",
@@ -361,34 +342,32 @@
    "label": "Notes"
   },
   {
+   "description": "Mandatory when status is Rescheduled, Cancelled, or Returned",
    "fieldname": "reschedule_note",
    "fieldtype": "Text",
-   "label": "Reschedule / Cancellation Note",
-   "description": "Mandatory when status is Rescheduled, Cancelled, or Returned"
+   "label": "Reschedule / Cancellation Note"
   },
   {
+   "depends_on": "eval:doc.order_status=='Cancelled' || doc.order_status=='Returned'",
+   "description": "M16: Required when status = Cancelled. Used for DSR Adjusted calculation.",
    "fieldname": "cancellation_source",
    "fieldtype": "Select",
    "label": "Cancellation Source",
-   "options": "\nCustomer\nDA\nOperations\nSystem",
-   "description": "M16: Required when status = Cancelled. Used for DSR Adjusted calculation.",
-   "depends_on": "eval:doc.order_status=='Cancelled' || doc.order_status=='Returned'",
-   "in_create": 0
+   "options": "\nCustomer\nDA\nOperations\nSystem"
   },
   {
+   "default": "0",
+   "description": "M18: Auto-set when Whale/Mini Whale SLA is breached",
    "fieldname": "sla_breached",
    "fieldtype": "Check",
-   "label": "SLA Breached",
-   "default": "0",
-   "read_only": 1,
    "hidden": 1,
-   "description": "M18: Auto-set when Whale/Mini Whale SLA is breached",
-   "in_create": 0
+   "label": "SLA Breached",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-03-08 00:00:00.000000",
+ "modified": "2026-03-19 08:47:02.484153",
  "modified_by": "Administrator",
  "module": "Vitalvida",
  "name": "VV Order",
@@ -396,7 +375,6 @@
  "permissions": [
   {
    "create": 1,
-   "delete": 0,
    "email": 1,
    "export": 1,
    "print": 1,
@@ -408,7 +386,6 @@
   },
   {
    "create": 1,
-   "delete": 0,
    "email": 1,
    "export": 1,
    "print": 1,
@@ -419,29 +396,77 @@
    "write": 1
   },
   {
-   "create": 0,
-   "delete": 0,
    "read": 1,
    "role": "Delivery Agent",
    "write": 1
   },
   {
    "create": 1,
-   "delete": 0,
    "read": 1,
+   "report": 1,
    "role": "Logistics User",
    "write": 1
   },
   {
-   "create": 0,
-   "delete": 0,
+   "export": 1,
    "read": 1,
+   "report": 1,
    "role": "Finance User",
    "write": 1
+  },
+  {
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Telesales User",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "CEO",
+   "share": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Sales Manager",
+   "share": 1
+  },
+  {
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Media Buyer Portal",
+   "share": 1
+  },
+  {
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Manager",
+   "share": 1
+  },
+  {
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Investor",
+   "share": 1
   }
  ],
  "row_format": "Dynamic",
- "sort_field": "modified",
+ "sort_field": "creation",
  "sort_order": "DESC",
  "states": [],
  "title_field": "customer_name",

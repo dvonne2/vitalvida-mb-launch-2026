@@ -1,5 +1,16 @@
 frappe.query_reports["National Inventory Dashboard"] = {
     filters: [
-        {fieldname:"stock_status",label:__("Stock Status"),fieldtype:"Select",options:"\nOut of Stock\nLow Stock\nWell Stocked",default:""}
-    ]
+        {
+            fieldname: "from_date",
+            label: __("From Date"),
+            fieldtype: "Date",
+            default: frappe.datetime.month_start(),
+        },
+        {
+            fieldname: "to_date",
+            label: __("To Date"),
+            fieldtype: "Date",
+            default: frappe.datetime.get_today(),
+        },
+    ],
 };

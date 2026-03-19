@@ -1,0 +1,71 @@
+{
+ "charts": [],
+ "content": "[{\"id\": \"LyP1s6QowK\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>My Performance</b></span>\", \"col\": 12}}, {\"id\": \"Mmp3rwOjGy\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"My Orders Received\", \"col\": 3}}, {\"id\": \"34r7J17g90\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"My Orders This Month\", \"col\": 3}}, {\"id\": \"qMDmJRI9m0\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"My Orders Today\", \"col\": 3}}, {\"id\": \"ScYUez3E2r\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"My Orders Delivered\", \"col\": 3}}, {\"id\": \"qY7s6vJBrt\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"My Delivered This Month\", \"col\": 3}}, {\"id\": \"bJh3TDNO9M\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"My Delivered Today\", \"col\": 3}}, {\"id\": \"kH6eIIC7Uf\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Transactions</b></span>\", \"col\": 12}}, {\"id\": \"ZabMgAkjQ2\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"VV Order\", \"col\": 6}}, {\"id\": \"mfjFAZPjXA\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Reports</b></span>\", \"col\": 12}}, {\"id\": \"xwLAJu9ieW\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Media Buyer Dashboard\", \"col\": 3}}, {\"id\": \"kfQWgHJVRu\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Product Revenue Breakdown\", \"col\": 3}}, {\"id\": \"Sd3f9NwpKl\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"State Performance Dashboard\", \"col\": 3}}]",
+ "creation": "2026-03-19 08:58:48.001126",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "hide_custom": 0,
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "Media Buyers Space",
+ "links": [],
+ "modified": "2026-03-19 08:58:48.001126",
+ "modified_by": "Administrator",
+ "module": "Vitalvida",
+ "name": "Media Buyers Space",
+ "number_cards": [
+  {
+   "number_card_name": "My Orders Received"
+  },
+  {
+   "number_card_name": "My Orders This Month"
+  },
+  {
+   "number_card_name": "My Orders Today"
+  },
+  {
+   "number_card_name": "My Orders Delivered"
+  },
+  {
+   "number_card_name": "My Delivered This Month"
+  },
+  {
+   "number_card_name": "My Delivered Today"
+  }
+ ],
+ "owner": "Administrator",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [
+  {
+   "role": "Media Buyer Portal"
+  }
+ ],
+ "sequence_id": 0.0,
+ "shortcuts": [
+  {
+   "doc_view": "",
+   "label": "Media Buyer Dashboard",
+   "link_to": "Media Buyer Dashboard",
+   "report_ref_doctype": "VV Media Buyer Weekly Report",
+   "type": "Report"
+  },
+  {
+   "doc_view": "",
+   "label": "Product Revenue Breakdown",
+   "link_to": "Product Revenue Breakdown",
+   "report_ref_doctype": "VV Order",
+   "type": "Report"
+  },
+  {
+   "doc_view": "",
+   "label": "State Performance Dashboard",
+   "link_to": "State Performance Dashboard",
+   "report_ref_doctype": "VV Order",
+   "type": "Report"
+  }
+ ],
+ "title": "Media Buyers Space"
+}

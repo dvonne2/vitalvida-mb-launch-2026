@@ -1,11 +1,16 @@
 frappe.query_reports["Revenue Dashboard"] = {
     filters: [
         {
-            fieldname: "period",
-            label: __("Period"),
-            fieldtype: "Select",
-            options: "week\ntoday\nmonth",
-            default: "week"
-        }
-    ]
+            fieldname: "from_date",
+            label: __("From Date"),
+            fieldtype: "Date",
+            default: frappe.datetime.month_start(),
+        },
+        {
+            fieldname: "to_date",
+            label: __("To Date"),
+            fieldtype: "Date",
+            default: frappe.datetime.get_today(),
+        },
+    ],
 };

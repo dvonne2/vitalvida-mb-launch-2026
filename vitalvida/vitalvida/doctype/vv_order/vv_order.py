@@ -53,6 +53,52 @@ NOTIFICATION_MAP = {
 
 
 class VVOrder(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		address: DF.Data | None
+		aff_id: DF.Data | None
+		affiliate_commission_amount: DF.Currency
+		affiliate_notes: DF.SmallText | None
+		affiliate_payout_batch: DF.Link | None
+		affiliate_payout_status: DF.Literal["", "Pending", "Approved", "Paid", "Rejected"]
+		assigned_at: DF.Datetime | None
+		attribution_locked: DF.Check
+		brand: DF.Literal["FHG", "IR", "General"]
+		cancellation_source: DF.Literal["", "Customer", "DA", "Operations", "System"]
+		click_id: DF.Data | None
+		customer_name: DF.Data
+		customer_phone: DF.Data
+		customer_tier: DF.Literal["", "Whale", "Mini Whale", "Regular"]
+		da_phone: DF.Data | None
+		delivered_at: DF.Datetime | None
+		delivery_agent: DF.Link | None
+		delivery_fee: DF.Currency
+		delivery_type: DF.Literal["Same Day", "Standard"]
+		expected_delivery_date: DF.Date | None
+		landing_page_url: DF.Data | None
+		media_buyer: DF.Link | None
+		order_status: DF.Literal["Partial", "Pending", "Confirmed", "Assigned", "Out for Delivery", "Delivered", "Paid", "Rescheduled", "Cancelled", "Returned"]
+		package_contents: DF.Data | None
+		package_name: DF.Link
+		paid_at: DF.Datetime | None
+		payment_confirmed: DF.Check
+		payment_confirmed_at: DF.Datetime | None
+		product_amount: DF.Currency
+		reschedule_note: DF.Text | None
+		sla_breached: DF.Check
+		status_changed_at: DF.Datetime | None
+		telesales_rep: DF.Link | None
+		total_payable: DF.Currency
+		utm_campaign: DF.Data | None
+		utm_content: DF.Data | None
+		utm_source: DF.Data | None
+	# end: auto-generated types
 
 	def after_insert(self):
 		"""M6: Create Payment Intent. M7: Start cart recovery if Partial."""
