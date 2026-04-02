@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>VitalVida · Telesales</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+:root{
+  --bg:#f4f4f4;
+  --card:#ffffff;
+  --raised:#f0f0f0;
+  --border:#e2e2e2;
+  --border2:#d0d0d0;
+  --ink:#111111;
+  --mid:#666666;
+  --dim:#aaaaaa;
+  --accent:#00a846;
+  --danger:#d32f2f;
+  --hdr:#ffffff;
+}
+html,body{height:100%;background:var(--bg);color:var(--ink);font-family:'IBM Plex Sans',sans-serif;font-size:14px;overflow:hidden;}
+
+/* ── HEADER (dark) ── */
+.hdr{position:fixed;top:0;left:0;right:0;z-index:100;height:48px;background:var(--hdr);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 16px;}
+.hdr-brand{display:flex;align-items:center;gap:10px;}
+.vv{width:26px;height:26px;background:var(--accent);display:grid;place-items:center;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:700;color:#fff;letter-spacing:-.5px;}
+.hdr-name{font-size:14px;font-weight:700;letter-spacing:-.3px;color:var(--ink);}
+.hdr-agent{text-align:right;}
+.ha-name{font-size:12px;font-weight:600;color:var(--ink);}
+.ha-rate{font-size:10px;color:var(--accent);font-family:'IBM Plex Mono',monospace;margin-top:1px;}
+
+/* ── STATS (dark) ── */
+.stats{position:fixed;top:48px;left:0;right:0;z-index:99;background:var(--hdr);border-bottom:1px solid var(--border);display:grid;grid-template-columns:repeat(3,1fr);}
+.st{display:flex;flex-direction:column;align-items:center;padding:9px 0;position:relative;}
+.st+.st::before{content:'';position:absolute;left:0;top:20%;height:60%;width:1px;background:var(--border);}
+.st-l{font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);font-family:'IBM Plex Mono',monospace;}
+.st-v{font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:500;line-height:1;margin-top:2px;color:var(--ink);}
+.st-v.g{color:var(--accent);}
+.st-s{font-size:10px;color:var(--dim);margin-top:1px;}
+
+/* ── TABS (white) ── */
+.tabs{position:fixed;top:112px;left:0;right:0;z-index:98;background:var(--card);border-bottom:1px solid var(--border);display:flex;overflow-x:auto;}
+.tabs::-webkit-scrollbar{height:0;}
+.tab{flex-shrink:0;display:flex;align-items:center;gap:6px;padding:0 14px;height:40px;cursor:pointer;font-size:11px;font-weight:700;letter-spacing:.4px;color:var(--dim);border-bottom:2px solid transparent;white-space:nowrap;transition:color .15s,border-color .15s;}
+.tab.active{color:var(--ink);border-bottom-color:var(--accent);}
+.t-n{font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;padding:1px 5px;background:var(--raised);color:var(--dim);min-width:16px;text-align:center;}
+.tab.active .t-n{background:rgba(0,168,70,.12);color:var(--accent);}
+.t-n.hot{background:rgba(211,47,47,.1);color:var(--danger);}
+
+/* ── CONTENT ── */
+.scroll{position:fixed;top:152px;bottom:0;left:0;right:0;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.page{display:none;padding:12px 12px 48px;}
+.page.active{display:block;}
+
+/* ── CUSTOMER DETAIL BLOCK ── */
+.cust-detail{padding:0 14px 12px;border-top:1px solid var(--border);}
+.cust-detail-inner{background:var(--raised);padding:10px 12px;display:flex;flex-direction:column;gap:5px;}
+.cd-row{display:flex;align-items:flex-start;gap:8px;font-size:12px;}
+.cd-lbl{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--dim);min-width:52px;flex-shrink:0;margin-top:1px;}
+.cd-val{color:var(--ink);font-weight:500;line-height:1.4;}
+.cd-phone{color:var(--accent);font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;letter-spacing:.5px;}
+/* ── ATTEMPT BADGE ── */
+.attempt-strip{display:flex;align-items:center;gap:8px;padding:6px 14px 0;}
+.attempt-badge{font-size:10px;font-weight:700;letter-spacing:.3px;padding:3px 8px;border:1px solid var(--border2);color:var(--mid);font-family:'IBM Plex Mono',monospace;}
+.attempt-badge.first{border-color:rgba(0,168,70,.3);color:var(--accent);}
+.attempt-badge.multi{border-color:rgba(211,47,47,.2);color:var(--danger);}
+/* ── REASON STRIP ── */
+.reason-strip{margin:8px 14px 0;padding:8px 10px;background:rgba(255,179,0,.06);border-left:2px solid #e6a817;font-size:11px;color:#7a5500;line-height:1.4;}
+.reason-strip strong{font-weight:700;display:block;font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:#a07000;margin-bottom:2px;}
+
+/* ── NOTICE ── */
+.notice{font-size:12px;color:var(--mid);line-height:1.5;padding:9px 12px;margin-bottom:12px;background:var(--card);border-left:2px solid var(--border2);}
+.notice strong{color:var(--ink);font-weight:600;}
+
+/* ── ORDER CARD ── */
+.ocard{background:var(--card);border:1px solid var(--border);border-left:2px solid var(--border2);margin-bottom:6px;overflow:hidden;}
+.ocard.g-l{border-left-color:var(--accent);}
+.ocard.d-l{border-left-color:var(--danger);}
+.ocard.m-l{border-left-color:var(--border2);}
+
+.oc-hd{padding:13px 14px 10px;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}
+.oc-id{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:.5px;margin-bottom:3px;}
+.oc-name{font-size:15px;font-weight:700;letter-spacing:-.2px;}
+.oc-prod{font-size:12px;color:var(--mid);margin-top:2px;}
+.oc-r{text-align:right;flex-shrink:0;}
+.oc-amt{font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:600;color:var(--accent);}
+.oc-tag{font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--dim);margin-top:3px;}
+
+.oc-meta{padding:0 14px 10px;display:flex;gap:5px;flex-wrap:wrap;}
+.pill{font-size:10px;font-weight:600;letter-spacing:.2px;padding:3px 8px;border:1px solid var(--border);color:var(--mid);background:transparent;}
+.pill.hi{border-color:var(--border2);color:var(--ink);}
+
+/* ── CALL BUTTON ── */
+.oc-cta{padding:0 14px 12px;}
+.btn-call{display:block;width:100%;padding:12px 16px;background:var(--danger);color:#fff;border:none;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;text-align:center;transition:opacity .15s;}
+.btn-call:active{opacity:.8;}
+.btn-call.ringing{background:var(--raised);color:var(--mid);border:1px solid var(--border);}
+
+/* ── OUTCOMES ── */
+.outcomes{display:none;border-top:1px solid var(--border);}
+.outcomes.show{display:block;}
+.out-lbl{padding:10px 14px 8px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);}
+.out-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);}
+.btn-out{padding:13px 10px;background:var(--card);border:none;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;text-align:center;display:flex;flex-direction:column;gap:3px;align-items:center;transition:background .1s;}
+.btn-out:active{background:var(--raised);}
+.bot-lbl{font-size:12px;font-weight:700;color:var(--ink);}
+.bot-desc{font-size:10px;color:var(--dim);line-height:1.3;}
+.btn-out.yes .bot-lbl{color:var(--accent);}
+.btn-out.no .bot-lbl{color:var(--danger);}
+
+/* ── DATE PICKER ── */
+.dp-blk{display:none;border-top:1px solid var(--border);padding:12px 14px;background:var(--raised);}
+.dp-blk.show{display:block;}
+.dp-lbl{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mid);margin-bottom:10px;}
+.dp-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+.dp-f{display:flex;flex-direction:column;gap:4px;}
+.dp-f label{font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--dim);}
+.dp-f input{padding:9px 10px;border:1px solid var(--border);background:var(--card);color:var(--ink);font-family:'IBM Plex Mono',monospace;font-size:12px;outline:none;-webkit-appearance:none;color-scheme:light;transition:border-color .15s;}
+.dp-f input:focus{border-color:var(--accent);}
+.btn-save{display:block;width:100%;padding:11px;background:transparent;border:1px solid var(--border2);color:var(--ink);cursor:pointer;font-family:'IBM Plex Sans',sans-serif;font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;transition:background .1s;}
+.btn-save:active{background:var(--border);}
+
+/* ── DA ASSIGN ── */
+.da-blk{display:none;border-top:1px solid var(--border);padding:12px 14px 14px;}
+.da-blk.show{display:block;}
+.da-lbl{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--dim);margin-bottom:10px;}
+.da-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);background:var(--card);cursor:pointer;margin-bottom:5px;transition:all .1s;}
+.da-row:active{background:var(--raised);}
+.da-row.sel{border-color:var(--accent);background:rgba(0,168,70,.05);}
+.da-init{width:32px;height:32px;background:var(--raised);border:1px solid var(--border);display:grid;place-items:center;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:700;color:var(--mid);flex-shrink:0;}
+.da-row.sel .da-init{background:var(--accent);color:#fff;border-color:var(--accent);}
+.da-name{font-size:13px;font-weight:700;}
+.da-meta{font-size:10px;color:var(--dim);font-family:'IBM Plex Mono',monospace;margin-top:1px;}
+.da-note{font-size:10px;color:var(--dim);line-height:1.5;padding:8px 0;border-top:1px solid var(--border);margin:6px 0;display:flex;gap:5px;}
+.btn-assign{display:block;width:100%;padding:12px;background:var(--accent);color:#fff;border:none;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;}
+.btn-assign:active{opacity:.85;}
+
+/* ── STATUS FLOW ── */
+.sf-blk{display:none;border-top:1px solid var(--border);padding:12px 14px 14px;}
+.sf-blk.show{display:block;}
+.sf-lbl{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--dim);margin-bottom:8px;}
+.sf-row{display:flex;overflow-x:auto;padding-bottom:2px;}
+.sf-row::-webkit-scrollbar{height:0;}
+.sf-item{display:flex;align-items:center;flex-shrink:0;}
+.sf-btn{padding:8px 12px;border:1px solid var(--border);background:var(--card);color:var(--dim);font-size:10px;font-weight:700;letter-spacing:.3px;cursor:pointer;white-space:nowrap;font-family:'IBM Plex Sans',sans-serif;transition:all .1s;}
+.sf-btn:active{opacity:.7;}
+.sf-btn.done{background:rgba(0,168,70,.08);border-color:rgba(0,168,70,.3);color:var(--accent);}
+.sf-btn.current{background:var(--ink);border-color:var(--ink);color:#fff;}
+.sf-btn.warn{border-color:rgba(211,47,47,.3);color:var(--danger);}
+.sf-sep{font-size:10px;color:var(--border2);padding:0 2px;flex-shrink:0;}
+
+/* ── TIMER CARD ── */
+.timer-card{background:var(--card);border:1px solid var(--border);border-left:2px solid var(--border2);margin-bottom:6px;padding:13px 14px;display:flex;align-items:center;gap:12px;}
+.timer-val{font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:500;color:var(--mid);min-width:58px;text-align:center;}
+.timer-val.hot{color:var(--danger);animation:blink 1s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.timer-body{flex:1;min-width:0;}
+.timer-name{font-size:14px;font-weight:700;}
+.timer-sub{font-size:11px;color:var(--dim);margin-top:2px;}
+.btn-ring{padding:9px 14px;background:var(--danger);color:#fff;border:none;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;font-size:11px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;}
+.btn-ring:active{opacity:.8;}
+
+/* ── DONE ROWS ── */
+.done-row{background:var(--card);border:1px solid var(--border);border-left:2px solid var(--border2);margin-bottom:6px;padding:12px 14px;display:flex;align-items:center;gap:10px;}
+.done-row.paid{border-left-color:var(--accent);}
+.done-body{flex:1;min-width:0;}
+.done-name{font-size:14px;font-weight:700;}
+.done-sub{font-size:11px;color:var(--mid);margin-top:2px;}
+.done-note{font-size:10px;color:var(--dim);margin-top:3px;}
+.done-right{text-align:right;flex-shrink:0;}
+.done-amt{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;color:var(--accent);}
+.done-status{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-top:3px;color:var(--dim);}
+.done-row.paid .done-status{color:var(--accent);}
+
+/* ── NUMBERS ── */
+.period{display:flex;background:var(--card);border:1px solid var(--border);margin-bottom:14px;}
+.pbtn{flex:1;padding:10px;border:none;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--dim);background:transparent;transition:all .15s;}
+.pbtn+.pbtn{border-left:1px solid var(--border);}
+.pbtn.on{background:var(--ink);color:#fff;}
+.num-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+.nc{background:var(--card);border:1px solid var(--border);padding:16px 14px;}
+.nc.hi{border-top:2px solid var(--accent);}
+.nc-v{font-family:'IBM Plex Mono',monospace;font-size:28px;font-weight:500;line-height:1;color:var(--ink);}
+.nc-v.g{color:var(--accent);}
+.nc-lbl{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--dim);margin-top:6px;}
+.nc-sub{font-size:10px;color:var(--dim);margin-top:2px;}
+.rate-blk{background:var(--card);border:1px solid var(--border);padding:14px;margin-bottom:14px;}
+.rb-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;}
+.rb-lbl{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--dim);}
+.rb-val{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;color:var(--ink);}
+.track{height:4px;background:var(--raised);}
+.fill{height:100%;transition:width 1s ease;}
+.fill.g{background:var(--accent);}
+.fill.m{background:var(--mid);}
+.fill.d{background:var(--danger);}
+.rb-hint{font-size:11px;color:var(--mid);margin-top:8px;}
+.rb-hint strong{color:var(--ink);}
+.bdown{background:var(--card);border:1px solid var(--border);overflow:hidden;margin-bottom:14px;}
+.bdown-hd{padding:10px 14px;border-bottom:1px solid var(--border);font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--dim);}
+.brow{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border);}
+.brow:last-child{border:none;}
+.brow-l{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink);}
+.brow-dot{width:4px;height:14px;flex-shrink:0;}
+.brow-r{display:flex;align-items:center;gap:10px;}
+.brow-v{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:14px;color:var(--ink);}
+.brow-p{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dim);}
+.verdict{padding:13px 14px;font-size:13px;line-height:1.6;border:1px solid var(--border);}
+.verdict.g{border-color:rgba(0,168,70,.3);background:rgba(0,168,70,.04);color:var(--accent);}
+.verdict.m{border-color:var(--border2);color:var(--mid);}
+.verdict.d{border-color:rgba(211,47,47,.2);background:rgba(211,47,47,.03);color:var(--danger);}
+.verdict strong{color:inherit;}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:60px 20px;color:var(--dim);}
+.e-t{font-size:13px;font-weight:700;color:var(--mid);margin-bottom:4px;}
+.e-s{font-size:11px;}
+
+/* ── UPSELL MODAL ── */
+.upsell-panel{position:fixed;bottom:0;left:0;right:0;z-index:201;background:var(--card);border-top:2px solid var(--accent);max-height:80vh;overflow-y:auto;display:none;}
+.upsell-panel.open{display:block;animation:up .2s ease;}
+.up-drag{width:28px;height:3px;background:var(--border2);margin:10px auto;}
+.up-head{padding:14px 16px 10px;border-bottom:1px solid var(--border);}
+.up-title{font-size:13px;font-weight:700;letter-spacing:.3px;color:var(--ink);}
+.up-sub{font-size:11px;color:var(--mid);margin-top:3px;}
+.up-body{padding:14px 16px;display:flex;flex-direction:column;gap:10px;}
+.up-pkg{border:1px solid var(--border);padding:12px 14px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;transition:all .1s;}
+.up-pkg:active{background:var(--raised);}
+.up-pkg.sel{border-color:var(--accent);background:rgba(0,168,70,.05);}
+.up-pkg-name{font-size:13px;font-weight:700;color:var(--ink);}
+.up-pkg-contents{font-size:11px;color:var(--mid);margin-top:2px;}
+.up-pkg-price{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;color:var(--accent);white-space:nowrap;}
+.up-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 16px 16px;}
+.btn-up-yes{padding:12px;background:var(--accent);color:#fff;border:none;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;}
+.btn-up-skip{padding:12px;background:var(--raised);color:var(--mid);border:1px solid var(--border2);cursor:pointer;font-family:'IBM Plex Sans',sans-serif;font-size:12px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;}
+.btn-up-yes:active,.btn-up-skip:active{opacity:.8;}
+.wa-scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;}
+.wa-scrim.open{display:block;}
+.wa-panel{position:fixed;bottom:0;left:0;right:0;z-index:201;background:var(--card);border-top:1px solid var(--border2);max-height:85vh;overflow-y:auto;display:none;}
+.wa-panel.open{display:block;animation:up .2s ease;}
+@keyframes up{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.wa-drag{width:28px;height:3px;background:var(--border2);margin:10px auto;}
+.wa-ttl{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;padding:10px 16px 12px;border-bottom:1px solid var(--border);color:var(--dim);}
+.wa-body{padding:14px 16px;display:flex;flex-direction:column;gap:14px;}
+.wa-msg{}
+.wa-who{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);margin-bottom:5px;display:flex;align-items:center;gap:6px;}
+.wa-mark{width:3px;height:10px;background:var(--border);}
+.wa-mark.g{background:var(--accent);}
+.wa-mark.m{background:var(--mid);}
+.wa-mark.l{background:var(--border2);}
+.wa-text{background:var(--raised);padding:10px 12px;font-size:12px;line-height:1.7;color:var(--mid);white-space:pre-wrap;border-left:2px solid var(--border2);font-family:'IBM Plex Mono',monospace;}
+.wa-text.g{border-color:var(--accent);color:var(--ink);}
+.wa-text.m{border-color:var(--mid);}
+.wa-lock{margin:0 16px 12px;padding:8px 12px;border:1px solid var(--border);font-size:11px;color:var(--dim);line-height:1.5;display:flex;gap:6px;}
+.wa-go{margin:0 16px 16px;width:calc(100% - 32px);padding:14px;border:none;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;background:var(--accent);color:#fff;}
+.wa-go.danger{background:var(--danger);color:#fff;}
+.wa-go.neutral{background:var(--raised);color:var(--ink);border:1px solid var(--border2);}
+.wa-go:active{opacity:.85;}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%) translateY(8px);background:var(--ink);color:#fff;padding:9px 16px;font-size:12px;font-weight:700;letter-spacing:.3px;display:none;align-items:center;gap:7px;box-shadow:0 4px 20px rgba(0,0,0,.2);z-index:999;white-space:nowrap;opacity:0;transition:all .18s;}
+.toast.show{display:flex;opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-brand"><div class="vv">VV</div><div class="hdr-name">VitalVida Telesales</div></div>
+  <div class="hdr-agent"><div class="ha-name">Emeka Okafor</div><div class="ha-rate">74% · this month</div></div>
+</div>
+
+<div class="stats">
+  <div class="st"><div class="st-l">Earned Today</div><div class="st-v g" id="te">₦3,800</div><div class="st-s" id="le">+₦800 last order</div></div>
+  <div class="st"><div class="st-l">Closed</div><div class="st-v" id="oc">8</div><div class="st-s">of 12 target</div></div>
+  <div class="st"><div class="st-l">My Rate</div><div class="st-v" id="mr">74%</div><div class="st-s">need 80%</div></div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" data-p="cn" onclick="go('cn')">CALL NOW<span class="t-n hot" id="cnt-cn">2</span></div>
+  <div class="tab" data-p="cf" onclick="go('cf')">CONFIRMED<span class="t-n" id="cnt-cf">3</span></div>
+  <div class="tab" data-p="ow" onclick="go('ow')">ON THE WAY<span class="t-n" id="cnt-ow">2</span></div>
+  <div class="tab" data-p="cb" onclick="go('cb')">CALL BACK<span class="t-n hot" id="cnt-cb">2</span></div>
+  <div class="tab" data-p="dn" onclick="go('dn')">DONE<span class="t-n" id="cnt-dn">4</span></div>
+  <div class="tab" data-p="nb" onclick="go('nb')">NUMBERS<span class="t-n"></span></div>
+</div>
+
+<div class="scroll">
+  <div class="page active" id="page-cn"><div id="cn-list"></div></div>
+  <div class="page" id="page-cf"><div class="notice">Customers confirmed. <strong>Assign a rider</strong> to each order below.</div><div id="cf-list"></div></div>
+  <div class="page" id="page-ow"><div class="notice">Rider dispatched. <strong>Update the status</strong> as the delivery progresses.</div><div id="ow-list"></div></div>
+  <div class="page" id="page-cb"><div class="notice">These customers asked you to call back. <strong>Call when the timer hits zero.</strong></div><div id="cb-list"></div></div>
+  <div class="page" id="page-dn"><div class="notice"><strong>Only Moniepoint can mark an order Paid.</strong> Delivered orders wait here until payment is confirmed automatically.</div><div id="dn-list"></div></div>
+  <div class="page" id="page-nb">
+    <div class="period">
+      <button class="pbtn on" id="pb-d" onclick="sp('d')">Today</button>
+      <button class="pbtn" id="pb-w" onclick="sp('w')">This Week</button>
+      <button class="pbtn" id="pb-m" onclick="sp('m')">This Month</button>
+    </div>
+    <div class="num-grid">
+      <div class="nc hi"><div class="nc-v g" id="pva">12</div><div class="nc-lbl">Sent to Me</div><div class="nc-sub">Orders assigned</div></div>
+      <div class="nc"><div class="nc-v" id="pvc">8</div><div class="nc-lbl">Closed</div><div class="nc-sub">Confirmed + Paid</div></div>
+      <div class="nc"><div class="nc-v" id="pvd">5</div><div class="nc-lbl">Delivered</div><div class="nc-sub">Product received</div></div>
+      <div class="nc"><div class="nc-v" id="pvr">74%</div><div class="nc-lbl">Success Rate</div><div class="nc-sub">Target: 80%</div></div>
+    </div>
+    <div class="rate-blk">
+      <div class="rb-top"><div class="rb-lbl">Delivery Rate</div><div class="rb-val" id="rbv">74%</div></div>
+      <div class="track"><div class="fill m" id="rbf" style="width:74%"></div></div>
+      <div class="rb-hint" id="rbh">You need <strong>+6%</strong> to reach the 80% bonus tier</div>
+    </div>
+    <div class="bdown"><div class="bdown-hd">Order Breakdown</div><div id="bdl"></div></div>
+    <div class="verdict m" id="vrd">Your rate is <strong>74%</strong>. Push for 6 more successful deliveries to hit the bonus.</div>
+  </div>
+</div>
+
+<div class="wa-scrim" id="waScrim" onclick="cWA()"></div>
+
+<!-- UPSELL PANEL -->
+<div class="wa-scrim" id="upScrim" onclick="cUpsell()"></div>
+<div class="upsell-panel" id="upPanel">
+  <div class="up-drag"></div>
+  <div class="up-head">
+    <div class="up-title">Upsell Opportunity</div>
+    <div class="up-sub" id="upSub">Customer confirmed. Offer them an upgrade before closing.</div>
+  </div>
+  <div class="up-body" id="upBody"></div>
+  <div class="up-actions">
+    <button class="btn-up-yes" onclick="takeUpsell()">They Took It</button>
+    <button class="btn-up-skip" onclick="skipUpsell()">No Thanks / Skip</button>
+  </div>
+</div>
+<div class="wa-panel" id="waPanel">
+  <div class="wa-drag"></div>
+  <div class="wa-ttl" id="waTitle">Messages being sent</div>
+  <div class="wa-body" id="waBody"></div>
+  <div class="wa-lock">Lock — your copy never contains the customer's phone number or address.</div>
+  <button class="wa-go" id="waGo" onclick="doAction()">Confirm and Send</button>
+</div>
+
+<div class="toast" id="tst"><span id="tm"></span></div>
+
+<script>
+let curP='cn',curA=null,curId=null,curPer='d',earnings=3800,closedN=8;
+const O={
+  cn:[
+    {id:'VV-0145',n:'Linda Obi',ph:'08031234567',email:'linda@gmail.com',p:'Self Love Plus',upsell:'Self Love Return',state:'Lagos',lga:'Lagos Island',l:'Ikoyi, Lagos',addr:'14 Awolowo Road, Ikoyi',lmk:'Beside First Bank',a:'₦32,750',c:4750,dfee:'₦1,500',ddate:'26 Mar',twin:'12–3PM',pmethod:'Pay on Delivery',heard:'Instagram',age:'Just assigned',da:'',attempts:0,reason:'',recovery:0,commitment:0,postdel:0},
+    {id:'VV-0144',n:'Suzzie Memuduaghan',ph:'07055678901',email:'',p:'Self Love Plus × 2',upsell:'',state:'Lagos',lga:'Mushin',l:'Ilupeju, Lagos',addr:'22 Industrial Avenue, Ilupeju',lmk:'Near Ilupeju Bus Stop',a:'₦66,750',c:9000,dfee:'₦1,500',ddate:'26 Mar',twin:'3–6PM',pmethod:'Pay on Delivery',heard:'Facebook',age:'8 mins ago',da:'',attempts:1,reason:'First call — no answer',recovery:0,commitment:1,postdel:0},
+  ],
+  cf:[
+    {id:'VV-0143',n:'Blessing Okonkwo',ph:'08123456789',email:'blessing@yahoo.com',p:'Self Love Plus',upsell:'',state:'Lagos',lga:'Lagos Island',l:'Lagos Island',addr:'5 Marina Street, Lagos Island',lmk:'Opposite GTBank',a:'₦32,750',c:4750,dfee:'₦1,500',ddate:'26 Mar',twin:'10AM–12PM',pmethod:'Pay on Delivery',heard:'Friend',age:'12 mins ago',da:'',attempts:2,reason:'Called twice, confirmed on 2nd',recovery:0,commitment:2,postdel:0},
+    {id:'VV-0141',n:'Ngozi Adaeze',ph:'07098765432',email:'',p:'Self Love Plus × 3',upsell:'Family Saves',state:'Rivers',lga:'Port Harcourt',l:'Port Harcourt',addr:'18 Rumuola Road, PH',lmk:'After Rumuola Junction',a:'₦66,750',c:9000,dfee:'₦2,500',ddate:'27 Mar',twin:'9–11AM',pmethod:'Pay on Delivery',heard:'Instagram',age:'34 mins ago',da:'',attempts:1,reason:'',recovery:0,commitment:1,postdel:0},
+    {id:'VV-0140',n:'Yetunde Adeyemi',ph:'08056789012',email:'',p:'Self Love Plus',upsell:'',state:'Oyo',lga:'Ibadan North',l:'Ibadan',addr:'9 Ring Road, Ibadan',lmk:'Near UTC',a:'₦32,750',c:4750,dfee:'₦2,000',ddate:'27 Mar',twin:'12–3PM',pmethod:'Pay on Delivery',heard:'TikTok',age:'1hr ago',da:'',attempts:1,reason:'',recovery:0,commitment:1,postdel:0},
+  ],
+  ow:[
+    {id:'VV-0138',n:'Amaka Obi',ph:'08034567890',email:'',p:'Self Love Plus × 2',upsell:'',state:'Lagos',lga:'Eti-Osa',l:'Lekki, Lagos',addr:'3 Admiralty Way, Lekki Phase 1',lmk:'Behind Shoprite Lekki',a:'₦66,750',c:9000,dfee:'₦1,500',ddate:'25 Mar',twin:'12–3PM',pmethod:'Pay on Delivery',heard:'Instagram',age:'2hrs ago',da:'Kemi Adewale',st:'Assigned',attempts:2,reason:'',recovery:0,commitment:3,postdel:0},
+    {id:'VV-0136',n:'Chioma Nwosu',ph:'07012345678',email:'',p:'Self Love Plus',upsell:'',state:'Imo',lga:'Owerri Municipal',l:'Owerri',addr:'44 Wetheral Road, Owerri',lmk:'Beside Imo State Secretariat',a:'₦32,750',c:4750,dfee:'₦2,500',ddate:'25 Mar',twin:'3–6PM',pmethod:'Pay on Delivery',heard:'Facebook',age:'3hrs ago',da:'Tunde Emmanuel',st:'Out for Delivery',attempts:1,reason:'',recovery:0,commitment:2,postdel:0},
+  ],
+  cb:[
+    {id:'VV-0142',n:'Chidi Eze',ph:'08087654321',email:'',p:'Self Love Plus',upsell:'',state:'FCT',lga:'Gwagwalada',l:'Abuja',addr:'12 Gwarinpa Estate, Abuja',lmk:'Near Gwarinpa Junction',a:'₦33,000',c:4750,dfee:'₦2,000',ddate:'26 Mar',twin:'2–4PM',pmethod:'Pay on Delivery',heard:'Instagram',da:'',rd:'Today 2:00 PM',s:862,attempts:2,reason:'Said husband not around, call back at 2PM',recovery:1,commitment:2,postdel:0},
+    {id:'VV-0130',n:'Kunbi Adesanya',ph:'07023456789',email:'kunbi@gmail.com',p:'Self Love Plus × 2',upsell:'',state:'Lagos',lga:'Surulere',l:'Lagos',addr:'7 Bode Thomas Street, Surulere',lmk:'Opposite Surulere Post Office',a:'₦66,750',c:9000,dfee:'₦1,500',ddate:'27 Mar',twin:'10AM–12PM',pmethod:'Pay on Delivery',heard:'Friend',da:'',rd:'Tomorrow 10:00 AM',s:47880,attempts:3,reason:'Wants to discuss with sister first, call tomorrow',recovery:2,commitment:3,postdel:0},
+  ],
+  dn:[
+    {id:'VV-0125',n:'Lola Martins',ph:'08045678901',email:'',p:'Self Love Plus',upsell:'',state:'Lagos',lga:'Ikeja',l:'Lagos',addr:'6 Allen Avenue, Ikeja',lmk:'Near Allen roundabout',a:'₦32,750',c:4750,dfee:'₦1,500',ddate:'25 Mar',twin:'12–3PM',pmethod:'Pay on Delivery',heard:'Instagram',age:'1hr ago',da:'Kemi Adewale',st:'Delivered',attempts:1,reason:'',recovery:0,commitment:3,postdel:1},
+    {id:'VV-0123',n:'Miriam Osei',ph:'07067890123',email:'',p:'Self Love Plus × 2',upsell:'Self Love Return',state:'Lagos',lga:'Eti-Osa',l:'Lagos',addr:'2 Ozumba Mbadiwe, VI',lmk:'Beside EcoBank VI',a:'₦66,750',c:9000,dfee:'₦1,500',ddate:'25 Mar',twin:'3–6PM',pmethod:'Pay on Delivery',heard:'TikTok',age:'2hrs ago',da:'Adebayo Johnson',st:'Delivered',attempts:1,reason:'',recovery:0,commitment:3,postdel:1},
+    {id:'VV-0121',n:'Ngozi Umeh',ph:'08078901234',email:'',p:'Self Love Plus',upsell:'',state:'Delta',lga:'Oshimili South',l:'Asaba',addr:'15 Nnebisi Road, Asaba',lmk:'Near Delta Broadcasting Service',a:'₦32,750',c:4750,dfee:'₦2,500',ddate:'24 Mar',twin:'10AM–12PM',pmethod:'Pay on Delivery',heard:'Facebook',age:'3hrs ago',da:'Tunde Emmanuel',st:'Paid',attempts:1,reason:'',recovery:0,commitment:3,postdel:2},
+    {id:'VV-0119',n:'Obiageli Nze',ph:'07089012345',email:'obiageli@gmail.com',p:'Family Saves',upsell:'',state:'Rivers',lga:'Port Harcourt',l:'Port Harcourt',addr:'30 Forces Avenue, Old GRA PH',lmk:'Opposite Forces Avenue junction',a:'₦215,000',c:9000,dfee:'₦2,500',ddate:'24 Mar',twin:'9–11AM',pmethod:'Pay on Delivery',heard:'Friend',age:'4hrs ago',da:'Kemi Adewale',st:'Paid',attempts:1,reason:'',recovery:0,commitment:3,postdel:3},
+  ]
+};
+const PACKAGES={
+  'Self Love Plus':'1 Shampoo · 1 Pomade · 1 Conditioner',
+  'Self Love Plus × 2':'3 Shampoo · 3 Pomade · 3 Conditioner (Buy 2 Get 1 Free)',
+  'Self Love Plus × 3':'3 Shampoo · 3 Pomade · 3 Conditioner',
+  'Self Love Return':'3 Pomades',
+  'Self Love B2GOF':'3 Shampoo · 3 Pomade',
+  'Self Love Plus B2GOF':'3 Shampoo · 3 Pomade · 3 Conditioner',
+  'Family Saves':'10 Shampoo · 10 Pomade · 10 Conditioner',
+};
+function pkgLine(p){const c=PACKAGES[p];return c?`${p}<br><span style="font-size:11px;color:var(--dim);font-weight:400;">${c}</span>`:p;}
+
+function fullDetail(o){
+  const stepDots=(val,max,label)=>{
+    const dots=Array.from({length:max},(_,i)=>`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${i<val?'var(--accent)':'var(--border2)'};margin-right:3px;"></span>`).join('');
+    return `<div class="cd-row"><div class="cd-lbl">${label}</div><div class="cd-val">${dots} <span style="font-size:10px;color:var(--dim);">Step ${val} of ${max}</span></div></div>`;
+  };
+  return `<div class="cust-detail">
+    <div class="cust-detail-inner">
+      <div class="cd-row"><div class="cd-lbl">Phone</div><div class="cd-val cd-phone">${o.ph}</div></div>
+      ${o.email?`<div class="cd-row"><div class="cd-lbl">Email</div><div class="cd-val">${o.email}</div></div>`:''}
+      <div class="cd-row"><div class="cd-lbl">Address</div><div class="cd-val">${o.addr}</div></div>
+      <div class="cd-row"><div class="cd-lbl">Landmark</div><div class="cd-val">${o.lmk}</div></div>
+      <div class="cd-row"><div class="cd-lbl">State / LGA</div><div class="cd-val">${o.state} · ${o.lga}</div></div>
+      <div style="height:1px;background:var(--border);margin:6px 0;"></div>
+      <div class="cd-row"><div class="cd-lbl">Delivery</div><div class="cd-val">${o.ddate} · ${o.twin}</div></div>
+      <div class="cd-row"><div class="cd-lbl">Del. Fee</div><div class="cd-val">${o.dfee}</div></div>
+      <div class="cd-row"><div class="cd-lbl">Payment</div><div class="cd-val">${o.pmethod}</div></div>
+      <div class="cd-row"><div class="cd-lbl">Source</div><div class="cd-val">${o.heard}</div></div>
+      ${o.upsell!==undefined?`<div class="cd-row"><div class="cd-lbl">Upsell</div><div class="cd-val"><select onchange="setUpsell('${o.id}',this.value)" style="font-family:'IBM Plex Sans',sans-serif;font-size:12px;font-weight:600;color:var(--accent);background:transparent;border:none;outline:none;cursor:pointer;padding:0;width:100%;">
+        <option value="">— not offered —</option>
+        ${ALL_PACKAGES.filter(p=>p.name!==o.p).map(p=>`<option value="${p.name}" ${o.upsell===p.name?'selected':''}>${p.name} · ${p.price}</option>`).join('')}
+        <option value="__custom__">+ Custom package...</option>
+      </select></div></div>`:''}
+      ${o.upsell==='__custom__'?`<div class="cd-row"><div class="cd-lbl"></div><div class="cd-val"><input type="text" id="customUp-${o.id}" placeholder="Type package name" value="${o.upsell_custom||''}" onchange="setCustomUpsell('${o.id}',this.value)" style="font-family:'IBM Plex Sans',sans-serif;font-size:12px;border:none;border-bottom:1px solid var(--border2);outline:none;width:100%;padding:2px 0;color:var(--ink);background:transparent;"></div></div>`:''}
+      <div style="height:1px;background:var(--border);margin:6px 0;"></div>
+      ${stepDots(o.commitment,3,'Commitment')}
+      ${stepDots(o.recovery,4,'Recovery')}
+      ${stepDots(o.postdel,4,'Post-Del')}
+    </div>
+  </div>`;
+}
+
+
+const DAS=[
+  {n:'Adebayo Johnson',i:'AJ',r:'Lagos Island · 87% success',s:'12 units'},
+  {n:'Kemi Adewale',i:'KA',r:'Lagos Island · 92% success',s:'8 units'},
+  {n:'Tunde Emmanuel',i:'TE',r:'Lekki · 78% success',s:'15 units'},
+];
+const PF={
+  d:{a:12,c:8,d:5,r:74,rows:[{l:'Sent to me',c:'#2979ff',v:12},{l:'Confirmed',c:'#00a846',v:9},{l:'Out for Delivery',c:'#999',v:5},{l:'Delivered',c:'#00a846',v:5},{l:'Paid',c:'#00a846',v:3},{l:'Rescheduled',c:'#999',v:1},{l:'Cancelled',c:'#d32f2f',v:2},{l:'Returned',c:'#d32f2f',v:1}]},
+  w:{a:67,c:54,d:38,r:79,rows:[{l:'Sent to me',c:'#2979ff',v:67},{l:'Confirmed',c:'#00a846',v:54},{l:'Out for Delivery',c:'#999',v:38},{l:'Delivered',c:'#00a846',v:38},{l:'Paid',c:'#00a846',v:31},{l:'Rescheduled',c:'#999',v:4},{l:'Cancelled',c:'#d32f2f',v:9},{l:'Returned',c:'#d32f2f',v:4}]},
+  m:{a:218,c:175,d:142,r:82,rows:[{l:'Sent to me',c:'#2979ff',v:218},{l:'Confirmed',c:'#00a846',v:175},{l:'Out for Delivery',c:'#999',v:142},{l:'Delivered',c:'#00a846',v:142},{l:'Paid',c:'#00a846',v:119},{l:'Rescheduled',c:'#999',v:12},{l:'Cancelled',c:'#d32f2f',v:31},{l:'Returned',c:'#d32f2f',v:14}]},
+};
+const WT={
+  confirm:{t:'CONFIRMING ORDER',go:'Confirm Order',cls:'',C:o=>`ORDER CONFIRMED — VitalVida\n\nHi ${o.n},\n\nYour order ${o.id} is confirmed.\nProduct: ${o.p}\nAmount to pay on delivery: ${o.a}\n\nWe will assign a rider and notify you.\n\nVitalVida`,O:o=>`CONFIRMED — ${o.id}\nCustomer: ${o.n}\nProduct: ${o.p}\nLocation: ${o.l}\nAmount: ${o.a}\nBy: Emeka Okafor`,A:o=>`Order ${o.id} confirmed.`},
+  reschedule:{t:'RESCHEDULING CALL-BACK',go:'Save Call-Back',cls:'neutral',hasDp:true,C:o=>`RESCHEDULED — VitalVida\n\nHi ${o.n},\n\nWe will call you back at your preferred time.\n\nVitalVida`,O:o=>`RESCHEDULED — ${o.id}\nCustomer: ${o.n}\nLocation: ${o.l}\nBy: Emeka Okafor`,A:o=>`Order ${o.id} rescheduled.`},
+  no_answer:{t:'MARKING NO ANSWER',go:'Mark No Answer',cls:'neutral',C:o=>`MISSED CALL — VitalVida\n\nHi ${o.n},\n\nWe tried to reach you about order ${o.id}.\nExpect another call shortly.\n\nVitalVida`,O:o=>`NO ANSWER — ${o.id}\nCustomer: ${o.n}\nBy: Emeka Okafor`,A:o=>`Order ${o.id} — no answer.`},
+  cancel:{t:'CANCELLING ORDER',go:'Cancel Order',cls:'danger',C:o=>`ORDER CANCELLED — VitalVida\n\nHi ${o.n},\n\nYour order ${o.id} has been cancelled.\nReply REOPEN if this was a mistake.\n\nVitalVida`,O:o=>`CANCELLED — ${o.id}\nCustomer: ${o.n}\nProduct: ${o.p}\nBy: Emeka Okafor`,A:o=>`Order ${o.id} cancelled.`},
+  's_Out for Delivery':{t:'MARKING OUT FOR DELIVERY',go:'Mark Out for Delivery',cls:'neutral',C:o=>`ORDER ON THE WAY — VitalVida\n\nHi ${o.n},\n\nYour order ${o.id} is on the way.\nProduct: ${o.p}\nAmount to pay on delivery: ${o.a}\n\nPay to our Moniepoint account only. Do not pay the rider directly.\n\nVitalVida`,O:o=>`OUT FOR DELIVERY — ${o.id}\nCustomer: ${o.n}\nRider: ${o.da||'—'}\nBy: Emeka Okafor`,A:o=>`Order ${o.id} out for delivery.`},
+  's_Delivered':{t:'MARKING DELIVERED',go:'Mark Delivered',cls:'',C:o=>`DELIVERED — VitalVida\n\nHi ${o.n},\n\nYour order ${o.id} has been delivered.\nEnjoy your ${o.p}.\n\nThank you for choosing VitalVida.`,O:o=>`DELIVERED — ${o.id}\nCustomer: ${o.n}\nAmount: ${o.a}\nRider: ${o.da||'—'}\nBy: Emeka Okafor\n(Awaiting Moniepoint payment)`,A:o=>`Order ${o.id} delivered.`},
+  's_Rescheduled':{t:'RESCHEDULING DELIVERY',go:'Reschedule Delivery',cls:'neutral',hasDp:true,C:o=>`DELIVERY RESCHEDULED — VitalVida\n\nHi ${o.n},\n\nYour delivery for order ${o.id} has been rescheduled.\nWe will contact you before the next attempt.\n\nVitalVida`,O:o=>`DELIVERY RESCHEDULED — ${o.id}\nCustomer: ${o.n}\nBy: Emeka Okafor`,A:o=>`Order ${o.id} delivery rescheduled.`},
+  's_Cancelled':{t:'CANCELLING ORDER',go:'Cancel Order',cls:'danger',C:o=>`ORDER CANCELLED — VitalVida\n\nHi ${o.n},\n\nOrder ${o.id} has been cancelled.\nReply REOPEN if this was a mistake.\n\nVitalVida`,O:o=>`CANCELLED — ${o.id}\nCustomer: ${o.n}\nBy: Emeka Okafor`,A:o=>`Order ${o.id} cancelled.`},
+};
+function go(p){curP=p;document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.p===p));document.getElementById('page-'+p).classList.add('active');render(p);}
+function render(p){updCnt();if(p==='cn')rCN();else if(p==='cf')rCF();else if(p==='ow')rOW();else if(p==='cb')rCB();else if(p==='dn')rDN();else if(p==='nb')rNB();}
+function updCnt(){[['cn','cnt-cn'],['cf','cnt-cf'],['ow','cnt-ow'],['cb','cnt-cb'],['dn','cnt-dn']].forEach(([k,id])=>{const el=document.getElementById(id);if(el)el.textContent=O[k]?O[k].length:'0';});}
+function em(t,s){return `<div class="empty"><div class="e-t">${t}</div><div class="e-s">${s}</div></div>`;}
+function tom(){const d=new Date();d.setDate(d.getDate()+1);return d.toISOString().split('T')[0];}
+function fmtT(s){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=s%60;return h>0?`${h}h ${String(m).padStart(2,'0')}m`:`${String(m).padStart(2,'0')}:${String(sc).padStart(2,'0')}`;}
+function fmtD(v){if(!v)return '';return new Date(v+'T12:00').toLocaleDateString('en-NG',{weekday:'short',day:'numeric',month:'short'});}
+function rCN(){
+  const el=document.getElementById('cn-list');
+  if(!O.cn.length){el.innerHTML=em('No calls right now','New orders will appear here.');return;}
+  el.innerHTML=O.cn.map(o=>`
+    <div class="ocard g-l" id="card-${o.id}">
+      <div class="oc-hd"><div><div class="oc-id">${o.id}</div><div class="oc-name">${o.n}</div><div class="oc-prod">${pkgLine(o.p)}</div></div><div class="oc-r"><div class="oc-amt">${o.a}</div><div class="oc-tag">New Order</div></div></div>
+      <div class="attempt-strip">
+        <span class="attempt-badge ${o.attempts===0?'first':o.attempts>=2?'multi':''}">${o.attempts===0?'First attempt':'Attempt '+o.attempts}</span>
+        <span class="pill">${o.age}</span>
+      </div>
+      ${o.reason?`<div class="reason-strip"><strong>Last note</strong>${o.reason}</div>`:''}
+      ${fullDetail(o)}
+      <div class="oc-cta"><button class="btn-call" id="cb-${o.id}" onclick="sc('${o.id}')">Call ${o.n.split(' ')[0]}</button></div>
+      <div class="outcomes" id="out-${o.id}">
+        <div class="out-lbl">What happened on the call?</div>
+        <div class="out-grid">
+          <button class="btn-out yes" onclick="tWA('${o.id}','confirm')"><div class="bot-lbl">They said YES</div><div class="bot-desc">Customer wants the order</div></button>
+          <button class="btn-out" onclick="sDP('${o.id}')"><div class="bot-lbl">Call back later</div><div class="bot-desc">Pick a time to call again</div></button>
+          <button class="btn-out" onclick="tWA('${o.id}','no_answer')"><div class="bot-lbl">No answer</div><div class="bot-desc">Phone rang, no reply</div></button>
+          <button class="btn-out no" onclick="tWA('${o.id}','cancel')"><div class="bot-lbl">They said NO</div><div class="bot-desc">Customer cancelled</div></button>
+        </div>
+      </div>
+      <div class="dp-blk" id="dp-${o.id}">
+        <div class="dp-lbl">When should we call back?</div>
+        <div class="dp-row"><div class="dp-f"><label>Date</label><input type="date" id="dpd-${o.id}" min="${tom()}" value="${tom()}"></div><div class="dp-f"><label>Time</label><input type="time" id="dpt-${o.id}" value="09:00"></div></div>
+        <div class="dp-f" style="margin-bottom:10px;"><label>Reason / Note</label><input type="text" id="dreason-${o.id}" placeholder="e.g. Said husband not around" style="padding:9px 10px;border:1px solid var(--border);background:var(--card);color:var(--ink);font-family:'IBM Plex Sans',sans-serif;font-size:12px;outline:none;width:100%;"></div>
+        <button class="btn-save" onclick="tWA('${o.id}','reschedule')">Save Call-Back Time</button>
+      </div>
+    </div>`).join('');
+}
+function sc(id){const btn=document.getElementById('cb-'+id);btn.classList.add('ringing');btn.textContent='Calling...';setTimeout(()=>{btn.textContent='Called — what happened?';document.getElementById('out-'+id).classList.add('show');},1800);}
+function sDP(id){const dp=document.getElementById('dp-'+id);dp.classList.add('show');dp.scrollIntoView({behavior:'smooth',block:'nearest'});}
+function rCF(){
+  const el=document.getElementById('cf-list');
+  if(!O.cf.length){el.innerHTML=em('No confirmed orders','Confirmed orders appear here.');return;}
+  el.innerHTML=O.cf.map(o=>`
+    <div class="ocard g-l" id="card-${o.id}">
+      <div class="oc-hd"><div><div class="oc-id">${o.id}</div><div class="oc-name">${o.n}</div><div class="oc-prod">${pkgLine(o.p)}</div></div><div class="oc-r"><div class="oc-amt">${o.a}</div><div class="oc-tag">Confirmed ${o.age}</div></div></div>
+      <div class="attempt-strip"><span class="attempt-badge ${o.attempts>=2?'multi':''}">${o.attempts} attempt${o.attempts!==1?'s':''}</span></div>
+      ${fullDetail(o)}
+      <div class="da-blk show" id="da-${o.id}">
+        <div class="da-lbl">Choose a Rider</div>
+        <select id="da-sel-${o.id}" style="width:100%;padding:11px 12px;border:1px solid var(--border);background:var(--card);color:var(--ink);font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:600;outline:none;cursor:pointer;-webkit-appearance:none;background-image:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 12 12%22><path fill=%22%23666%22 d=%22M6 8L1 3h10z%22/></svg>');background-repeat:no-repeat;background-position:right 12px center;margin-bottom:8px;">
+          <option value="">— Select a rider —</option>
+          ${DAS.map(d=>`<option value="${d.n}">${d.n} · ${d.r} · ${d.s}</option>`).join('')}
+        </select>
+        <div class="da-note">Lock — Rider only receives: "You have a new order. Log in to view details." No customer contact information is shared.</div>
+        <button class="btn-assign" onclick="dAsgn('${o.id}')">Assign Rider</button>
+      </div>
+    </div>`).join('');
+}
+function sDA(el,oid){document.querySelectorAll(`#da-${oid} .da-row`).forEach(x=>x.classList.remove('sel'));el.classList.add('sel');}
+function dAsgn(oid){
+  const sel=document.getElementById('da-sel-'+oid);
+  if(!sel||!sel.value){showT('Choose a rider first');return;}
+  const da=sel.value;
+  const o=fO(oid);if(o){o.da=da;o.st='Assigned';}
+  mv(oid,'cf','ow');showT(`${da} assigned`);
+}
+const SF=[{k:'Assigned',l:'Assigned'},{k:'Out for Delivery',l:'Out for Delivery'},{k:'Delivered',l:'Delivered'},{k:'Rescheduled',l:'Reschedule',w:true},{k:'Cancelled',l:'Cancel',w:true}];
+function rOW(){
+  const el=document.getElementById('ow-list');
+  if(!O.ow.length){el.innerHTML=em('No active deliveries','Assigned orders appear here.');return;}
+  el.innerHTML=O.ow.map(o=>{
+    const ci=SF.findIndex(s=>s.k===o.st)||0;
+    const steps=SF.map((s,i)=>{let cls='sf-btn';if(i<ci)cls+=' done';else if(i===ci)cls+=' current';if(s.w)cls+=' warn';return `<div class="sf-item"><button class="${cls}" onclick="tWA('${o.id}','s_${s.k}')">${s.l}</button>${i<SF.length-1?'<span class="sf-sep">›</span>':''}</div>`;}).join('');
+    return `<div class="ocard m-l" id="card-${o.id}">
+      <div class="oc-hd"><div><div class="oc-id">${o.id}</div><div class="oc-name">${o.n}</div><div class="oc-prod">${pkgLine(o.p)}</div></div><div class="oc-r"><div class="oc-amt">${o.a}</div><div class="oc-tag">${o.st||'Assigned'}</div></div></div>
+      <div class="oc-meta"><span class="pill">Rider: ${o.da}</span></div>
+      ${fullDetail(o)}
+      <div class="sf-blk show"><div class="sf-lbl">Update Status</div><div class="sf-row">${steps}</div></div>
+      <div class="dp-blk" id="dp-${o.id}">
+        <div class="dp-lbl">New delivery date</div>
+        <div class="dp-row"><div class="dp-f"><label>Date</label><input type="date" id="dpd-${o.id}" min="${tom()}" value="${tom()}"></div><div class="dp-f"><label>Time</label><input type="time" id="dpt-${o.id}" value="09:00"></div></div>
+        <button class="btn-save" onclick="tWA('${o.id}','s_Rescheduled_go')">Save Reschedule</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+const TM={};
+function rCB(){
+  const el=document.getElementById('cb-list');
+  if(!O.cb.length){el.innerHTML=em('No call-backs scheduled','Rescheduled orders appear here.');return;}
+  el.innerHTML=O.cb.map(o=>`
+    <div class="timer-card" id="fu-${o.id}">
+      <div class="timer-val ${o.s<300?'hot':''}" id="tmr-${o.id}">${fmtT(o.s)}</div>
+      <div class="timer-body">
+        <div class="timer-name">${o.n}</div>
+        <div class="timer-sub">${o.rd} · ${o.a}</div>
+        ${o.reason?`<div style="font-size:11px;color:#7a5500;margin-top:3px;font-style:italic;">"${o.reason}"</div>`:''}
+      </div>
+      <button class="btn-ring" onclick="sC2('${o.id}')">Call</button>
+    </div>
+    <div class="ocard m-l" id="card-${o.id}" style="display:none">
+      <div class="oc-hd"><div><div class="oc-id">${o.id}</div><div class="oc-name">${o.n}</div><div class="oc-prod">${pkgLine(o.p)}</div></div><div class="oc-r"><div class="oc-amt">${o.a}</div></div></div>
+      <div class="attempt-strip">
+        <span class="attempt-badge ${o.attempts>=2?'multi':''}">${o.attempts} attempt${o.attempts!==1?'s':''} so far</span>
+      </div>
+      ${o.reason?`<div class="reason-strip"><strong>Reason for call-back</strong>${o.reason}</div>`:''}
+      ${fullDetail(o)}
+      <div class="outcomes show">
+        <div class="out-lbl">What happened on the call?</div>
+        <div class="out-grid">
+          <button class="btn-out yes" onclick="tWA('${o.id}','confirm')"><div class="bot-lbl">They said YES</div></button>
+          <button class="btn-out" onclick="sDP('${o.id}')"><div class="bot-lbl">Call back again</div></button>
+          <button class="btn-out" onclick="tWA('${o.id}','no_answer')"><div class="bot-lbl">No answer</div></button>
+          <button class="btn-out no" onclick="tWA('${o.id}','cancel')"><div class="bot-lbl">They said NO</div></button>
+        </div>
+      </div>
+      <div class="dp-blk" id="dp-${o.id}">
+        <div class="dp-lbl">New call-back time</div>
+        <div class="dp-row"><div class="dp-f"><label>Date</label><input type="date" id="dpd-${o.id}" min="${tom()}" value="${tom()}"></div><div class="dp-f"><label>Time</label><input type="time" id="dpt-${o.id}" value="09:00"></div></div>
+        <div class="dp-f" style="margin-bottom:10px;"><label>Reason / Note</label><input type="text" id="dreason-${o.id}" placeholder="e.g. Wants to confirm with husband" style="padding:9px 10px;border:1px solid var(--border);background:var(--card);color:var(--ink);font-family:'IBM Plex Sans',sans-serif;font-size:12px;outline:none;width:100%;"></div>
+        <button class="btn-save" onclick="tWA('${o.id}','reschedule')">Save</button>
+      </div>
+    </div>`).join('');
+  O.cb.forEach(o=>{if(TM[o.id])clearInterval(TM[o.id]);TM[o.id]=setInterval(()=>tick(o.id),1000);});
+}
+function sC2(id){document.getElementById('fu-'+id).style.display='none';document.getElementById('card-'+id).style.display='block';}
+function tick(id){const o=O.cb.find(x=>x.id===id);if(!o)return;if(o.s>0)o.s--;const el=document.getElementById('tmr-'+id);if(el){el.textContent=fmtT(o.s);if(o.s<300)el.classList.add('hot');}}
+function rDN(){
+  const el=document.getElementById('dn-list');
+  if(!O.dn.length){el.innerHTML=em('Nothing here yet','Delivered orders appear here.');return;}
+  el.innerHTML=O.dn.map(o=>`
+    <div class="ocard ${o.st==='Paid'?'g-l':'m-l'}" id="card-${o.id}">
+      <div class="oc-hd"><div><div class="oc-id">${o.id}</div><div class="oc-name">${o.n}</div><div class="oc-prod">${pkgLine(o.p)}</div></div><div class="oc-r"><div class="oc-amt">${o.a}</div><div class="oc-tag" style="color:${o.st==='Paid'?'var(--accent)':'var(--dim)'}">${o.st}</div></div></div>
+      <div class="oc-meta"><span class="pill">Rider: ${o.da}</span><span class="pill">${o.age}</span></div>
+      ${fullDetail(o)}
+      <div style="padding:0 14px 12px;font-size:11px;color:var(--dim);">${o.st==='Paid'?'🔒 Payment confirmed by Moniepoint':'⏳ Waiting for Moniepoint payment confirmation'}</div>
+    </div>`).join('');
+}
+function sp(p){curPer=p;['d','w','m'].forEach(x=>document.getElementById('pb-'+x).classList.toggle('on',x===p));rNB();}
+function rNB(){
+  const d=PF[curPer];
+  const fc=d.r>=80?'g':d.r>=70?'m':'d';
+  const col=d.r>=80?'var(--accent)':d.r>=70?'var(--mid)':'var(--danger)';
+  document.getElementById('pva').textContent=d.a;
+  document.getElementById('pvc').textContent=d.c;
+  document.getElementById('pvd').textContent=d.d;
+  document.getElementById('pvr').textContent=d.r+'%';
+  document.getElementById('rbv').textContent=d.r+'%';
+  document.getElementById('rbv').style.color=col;
+  document.getElementById('rbf').style.width=Math.min(d.r,100)+'%';
+  document.getElementById('rbf').className='fill '+fc;
+  document.getElementById('rbh').innerHTML=d.r>=80?`<strong style="color:var(--accent)">Above 80% target — keep it up.</strong>`:`You need <strong>+${80-d.r}%</strong> to reach the 80% bonus tier`;
+  document.getElementById('bdl').innerHTML=d.rows.map(r=>{const pct=d.a>0?Math.round(r.v/d.a*100):0;return `<div class="brow"><div class="brow-l"><div class="brow-dot" style="background:${r.c}"></div>${r.l}</div><div class="brow-r"><div class="brow-v">${r.v}</div><div class="brow-p">${pct}%</div></div></div>`;}).join('');
+  const vrd=document.getElementById('vrd');
+  if(d.r>=80){vrd.className='verdict g';vrd.innerHTML=`Your rate is <strong>${d.r}%</strong>. Above target. Keep closing.`;}
+  else if(d.r>=70){vrd.className='verdict m';vrd.innerHTML=`Your rate is <strong>${d.r}%</strong>. You need <strong>+${80-d.r}%</strong> to reach the bonus.`;}
+  else{vrd.className='verdict d';vrd.innerHTML=`Your rate is <strong>${d.r}%</strong>. Below 70%. Focus on following up call-backs.`;}
+}
+function tWA(id,action){
+  curId=id;curA=action;const o=fO(id);if(!o)return;
+
+  // Intercept confirm — show upsell panel first
+  if(action==='confirm'){
+    openUpsell(id);
+    return;
+  }
+
+  if(action==='reschedule'||action==='s_Rescheduled'){const dp=document.getElementById('dp-'+id);if(dp&&!dp.classList.contains('show')){dp.classList.add('show');dp.scrollIntoView({behavior:'smooth',block:'nearest'});return;}if(!document.getElementById('dpd-'+id)?.value){showT('Pick a date first');return;}}
+  if(action==='s_Rescheduled_go')curA='s_Rescheduled';
+  const tpl=WT[curA];if(!tpl||!tpl.t)return;
+  document.getElementById('waTitle').textContent=tpl.t;
+  document.getElementById('waBody').innerHTML=`<div class="wa-msg"><div class="wa-who"><div class="wa-mark g"></div>Customer receives</div><div class="wa-text g">${tpl.C(o)}</div></div><div class="wa-msg"><div class="wa-who"><div class="wa-mark m"></div>Owner receives</div><div class="wa-text m">${tpl.O(o)}</div></div><div class="wa-msg"><div class="wa-who"><div class="wa-mark l"></div>Your notification — no customer data</div><div class="wa-text">${tpl.A(o)}</div></div>`;
+  const btn=document.getElementById('waGo');btn.textContent=tpl.go;btn.className='wa-go'+(tpl.cls?' '+tpl.cls:'');
+  document.getElementById('waScrim').classList.add('open');document.getElementById('waPanel').classList.add('open');
+}
+
+// ── Upsell logic ──
+let curUpsellPkg=null;
+
+const ALL_PACKAGES=[
+  {name:'Self Love Plus',price:'₦32,750',contents:'1 Shampoo · 1 Pomade · 1 Conditioner'},
+  {name:'Self Love Return',price:'₦42,750',contents:'3 Pomades'},
+  {name:'Self Love B2GOF',price:'₦52,750',contents:'3 Shampoo · 3 Pomade'},
+  {name:'Self Love Plus B2GOF',price:'₦66,750',contents:'3 Shampoo · 3 Pomade · 3 Conditioner'},
+  {name:'Family Saves',price:'₦215,000',contents:'10 Shampoo · 10 Pomade · 10 Conditioner'},
+];
+
+function openUpsell(id){
+  const o=fO(id);if(!o)return;
+  curUpsellPkg=null;
+
+  document.getElementById('upSub').textContent=`${o.n} ordered ${o.p}. What else did they agree to?`;
+
+  // Show ALL packages except the one they already ordered — no rigid filtering
+  const upgrades=ALL_PACKAGES.filter(p=>p.name!==o.p&&!o.p.startsWith(p.name));
+
+  document.getElementById('upBody').innerHTML=`
+    <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--dim);margin-bottom:6px;">Select additional package</div>
+    ${upgrades.map(p=>`
+      <div class="up-pkg" onclick="selUpsell(this,'${p.name}','${p.price}')" data-pkg="${p.name}">
+        <div>
+          <div class="up-pkg-name">${p.name}</div>
+          <div class="up-pkg-contents">${p.contents}</div>
+        </div>
+        <div class="up-pkg-price">${p.price}</div>
+      </div>`).join('')}
+    <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--dim);margin:10px 0 6px;">Or type a custom upsell</div>
+    <div style="display:grid;grid-template-columns:1fr auto;gap:8px;">
+      <input type="text" id="customUpsellName" placeholder="Package name" style="padding:9px 10px;border:1px solid var(--border);background:var(--card);color:var(--ink);font-family:'IBM Plex Sans',sans-serif;font-size:12px;outline:none;width:100%;">
+      <input type="text" id="customUpsellPrice" placeholder="₦0" style="padding:9px 10px;border:1px solid var(--border);background:var(--card);color:var(--ink);font-family:'IBM Plex Mono',monospace;font-size:12px;outline:none;width:90px;">
+    </div>
+    <div style="font-size:10px;color:var(--dim);margin-top:4px;">Type here if the customer agreed to something not in the list above</div>`;
+
+  document.getElementById('upScrim').classList.add('open');
+  document.getElementById('upPanel').classList.add('open');
+}
+
+function selUpsell(el,pkg,price){
+  document.querySelectorAll('.up-pkg').forEach(x=>x.classList.remove('sel'));
+  el.classList.add('sel');
+  curUpsellPkg=pkg;
+  // Also clear custom fields when a package is selected
+  const cn=document.getElementById('customUpsellName');
+  const cp=document.getElementById('customUpsellPrice');
+  if(cn)cn.value='';if(cp)cp.value='';
+}
+
+function takeUpsell(){
+  // Check if custom input was filled instead
+  const customName=document.getElementById('customUpsellName')?.value?.trim();
+  const customPrice=document.getElementById('customUpsellPrice')?.value?.trim();
+
+  let finalPkg=curUpsellPkg;
+  let finalPrice='';
+
+  if(customName){
+    finalPkg=customName;
+    finalPrice=customPrice||'';
+  } else if(!finalPkg){
+    showT('Select a package or type a custom upsell');return;
+  } else {
+    const pkgData=ALL_PACKAGES.find(p=>p.name===finalPkg);
+    if(pkgData)finalPrice=pkgData.price;
+  }
+
+  const o=fO(curId);
+  if(o){
+    o.upsell_taken=finalPkg;
+    o.upsell_taken_price=finalPrice;
+    o.upsell_status='Accepted';
+  }
+  cUpsell();
+  doConfirmWA(curId);
+}
+
+function skipUpsell(){
+  const o=fO(curId);
+  if(o){o.upsell_taken='';o.upsell_status='Declined';}
+  cUpsell();
+  doConfirmWA(curId);
+}
+
+function cUpsell(){
+  document.getElementById('upScrim').classList.remove('open');
+  document.getElementById('upPanel').classList.remove('open');
+}
+
+function doConfirmWA(id){
+  const o=fO(id);if(!o)return;
+  const tpl=WT['confirm'];
+
+  const upsellNote=o.upsell_taken
+    ?`\n\n🎁 Additional package agreed: ${o.upsell_taken}${o.upsell_taken_price?' ('+o.upsell_taken_price+')':''}\nFull amount to pay on delivery includes both packages.`
+    :'';
+
+  const ownerUpsellLine=o.upsell_taken
+    ?`\n💚 UPSELL AGREED: ${o.upsell_taken}${o.upsell_taken_price?' — '+o.upsell_taken_price:''}\n⚠️ Status: Accepted — awaiting payment confirmation`
+    :o.upsell_status==='Declined'
+    ?`\nUpsell: Offered — Declined`
+    :'';
+
+  document.getElementById('waTitle').textContent=tpl.t;
+  document.getElementById('waBody').innerHTML=`
+    <div class="wa-msg"><div class="wa-who"><div class="wa-mark g"></div>Customer receives</div><div class="wa-text g">${tpl.C(o)}${upsellNote}</div></div>
+    <div class="wa-msg"><div class="wa-who"><div class="wa-mark m"></div>Owner receives</div><div class="wa-text m">${tpl.O(o)}${ownerUpsellLine}</div></div>
+    <div class="wa-msg"><div class="wa-who"><div class="wa-mark l"></div>Your notification — no customer data</div><div class="wa-text">${tpl.A(o)}</div></div>
+    ${o.upsell_taken?`<div style="padding:8px 12px;background:rgba(0,168,70,.06);border:1px solid rgba(0,168,70,.2);font-size:11px;color:var(--accent);">⚠️ Upsell is <strong>Accepted</strong> — not yet Paid. Will confirm to Paid only when Moniepoint receives the full combined amount.</div>`:''}`;
+
+  const btn=document.getElementById('waGo');
+  btn.textContent=tpl.go;btn.className='wa-go';
+  document.getElementById('waScrim').classList.add('open');
+  document.getElementById('waPanel').classList.add('open');
+}
+function cWA(){document.getElementById('waScrim').classList.remove('open');document.getElementById('waPanel').classList.remove('open');}
+function doAction(){
+  cWA();const o=fO(curId);if(!o)return;
+  const fromCB=O.cb.find(x=>x.id===curId)?'cb':null;
+  if(curA==='confirm'){mv(curId,fromCB||'cn','cf');showT('Confirmed');}
+  else if(curA==='reschedule'){const fd=fmtD(document.getElementById('dpd-'+curId)?.value);const ft=document.getElementById('dpt-'+curId)?.value||'09:00';const nr=document.getElementById('dreason-'+curId)?.value||'';if(o){o.rd=`${fd} at ${ft}`;o.s=86400;if(nr)o.reason=nr;o.attempts=(o.attempts||0)+1;}mv(curId,fromCB||'cn','cb');showT(`Call-back saved: ${fd}${nr?' — '+nr.slice(0,30):''}`);}
+  else if(curA==='no_answer')showT('No answer recorded');
+  else if(curA==='cancel'){rm(curId,fTab(curId));showT('Order cancelled');}
+  else if(curA==='s_Out for Delivery'){if(o)o.st='Out for Delivery';render('ow');showT('Marked out for delivery');}
+  else if(curA==='s_Delivered'){if(o){o.st='Delivered';o.age='Just now';}earnings+=o?o.c:0;closedN++;document.getElementById('te').textContent='₦'+earnings.toLocaleString();document.getElementById('oc').textContent=closedN;mv(curId,'ow','dn');showT('Delivered');}
+  else if(curA==='s_Rescheduled'){const fd=fmtD(document.getElementById('dpd-'+curId)?.value);const ft=document.getElementById('dpt-'+curId)?.value||'09:00';if(o){o.rd=`${fd} at ${ft}`;o.s=86400;}mv(curId,'ow','cb');showT(`Rescheduled: ${fd}`);}
+  else if(curA==='s_Cancelled'){rm(curId,'ow');showT('Order cancelled');}
+}
+function setUpsell(id,val){
+  const o=fO(id);if(!o)return;
+  o.upsell=val;
+  // Re-render current page so dropdown + optional custom field updates
+  render(curP);
+}
+function setCustomUpsell(id,val){
+  const o=fO(id);if(!o)return;
+  o.upsell_custom=val;
+}
+function fO(id){for(const k of Object.keys(O)){const o=O[k].find(x=>x.id===id);if(o)return o;}return null;}
+function fTab(id){for(const k of Object.keys(O)){if(O[k].find(x=>x.id===id))return k;}return null;}
+function mv(id,from,to){const i=O[from].findIndex(x=>x.id===id);if(i===-1)return;const o=O[from].splice(i,1)[0];O[to].unshift(o);updCnt();render(curP);setTimeout(()=>go(to),300);}
+function rm(id,from){const i=O[from].findIndex(x=>x.id===id);if(i!==-1)O[from].splice(i,1);updCnt();render(curP);}
+function showT(msg){const t=document.getElementById('tst');document.getElementById('tm').textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2600);}
+updCnt();render('cn');
+</script>
+</body>
+</html>

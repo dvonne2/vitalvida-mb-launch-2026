@@ -9,6 +9,32 @@ from frappe.model.document import Document
 
 
 class DeliveryAgent(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		active: DF.Check
+		agent_name: DF.Data
+		current_stock: DF.Int
+		dsr_adjusted: DF.Percent
+		dsr_colour: DF.Data | None
+		dsr_strict: DF.Percent
+		is_double_risk: DF.Check
+		partnership_level: DF.Data | None
+		phone: DF.Data
+		shrinkage_rate: DF.Percent
+		state: DF.Data
+		strike_count: DF.Int
+		strike_status: DF.Literal["", "Active", "Suspended"]
+		success_rate: DF.Percent
+		total_earned: DF.Currency
+		total_orders: DF.Int
+		zone: DF.Link | None
+	# end: auto-generated types
 
 	def validate(self):
 		"""Normalize phone on save."""

@@ -1,0 +1,34 @@
+{
+ "content": null,
+ "creation": "2026-03-28 00:00:00",
+ "docstatus": 0,
+ "doctype": "Page",
+ "icon": "fa fa-phone",
+ "idx": 0,
+ "modified": "2026-03-28 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Vitalvida",
+ "name": "vv-telesales-hub",
+ "owner": "Administrator",
+ "page_name": "vv-telesales-hub",
+ "restrict_to_domain": null,
+ "roles": [
+  {
+   "doctype": "Has Role",
+   "role": "Telesales User"
+  },
+  {
+   "doctype": "Has Role",
+   "role": "Sales Manager"
+  },
+  {
+   "doctype": "Has Role",
+   "role": "System Manager"
+  }
+ ],
+ "script": null,
+ "standard": "No",
+ "style": null,
+ "system_page": 0,
+ "title": "VitalVida Telesales Hub"
+}

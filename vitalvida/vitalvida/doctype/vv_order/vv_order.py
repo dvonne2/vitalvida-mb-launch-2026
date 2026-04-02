@@ -68,8 +68,10 @@ class VVOrder(Document):
 		affiliate_payout_batch: DF.Link | None
 		affiliate_payout_status: DF.Literal["", "Pending", "Approved", "Paid", "Rejected"]
 		assigned_at: DF.Datetime | None
+		attempt_count: DF.Int
 		attribution_locked: DF.Check
 		brand: DF.Literal["FHG", "IR", "General"]
+		call_back_time: DF.Datetime | None
 		cancellation_source: DF.Literal["", "Customer", "DA", "Operations", "System"]
 		click_id: DF.Data | None
 		customer_name: DF.Data
@@ -82,6 +84,8 @@ class VVOrder(Document):
 		delivery_type: DF.Literal["Same Day", "Standard"]
 		expected_delivery_date: DF.Date | None
 		landing_page_url: DF.Data | None
+		landmark: DF.Data | None
+		lga: DF.Data | None
 		media_buyer: DF.Link | None
 		order_status: DF.Literal["Partial", "Pending", "Confirmed", "Assigned", "Out for Delivery", "Delivered", "Paid", "Rescheduled", "Cancelled", "Returned"]
 		package_contents: DF.Data | None
@@ -92,6 +96,7 @@ class VVOrder(Document):
 		product_amount: DF.Currency
 		reschedule_note: DF.Text | None
 		sla_breached: DF.Check
+		state: DF.Literal["Lagos", "FCT", "Rivers", "Oyo", "Imo", "Delta", "Kano"]
 		status_changed_at: DF.Datetime | None
 		telesales_rep: DF.Link | None
 		total_payable: DF.Currency

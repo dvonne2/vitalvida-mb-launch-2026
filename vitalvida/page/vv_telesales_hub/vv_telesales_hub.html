@@ -1,0 +1,50 @@
+<div id="vv-root">
+
+  <h2>Telesales Hub</h2>
+
+  <div>
+    Agent: <strong id="vv-agent-name">Loading...</strong>
+  </div>
+
+  <hr>
+
+  <!-- Tabs -->
+  <div style="margin:10px 0;">
+    <button class="vv-tab" data-p="cn" onclick="vvGo('cn')">Call Now (<span id="vv-cnt-cn">0</span>)</button>
+    <button class="vv-tab" data-p="cf" onclick="vvGo('cf')">Confirmed (<span id="vv-cnt-cf">0</span>)</button>
+    <button class="vv-tab" data-p="ow" onclick="vvGo('ow')">On The Way (<span id="vv-cnt-ow">0</span>)</button>
+    <button class="vv-tab" data-p="cb" onclick="vvGo('cb')">Call Back (<span id="vv-cnt-cb">0</span>)</button>
+    <button class="vv-tab" data-p="dn" onclick="vvGo('dn')">Done (<span id="vv-cnt-dn">0</span>)</button>
+  </div>
+
+  <hr>
+
+  <!-- Pages -->
+  <div id="vv-page-cn" class="vv-page active">
+    <div id="vv-cn-list">Loading Call Now...</div>
+  </div>
+
+  <div id="vv-page-cf" class="vv-page">
+    <div id="vv-cf-list"></div>
+  </div>
+
+  <div id="vv-page-ow" class="vv-page">
+    <div id="vv-ow-list"></div>
+  </div>
+
+  <div id="vv-page-cb" class="vv-page">
+    <div id="vv-cb-list"></div>
+  </div>
+
+  <div id="vv-page-dn" class="vv-page">
+    <div id="vv-dn-list"></div>
+  </div>
+
+</div>
+
+<style>
+.vv-page { display: none; }
+.vv-page.active { display: block; }
+.vv-tab { margin-right: 5px; padding: 5px 10px; }
+.vv-tab.active { background: black; color: white; }
+</style>
