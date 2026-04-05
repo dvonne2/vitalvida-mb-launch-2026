@@ -1,53 +1,203 @@
 {
  "actions": [],
  "autoname": "field:closer_name",
- "creation": "2026-03-08 00:00:00.000000",
+ "creation": "2026-03-08 00:00:00",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "closer_name", "phone", "pool", "user",
-  "column_break_1", "is_active", "is_blocked", "last_assigned_at",
-  "section_break_stats", "round_robin_index", "weekly_delivery_rate",
-  "section_break_dsr", "dsr_strict", "total_assigned_this_period",
+  "closer_name",
+  "phone",
+  "pool",
+  "user",
+  "max_pending_override",
+  "column_break_1",
+  "is_active",
+  "is_blocked",
+  "last_assigned_at",
+  "section_break_stats",
+  "round_robin_index",
+  "weekly_delivery_rate",
+  "section_break_dsr",
+  "dsr_strict",
+  "total_assigned_this_period",
   "total_paid_this_period",
-  "column_break_dsr", "total_ghosted_this_period", "ghost_rate",
-  "avg_confirmation_minutes", "dsr_colour"
+  "column_break_dsr",
+  "total_ghosted_this_period",
+  "ghost_rate",
+  "avg_confirmation_minutes",
+  "dsr_colour"
  ],
  "fields": [
-  {"fieldname":"closer_name","fieldtype":"Data","label":"Closer Name","reqd":1,"in_list_view":1,"unique":1,"in_create":0},
-  {"fieldname":"phone","fieldtype":"Data","label":"Phone","reqd":1,"in_list_view":1,"in_create":0},
-  {"fieldname":"pool","fieldtype":"Select","label":"Pool","options":"General\nFHG\nIR","reqd":1,"in_list_view":1,"in_standard_filter":1,"in_create":0},
-  {"fieldname":"user","fieldtype":"Link","label":"User","options":"User","in_create":0},
-  {"fieldname":"column_break_1","fieldtype":"Column Break","in_create":0},
-  {"fieldname":"is_active","fieldtype":"Check","label":"Active","default":"1","in_list_view":1,"in_standard_filter":1,"in_create":0},
-  {"fieldname":"is_blocked","fieldtype":"Check","label":"Blocked","default":"0","in_list_view":1,"in_create":0},
-  {"fieldname":"last_assigned_at","fieldtype":"Datetime","label":"Last Assigned At","read_only":1,"in_create":0},
-  {"fieldname":"section_break_stats","fieldtype":"Section Break","label":"Assignment Stats","in_create":0},
-  {"fieldname":"round_robin_index","fieldtype":"Int","label":"Round Robin Index","default":"0","in_create":0},
-  {"fieldname":"weekly_delivery_rate","fieldtype":"Float","label":"Weekly Delivery Rate","read_only":1,"description":"M16: equals dsr_strict, kept for M10 compatibility","in_create":0},
-  {"fieldname":"section_break_dsr","fieldtype":"Section Break","label":"DSR — Delivery Success Rate","in_create":0},
-  {"fieldname":"dsr_strict","fieldtype":"Percent","label":"DSR Strict","read_only":1,"description":"Paid / Assigned x 100","default":"0","in_create":0},
-  {"fieldname":"total_assigned_this_period","fieldtype":"Int","label":"Total Assigned This Period","read_only":1,"default":"0","in_create":0},
-  {"fieldname":"total_paid_this_period","fieldtype":"Int","label":"Total Paid This Period","read_only":1,"default":"0","in_create":0},
-  {"fieldname":"column_break_dsr","fieldtype":"Column Break","in_create":0},
-  {"fieldname":"total_ghosted_this_period","fieldtype":"Int","label":"Total Ghosted This Period","read_only":1,"default":"0","in_create":0},
-  {"fieldname":"ghost_rate","fieldtype":"Percent","label":"Ghost Rate","read_only":1,"description":"Ghosted / Assigned x 100","default":"0","in_create":0},
-  {"fieldname":"avg_confirmation_minutes","fieldtype":"Float","label":"Avg Confirmation Minutes","read_only":1,"description":"Avg time from assignment to Confirmed status","default":"0","in_create":0},
-  {"fieldname":"dsr_colour","fieldtype":"Data","label":"DSR Colour","read_only":1,"hidden":1,"in_create":0}
+  {
+   "fieldname": "closer_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Closer Name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "phone",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Phone",
+   "reqd": 1
+  },
+  {
+   "fieldname": "pool",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Pool",
+   "options": "General\nFHG\nIR",
+   "reqd": 1
+  },
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "label": "User",
+   "options": "User"
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Active"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_blocked",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Blocked"
+  },
+  {
+   "fieldname": "last_assigned_at",
+   "fieldtype": "Datetime",
+   "label": "Last Assigned At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_stats",
+   "fieldtype": "Section Break",
+   "label": "Assignment Stats"
+  },
+  {
+   "default": "0",
+   "fieldname": "round_robin_index",
+   "fieldtype": "Int",
+   "label": "Round Robin Index"
+  },
+  {
+   "description": "M16: equals dsr_strict, kept for M10 compatibility",
+   "fieldname": "weekly_delivery_rate",
+   "fieldtype": "Float",
+   "label": "Weekly Delivery Rate",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_dsr",
+   "fieldtype": "Section Break",
+   "label": "DSR \u2014 Delivery Success Rate"
+  },
+  {
+   "default": "0",
+   "description": "Paid / Assigned x 100",
+   "fieldname": "dsr_strict",
+   "fieldtype": "Percent",
+   "label": "DSR Strict",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "total_assigned_this_period",
+   "fieldtype": "Int",
+   "label": "Total Assigned This Period",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "total_paid_this_period",
+   "fieldtype": "Int",
+   "label": "Total Paid This Period",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_dsr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "total_ghosted_this_period",
+   "fieldtype": "Int",
+   "label": "Total Ghosted This Period",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "Ghosted / Assigned x 100",
+   "fieldname": "ghost_rate",
+   "fieldtype": "Percent",
+   "label": "Ghost Rate",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "Avg time from assignment to Confirmed status",
+   "fieldname": "avg_confirmation_minutes",
+   "fieldtype": "Float",
+   "label": "Avg Confirmation Minutes",
+   "read_only": 1
+  },
+  {
+   "fieldname": "dsr_colour",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "DSR Colour",
+   "read_only": 1
+  },
+  {
+   "fieldname": "max_pending_override",
+   "fieldtype": "Int",
+   "label": "Pending Override"
+  }
  ],
- "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-03-15 00:00:00.000000",
+ "modified": "2026-04-05 10:12:28.285643",
  "modified_by": "Administrator",
  "module": "Vitalvida",
  "name": "Telesales Closer",
  "owner": "Administrator",
  "permissions": [
-  {"create":1,"delete":1,"email":1,"export":1,"print":1,"read":1,"report":1,"role":"System Manager","share":1,"write":1},
-  {"create":0,"delete":0,"read":1,"role":"Sales User","write":1,"report":1}
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "Sales User",
+   "write": 1
+  }
  ],
+ "row_format": "Dynamic",
  "sort_field": "closer_name",
  "sort_order": "ASC",
+ "states": [],
  "title_field": "closer_name",
  "track_changes": 1
 }

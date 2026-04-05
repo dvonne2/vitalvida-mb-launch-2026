@@ -1,10 +1,11 @@
 import frappe
 
+
 def normalise_payload(raw: dict, queue_row_name: str) -> dict:
     data = raw.copy()
     log = []
 
-    #READ ACTIVE MAPPINGS FROM INBOUND FIELD MAP DOCTYPE
+    # ── READ ACTIVE MAPPINGS FROM INBOUND FIELD MAP DOCTYPE ──
     try:
         mappings = frappe.get_all(
             "Inbound Field Map",
@@ -18,11 +19,11 @@ def normalise_payload(raw: dict, queue_row_name: str) -> dict:
     except Exception:
         log.append("Warning: Could not read Inbound Field Map")
 
-    #Fix phone number
+    # ── PHONE ─────────────────────────────────────────────────
     phone = (
         raw.get("customerPhone")
-        or raw.get("phone")
         or raw.get("customer_phone")
+        or raw.get("phone")
         or ""
     )
     phone = "".join(filter(str.isdigit, str(phone)))
@@ -39,43 +40,60 @@ def normalise_payload(raw: dict, queue_row_name: str) -> dict:
 
     data["customer_phone"] = phone
 
-    #Fix customer name
+    # ── CUSTOMER NAME ─────────────────────────────────────────
+    # Cover every field name variant from all sources
     data["customer_name"] = (
-        raw.get("customerFullName")
+        raw.get("customer_name")       # ← React-Web / your current payload
+        or raw.get("customerFullName")
         or raw.get("customerName")
+        or raw.get("full_name")
+        or raw.get("fullName")
         or raw.get("name")
         or ""
     )
     log.append(f"Name: {data['customer_name']}")
 
-    #Fix amount
+    # ── PACKAGE / PRODUCT ─────────────────────────────────────
+    # Cover every field name variant from all sources
+    package = (
+        raw.get("package_name")        # standard ERPNext name
+        or raw.get("packageName")      # camelCase variant
+        or raw.get("product")          # ← React-Web / your current payload
+        or raw.get("product_name")
+        or raw.get("productName")
+        or raw.get("item")
+        or ""
+    )
+
+    # Validate package exists in ERPNext — only if package is not empty
+    if package and not frappe.db.exists("Package", package):
+        # Don't hard reject — log warning and keep going
+        # Telesales can correct the package on the confirmation call
+        log.append(f"Warning: Package '{package}' not found in ERPNext — saved as-is")
+
+    data["package_name"] = package
+    log.append(f"Package: {package}")
+
+    # ── AMOUNT ────────────────────────────────────────────────
     data["total"] = float(
         raw.get("totalAmount")
+        or raw.get("total_amount")
         or raw.get("packageAmount")
         or raw.get("productPrice")
+        or raw.get("total_payable")
         or raw.get("amount")
         or raw.get("price")
         or 0
     )
     log.append(f"Total: {data['total']}")
 
-    #Check package exists in ERPNext
-    package = (
-        raw.get("package_name")
-        or raw.get("packageName")
-        or ""
-    )
-    if package and not frappe.db.exists("Package", package):
-        raise ValueError(f"Unknown package: '{package}' — rejected")
-    data["package_name"] = package
-    log.append(f"Package: {package}")
-
-    #Calculate delivery fee
+    # ── DELIVERY FEE ──────────────────────────────────────────
     delivery_type = (
         raw.get("deliveryType")
         or raw.get("delivery_type")
         or "STANDARD"
-    )
+    ).upper()
+
     try:
         fee_config = frappe.get_single("Delivery Fee Config")
         same_day = fee_config.same_day_fee or 5000
@@ -86,16 +104,25 @@ def normalise_payload(raw: dict, queue_row_name: str) -> dict:
 
     data["delivery_fee"] = same_day if delivery_type == "SAME_DAY" else standard
     data["delivery_type"] = delivery_type
-    log.append(f"Delivery fee: {data['delivery_fee']}")
+    log.append(f"Delivery fee: {data['delivery_fee']} ({delivery_type})")
 
-    #Flag incomplete orders
-    if not data["customer_name"] and not package:
+    # ── LOCATION FIELDS ───────────────────────────────────────
+    # These come straight from payload — just ensure they exist
+    data["state"]    = raw.get("state", "")
+    data["lga"]      = raw.get("lga", "")
+    data["address"]  = raw.get("address", "")
+    data["landmark"] = raw.get("landmark", "")  # blank if not sent — telesales fills on call
+    log.append(f"Location: {data['state']} / {data['lga']}")
+
+    # ── PARTIAL FLAG ──────────────────────────────────────────
+    # Mark as partial if name or package is missing
+    if not data["customer_name"] or not data["package_name"]:
         data["is_partial"] = 1
-        log.append("Flagged as Partial")
+        log.append("Flagged as Partial — missing name or package")
     else:
         data["is_partial"] = 0
 
-    #Save log to queue row
+    # ── SAVE NORMALISATION LOG TO QUEUE ROW ───────────────────
     frappe.db.set_value(
         "Vitalvida Webhook Queue",
         queue_row_name,

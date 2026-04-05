@@ -96,7 +96,7 @@ class VVOrder(Document):
 		product_amount: DF.Currency
 		reschedule_note: DF.Text | None
 		sla_breached: DF.Check
-		state: DF.Literal["Lagos", "FCT", "Rivers", "Oyo", "Imo", "Delta", "Kano"]
+		state: DF.Literal["Lagos", "FCT", "Rivers", "Oyo", "Imo", "Delta", "Kano", "Kwara", "Osun"]
 		status_changed_at: DF.Datetime | None
 		telesales_rep: DF.Link | None
 		total_payable: DF.Currency
