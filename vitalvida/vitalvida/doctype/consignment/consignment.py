@@ -3,6 +3,29 @@ from frappe.model.document import Document
 from vitalvida.consignment import generate_consignment_id, on_consignment_delivered
 
 class Consignment(Document):
+    # begin: auto-generated types
+    # This code is auto-generated. Do not modify anything in this block.
+
+    from typing import TYPE_CHECKING
+
+    if TYPE_CHECKING:
+        from frappe.types import DF
+        from vitalvida.vitalvida.doctype.consignment_item.consignment_item import ConsignmentItem
+
+        confirmed_at: DF.Datetime | None
+        confirmed_by: DF.Link | None
+        consignment_id: DF.Data
+        delivery_agent: DF.Link
+        dispatch_date: DF.Date
+        driver_phone: DF.Data | None
+        eta_date: DF.Date | None
+        from_location: DF.Link
+        items: DF.Table[ConsignmentItem]
+        linked_dispatch: DF.Link | None
+        notes: DF.Text | None
+        status: DF.Literal["", "Pending", "In Transit", "Delivered", "Cancelled", "Confirmed"]
+        to_location: DF.Link
+    # end: auto-generated types
 
     def before_insert(self):
         if not self.consignment_id:

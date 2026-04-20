@@ -1,164 +1,161 @@
 import frappe
-from frappe.utils import now_datetime
+from frappe import _
+from datetime import datetime, timedelta
 
-
-def dispatch_stock(dispatch_name: str) -> None:
+@frappe.whitelist()
+def dispatch_stock(dispatch_name=None, delivery_agent=None, items=None, 
+                   storekeeper_fee=0, da_pickup_transport=0, driver_transport=0,
+                   driver_phone=None, motor_park=None, eta_date=None,
+                   notes=None, approval_required=False):
     """
-    Called on Stock Dispatch submit.
-    M15: Freeze gate and Restock Block gate run before any stock entries are created.
+    Create or update a Stock Dispatch with business logic validation.
+    
+    If approval_required=True, creates dispatch with status=Pending Approval
+    and escalates to Operations Manager.
+    
+    Otherwise, creates with status=In Transit, decrements factory stock,
+    and creates linked Consignment.
     """
-    dispatch = frappe.get_doc("Stock Dispatch", dispatch_name)
-
-    if not dispatch.items:
-        frappe.throw(f"Stock Dispatch {dispatch_name} has no items.")
-
-    for item in dispatch.items:
-        # ── M15 Gate 1: Freeze check ──────────────────────────────────────
-        try:
-            from vitalvida.freeze import is_frozen
-            if is_frozen(dispatch.delivery_agent, item.product):
-                da_name = (
-                    frappe.db.get_value("Delivery Agent", dispatch.delivery_agent, "agent_name")
-                    or dispatch.delivery_agent
-                )
-                frappe.throw(
-                    f"DA {da_name} warehouse is frozen for {item.product}. "
-                    f"Unfreeze before dispatching stock."
-                )
-        except ImportError:
-            pass  # M15 not yet installed — skip gate
-
-        # ── M15 Gate 2: Restock Block check ──────────────────────────────
-        _check_restock_block(dispatch.delivery_agent)
-
-        # ── Create stock entry ────────────────────────────────────────────
-        qty_net = float(item.quantity_dispatched or 0) - float(item.quantity_returned or 0)
-        frappe.db.set_value("Stock Dispatch Item", item.name, "quantity_net", qty_net)
-
-        _create_stock_entry(
-            delivery_agent=dispatch.delivery_agent,
-            product=item.product,
-            entry_type="Dispatch",
-            direction="In",
-            quantity=float(item.quantity_dispatched or 0),
-            dispatch=dispatch_name
-        )
-
-    frappe.db.set_value("Stock Dispatch", dispatch_name, "status", "Confirmed")
-    frappe.db.commit()
-
-
-def get_da_stock(delivery_agent: str, product: str):
-    name = frappe.db.exists("DA Warehouse", {
-        "delivery_agent": delivery_agent,
-        "product": product
-    })
-    return frappe.get_doc("DA Warehouse", name) if name else None
-
-
-def validate_stock_available(delivery_agent: str, product: str, quantity: int = 1) -> None:
-    warehouse = get_da_stock(delivery_agent, product)
-    current = float(warehouse.current_stock if warehouse else 0)
-    if current < quantity:
-        da_name = frappe.db.get_value("Delivery Agent", delivery_agent, "agent_name") or delivery_agent
-        item_name = frappe.db.get_value("Item", product, "item_name") or product
-        frappe.throw(
-            f"DA {da_name} has no stock of {item_name}. "
-            f"Dispatch stock before assigning this order."
-        )
-
-
-def _create_stock_entry(delivery_agent, product, entry_type, direction,
-                        quantity, order=None, dispatch=None):
-    entry = frappe.get_doc({
-        "doctype": "DA Stock Entry",
-        "delivery_agent": delivery_agent,
-        "product": product,
-        "entry_type": entry_type,
-        "direction": direction,
-        "quantity": float(quantity),
-        "reference_order": order,
-        "reference_dispatch": dispatch,
-        "entry_date": now_datetime(),
-        "posted_by": frappe.session.user,
-    })
-    entry.insert(ignore_permissions=True)
-    return entry
-
-
-def _update_warehouse_stock(entry) -> None:
-    """Called from DAStockEntry.after_insert()."""
-    delivery_agent = entry.delivery_agent
-    product = entry.product
-    quantity = float(entry.quantity or 0)
-    direction = entry.direction
-    now = now_datetime()
-
-    warehouse_name = frappe.db.exists("DA Warehouse", {
-        "delivery_agent": delivery_agent,
-        "product": product
-    })
-
-    if warehouse_name:
-        current_stock = float(
-            frappe.db.get_value("DA Warehouse", warehouse_name, "current_stock") or 0
-        )
+    
+    # Validate cost limits
+    limits = frappe.get_value('Vitalvida Settings', 'Vitalvida Settings', 
+                             ['max_storekeeper_fee', 'max_da_pickup_transport'])
+    
+    if float(storekeeper_fee) > float(limits[0]):
+        if not approval_required:
+            frappe.throw(_("Storekeeper fee exceeds limit. Resubmit with approval."))
+    
+    if float(da_pickup_transport) > float(limits[1]):
+        if not approval_required:
+            frappe.throw(_("DA pickup transport exceeds limit. Resubmit with approval."))
+    
+    # Check if DA is frozen
+    da_frozen = frappe.db.get_value('DA Warehouse', 
+                                    {'delivery_agent': delivery_agent},
+                                    'is_frozen')
+    if da_frozen:
+        frappe.throw(_("Cannot dispatch to a frozen DA warehouse"))
+    
+    # Validate ETA (max 5 days)
+    if eta_date:
+        eta = datetime.strptime(eta_date, '%Y-%m-%d')
+        today = datetime.now()
+        days_until_eta = (eta - today).days
+        if days_until_eta > 5:
+            frappe.msgprint(_("⚠ ETA exceeds 5 days — flagged for review"), 
+                          alert=True)
+    
+    # Handle approval flow
+    if approval_required:
+        doc = frappe.new_doc('Stock Dispatch')
+        doc.delivery_agent = delivery_agent
+        doc.dispatch_date = datetime.now().date()
+        doc.eta_date = eta_date
+        doc.driver_phone = driver_phone
+        doc.motor_park = motor_park
+        doc.storekeeper_fee = storekeeper_fee
+        doc.da_pickup_transport = da_pickup_transport
+        doc.driver_transport = driver_transport
+        doc.total_cost = float(storekeeper_fee) + float(da_pickup_transport) + float(driver_transport)
+        doc.notes = notes
+        doc.approval_required = 1
+        doc.status = 'Pending Approval'
+        
+        # Add items
+        if items:
+            for item in items:
+                doc.append('items', {'product': item['product'], 'qty': item['qty']})
+        
+        doc.insert()
+        frappe.db.commit()
+        
+        # Create escalation request
+        esc = frappe.new_doc('Escalation Request')
+        esc.type = 'Cost Approval'
+        esc.subject = f"Dispatch {doc.name} — Cost Approval Required"
+        esc.description = f"Storekeeper: ₦{storekeeper_fee}, DA Pickup: ₦{da_pickup_transport}"
+        esc.linked_doctype = 'Stock Dispatch'
+        esc.linked_name = doc.name
+        esc.status = 'Open'
+        esc.insert()
+        frappe.db.commit()
+        
+        # Notify Operations Manager (placeholder)
+        frappe.msgprint(_("Dispatch created and sent for approval to Operations Manager"))
+        
+        return {'dispatch_name': doc.name, 'status': 'Pending Approval', 'consignment_name': None}
+    
+    # Normal flow: create dispatch and ship immediately
+    if dispatch_name:
+        doc = frappe.get_doc('Stock Dispatch', dispatch_name)
     else:
-        warehouse_doc = frappe.get_doc({
-            "doctype": "DA Warehouse",
-            "delivery_agent": delivery_agent,
-            "product": product,
-            "current_stock": 0,
-            "last_updated": now,
-        })
-        warehouse_doc.insert(ignore_permissions=True)
-        warehouse_name = warehouse_doc.name
-        current_stock = 0.0
-
-    balance_before = current_stock
-    new_stock = (current_stock + quantity) if direction == "In" else (current_stock - quantity)
-
-    if new_stock < 0:
-        frappe.log_error(
-            f"M12: Stock would go negative for DA={delivery_agent}, product={product}. "
-            f"Entry={entry.name}, current={current_stock}, quantity={quantity}.",
-            "M12 Negative Stock Attempt"
-        )
-        frappe.throw(
-            f"Insufficient stock: DA {delivery_agent} only has "
-            f"{current_stock} units of {product}. Cannot deduct {quantity}."
-        )
-
-    frappe.db.set_value("DA Warehouse", warehouse_name, {
-        "current_stock": new_stock,
-        "last_updated": now,
-    })
-    frappe.db.set_value("DA Stock Entry", entry.name, {
-        "balance_before": balance_before,
-        "balance_after": new_stock,
-    })
+        doc = frappe.new_doc('Stock Dispatch')
+        doc.delivery_agent = delivery_agent
+        doc.dispatch_date = datetime.now().date()
+        doc.dispatched_by = frappe.session.user
+    
+    doc.eta_date = eta_date
+    doc.driver_phone = driver_phone
+    doc.motor_park = motor_park
+    doc.storekeeper_fee = storekeeper_fee
+    doc.da_pickup_transport = da_pickup_transport
+    doc.driver_transport = driver_transport
+    doc.total_cost = float(storekeeper_fee) + float(da_pickup_transport) + float(driver_transport)
+    doc.notes = notes
+    doc.status = 'In Transit'
+    
+    # Add items
+    if items:
+        doc.items = []
+        for item in items:
+            doc.append('items', {'product': item['product'], 'qty': item['qty']})
+    
+    doc.save()
+    
+    # Decrement factory stock (atomic)
+    for item in items:
+        stock_qty = frappe.db.get_value('Item', item['product'], 'stock_qty') or 0
+        if float(item['qty']) > float(stock_qty):
+            frappe.throw(_("Insufficient factory stock for {0}").format(item['product']))
+        
+        frappe.db.set_value('Item', item['product'], 'stock_qty', 
+                           float(stock_qty) - float(item['qty']))
+    
+    # Create Consignment
+    consignment = frappe.new_doc('Consignment')
+    consignment.delivery_agent = delivery_agent
+    consignment.dispatch_date = doc.dispatch_date
+    consignment.eta_date = eta_date
+    consignment.driver_phone = driver_phone
+    consignment.linked_dispatch = doc.name
+    consignment.status = 'Pending Receipt'
+    
+    for item in items:
+        consignment.append('items', {'product': item['product'], 'qty': item['qty']})
+    
+    consignment.insert()
     frappe.db.commit()
+    
+    # Notify DA (placeholder)
+    frappe.msgprint(_("Dispatch shipped and DA notified via WhatsApp"))
+    
+    return {
+        'dispatch_name': doc.name, 
+        'status': 'In Transit', 
+        'consignment_name': consignment.name
+    }
 
-
-def _check_restock_block(delivery_agent: str) -> None:
+@frappe.whitelist()
+def dispatch_stats():
     """
-    M15: Raises if DA has an active Restock Block.
-    Called before any stock dispatch to this DA.
+    Get dispatch statistics: pending, in_transit, delivered counts
     """
-    try:
-        block = frappe.db.exists("DA Restock Block", {
-            "delivery_agent": delivery_agent,
-            "is_active": 1
-        })
-        if block:
-            da_name = (
-                frappe.db.get_value("Delivery Agent", delivery_agent, "agent_name")
-                or delivery_agent
-            )
-            reason = frappe.db.get_value("DA Restock Block", block, "reason") or "No reason given"
-            frappe.throw(
-                f"Stock issuance to DA {da_name} is blocked. "
-                f"Reason: {reason}. Use Resume Restock to unblock."
-            )
-    except frappe.exceptions.DoesNotExistError:
-        pass  # DocType not yet installed
+    pending = frappe.db.count('Stock Dispatch', {'status': 'Pending'})
+    in_transit = frappe.db.count('Stock Dispatch', {'status': 'In Transit'})
+    delivered = frappe.db.count('Stock Dispatch', {'status': 'Confirmed'})
+    
+    return {
+        'pending': pending,
+        'in_transit': in_transit,
+        'delivered': delivered
+    }

@@ -13,6 +13,24 @@ from frappe.model.document import Document
 
 
 class DAWarehouse(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		current_stock: DF.Float
+		delivery_agent: DF.Link
+		dsr_percentage: DF.Percent
+		freeze_reason: DF.Text | None
+		is_frozen: DF.Check
+		last_dispatch_date: DF.Date | None
+		last_updated: DF.Datetime | None
+		notes: DF.Text | None
+		product: DF.Link
+	# end: auto-generated types
 
 	def before_save(self):
 		"""Block manual edits to current_stock."""

@@ -7,13 +7,21 @@
  "engine": "InnoDB",
  "field_order": [
   "agent_name",
+  "user",
   "phone",
   "column_break_1",
   "state",
   "zone",
   "active",
-  "column_break_pfpv",
+  "section_break_bank",
+  "bank_name",
+  "bank_account_number",
+  "column_break_bank",
+  "bank_account_name",
+  "section_break_pfpv",
   "current_stock",
+  "column_break_pfpv",
+  "partnership_level",
   "section_break_stats",
   "total_orders",
   "success_rate",
@@ -28,8 +36,7 @@
   "section_break_strike",
   "strike_count",
   "strike_status",
-  "column_break_partner",
-  "partnership_level"
+  "column_break_partner"
  ],
  "fields": [
   {
@@ -38,6 +45,15 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Agent Name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "description": "The ERPNext User account for this Agent. Required for Portal Login.",
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "label": "User",
+   "options": "User",
    "reqd": 1,
    "unique": 1
   },
@@ -62,7 +78,7 @@
    "reqd": 1
   },
   {
-   "description": "Gap 7: Geographic delivery zone for this DA",
+   "description": "Geographic delivery zone for this DA",
    "fieldname": "zone",
    "fieldtype": "Link",
    "label": "Zone",
@@ -75,6 +91,51 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Active"
+  },
+  {
+   "fieldname": "section_break_bank",
+   "fieldtype": "Section Break",
+   "label": "Bank & Payment Details"
+  },
+  {
+   "fieldname": "bank_name",
+   "fieldtype": "Data",
+   "label": "Bank Name"
+  },
+  {
+   "fieldname": "bank_account_number",
+   "fieldtype": "Data",
+   "label": "Bank Account Number"
+  },
+  {
+   "fieldname": "column_break_bank",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "bank_account_name",
+   "fieldtype": "Data",
+   "label": "Bank Account Name"
+  },
+  {
+   "fieldname": "section_break_pfpv",
+   "fieldtype": "Section Break",
+   "label": "Inventory Control"
+  },
+  {
+   "default": "0",
+   "fieldname": "current_stock",
+   "fieldtype": "Int",
+   "label": "Current Stock"
+  },
+  {
+   "fieldname": "column_break_pfpv",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "partnership_level",
+   "fieldtype": "Data",
+   "label": "Partnership Level",
+   "read_only": 1
   },
   {
    "fieldname": "section_break_stats",
@@ -90,7 +151,7 @@
   },
   {
    "default": "0",
-   "description": "M16: Paid / Assigned x 100 (equals DSR Strict)",
+   "description": "Paid / Assigned x 100",
    "fieldname": "success_rate",
    "fieldtype": "Percent",
    "label": "Success Rate",
@@ -98,7 +159,6 @@
   },
   {
    "default": "0",
-   "description": "M26: Cumulative payout amount after CEO approval",
    "fieldname": "total_earned",
    "fieldtype": "Currency",
    "label": "Total Earned",
@@ -107,7 +167,7 @@
   {
    "fieldname": "section_break_dsr",
    "fieldtype": "Section Break",
-   "label": "DSR \u2014 Delivery Success Rate"
+   "label": "DSR — Delivery Success Rate"
   },
   {
    "default": "0",
@@ -174,27 +234,11 @@
   {
    "fieldname": "column_break_partner",
    "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "partnership_level",
-   "fieldtype": "Data",
-   "label": "Partnership Level",
-   "read_only": 1
-  },
-  {
-   "fieldname": "column_break_pfpv",
-   "fieldtype": "Column Break"
-  },
-  {
-   "default": "0",
-   "fieldname": "current_stock",
-   "fieldtype": "Int",
-   "label": "Current Stock"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-03-31 18:22:05.622396",
+ "modified": "2026-04-10 16:30:00.000000",
  "modified_by": "Administrator",
  "module": "Vitalvida",
  "name": "Delivery Agent",

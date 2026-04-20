@@ -8,6 +8,28 @@ from frappe.model.document import Document
 from frappe.utils import now_datetime
 
 class DAStockReturn(Document):
+    # begin: auto-generated types
+    # This code is auto-generated. Do not modify anything in this block.
+
+    from typing import TYPE_CHECKING
+
+    if TYPE_CHECKING:
+        from frappe.types import DF
+        from vitalvida.vitalvida.doctype.return_item.return_item import ReturnItem
+
+        approved_at: DF.Datetime | None
+        approved_by: DF.Link | None
+        delivery_agent: DF.Link
+        initiated_at: DF.Datetime | None
+        initiated_by: DF.Link | None
+        items: DF.Table[ReturnItem]
+        notes: DF.Text | None
+        processed_at: DF.Datetime | None
+        processed_by: DF.Link | None
+        rejection_reason: DF.Text | None
+        return_type: DF.Literal["End of Cycle", "Damaged", "Expired"]
+        status: DF.Literal["Draft", "Pending Inspection", "Inspected", "Approved", "Rejected", "Completed"]
+    # end: auto-generated types
     def before_insert(self):
         self.initiated_by = frappe.session.user
         self.initiated_at = now_datetime()

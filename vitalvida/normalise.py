@@ -65,8 +65,26 @@ def normalise_payload(raw: dict, queue_row_name: str) -> dict:
         or ""
     )
 
+    # Resolve package aliases (website shortnames → exact VV Package names)
+    PACKAGE_ALIASES = {
+        "hair grow":          "Hair Growth Oil",
+        "hair growth":        "Hair Growth Oil",
+        "hair growth oil":    "Hair Growth Oil",
+        "self love":          "Self Love Plus",
+        "self love plus":     "Self Love Plus",
+        "self love return":   "Self Love Return",
+        "self love b2gof":    "Self Love B2GOF",
+        "family saves":       "Family Saves",
+        "self love plus b2gof": "Self Love Plus B2GOF",
+    }
+    if package:
+        resolved = PACKAGE_ALIASES.get(package.lower().strip())
+        if resolved:
+            log.append(f"Package alias: '{package}' → '{resolved}'")
+            package = resolved
+
     # Validate package exists in ERPNext — only if package is not empty
-    if package and not frappe.db.exists("Package", package):
+    if package and not frappe.db.exists("VV Package", package):
         # Don't hard reject — log warning and keep going
         # Telesales can correct the package on the confirmation call
         log.append(f"Warning: Package '{package}' not found in ERPNext — saved as-is")

@@ -55,6 +55,16 @@
   "paid_at",
   "payment_confirmed",
   "payment_confirmed_at",
+  "section_break_da_payout",
+  "da_fee_paid",
+  "fee_requested",
+  "fee_requested_at",
+  "fee_accountant_paid",
+  "fee_accountant_paid_date",
+  "fee_disputed",
+  "column_break_payout_1",
+  "da_fee_amount",
+  "da_fee_pay_date",
   "section_break_notes",
   "reschedule_note",
   "cancellation_source",
@@ -107,7 +117,7 @@
    "reqd": 1
   },
   {
-   "description": "Normalised 234XXXXXXXXXX format \u2014 no + prefix, no spaces",
+   "description": "Normalised 234XXXXXXXXXX format — no + prefix, no spaces",
    "fieldname": "customer_phone",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -329,7 +339,7 @@
   },
   {
    "default": "0",
-   "description": "Set by Moniepoint webhook or Finance manual confirm. Does NOT mean order is Paid \u2014 delivery must also be confirmed.",
+   "description": "Set by Moniepoint webhook or Finance manual confirm. Does NOT mean order is Paid — delivery must also be confirmed.",
    "fieldname": "payment_confirmed",
    "fieldtype": "Check",
    "in_standard_filter": 1,
@@ -340,6 +350,63 @@
    "fieldname": "payment_confirmed_at",
    "fieldtype": "Datetime",
    "label": "Payment Confirmed At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_da_payout",
+   "fieldtype": "Section Break",
+   "label": "DA Payout Tracking"
+  },
+  {
+   "default": "0",
+   "fieldname": "da_fee_paid",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "DA Fee Paid"
+  },
+  {
+   "default": "0",
+   "fieldname": "fee_requested",
+   "fieldtype": "Check",
+   "label": "Fee Requested"
+  },
+  {
+   "fieldname": "fee_requested_at",
+   "fieldtype": "Datetime",
+   "label": "Fee Requested At",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "fee_accountant_paid",
+   "fieldtype": "Check",
+   "label": "Fee Accountant Paid"
+  },
+  {
+   "fieldname": "fee_accountant_paid_date",
+   "fieldtype": "Date",
+   "label": "Fee Accountant Paid Date",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "fee_disputed",
+   "fieldtype": "Check",
+   "label": "Fee Disputed"
+  },
+  {
+   "fieldname": "column_break_payout_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "da_fee_amount",
+   "fieldtype": "Currency",
+   "label": "DA Fee Amount"
+  },
+  {
+   "fieldname": "da_fee_pay_date",
+   "fieldtype": "Date",
+   "label": "DA Fee Pay Date",
    "read_only": 1
   },
   {
@@ -404,7 +471,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-04 20:10:06.985197",
+ "modified": "2026-04-10 23:30:00",
  "modified_by": "Administrator",
  "module": "Vitalvida",
  "name": "VV Order",

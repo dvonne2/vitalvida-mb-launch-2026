@@ -1,7 +1,7 @@
 {
  "actions": [],
  "autoname": "format:SD-{delivery_agent}-{dispatch_date}-{####}",
- "creation": "2026-03-12 00:00:00.000000",
+ "creation": "2026-03-12 00:00:00",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -13,23 +13,33 @@
   "section_break_items",
   "items",
   "section_break_notes",
-  "notes"
+  "notes",
+  "eta_date",
+  "driver_phone",
+  "motor_park",
+  "storekeeper_fee",
+  "da_pickup_transport",
+  "driver_transport",
+  "total_cost",
+  "approval_required",
+  "rejection_reason",
+  "amended_from"
  ],
  "fields": [
   {
    "fieldname": "delivery_agent",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Delivery Agent",
    "options": "Delivery Agent",
-   "reqd": 1,
-   "in_list_view": 1
+   "reqd": 1
   },
   {
    "fieldname": "dispatch_date",
    "fieldtype": "Date",
+   "in_list_view": 1,
    "label": "Dispatch Date",
-   "reqd": 1,
-   "in_list_view": 1
+   "reqd": 1
   },
   {
    "fieldname": "column_break_1",
@@ -42,12 +52,12 @@
    "options": "User"
   },
   {
+   "default": "Pending",
    "fieldname": "status",
    "fieldtype": "Select",
+   "in_list_view": 1,
    "label": "Status",
-   "options": "Pending\nConfirmed\nPartially Returned",
-   "default": "Pending",
-   "in_list_view": 1
+   "options": "Pending\nConfirmed\nPartially Returned"
   },
   {
    "fieldname": "section_break_items",
@@ -69,28 +79,93 @@
    "fieldname": "notes",
    "fieldtype": "Text",
    "label": "Notes"
+  },
+  {
+   "fieldname": "eta_date",
+   "fieldtype": "Date",
+   "label": "ETA Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "driver_phone",
+   "fieldtype": "Phone",
+   "label": "Driver Phone",
+   "reqd": 1
+  },
+  {
+   "fieldname": "motor_park",
+   "fieldtype": "Data",
+   "label": "Motor Park",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "storekeeper_fee",
+   "fieldtype": "Currency",
+   "label": "Storekeeper Fee"
+  },
+  {
+   "default": "0",
+   "fieldname": "da_pickup_transport",
+   "fieldtype": "Currency",
+   "label": "DA Pickup Transport"
+  },
+  {
+   "default": "0",
+   "fieldname": "driver_transport",
+   "fieldtype": "Currency",
+   "label": "Driver Transport"
+  },
+  {
+   "fieldname": "total_cost",
+   "fieldtype": "Currency",
+   "label": "Total Cost",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "approval_required",
+   "fieldtype": "Check",
+   "label": "Approval Required"
+  },
+  {
+   "fieldname": "rejection_reason",
+   "fieldtype": "Long Text",
+   "label": "Rejection Reason"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Stock Dispatch",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
   }
  ],
+ "is_submittable": 1,
  "links": [],
- "modified": "2026-03-12 00:00:00.000000",
+ "modified": "2026-04-11 01:41:29.398438",
  "modified_by": "Administrator",
  "module": "Vitalvida",
  "name": "Stock Dispatch",
- "naming_rule": "Expression",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {
    "create": 1,
-   "delete": 0,
-   "read": 1,
-   "write": 1,
-   "submit": 1,
-   "report": 1,
    "export": 1,
-   "role": "System Manager"
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "submit": 1,
+   "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "dispatch_date",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }

@@ -1,0 +1,166 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-04-13 16:01:04.732100",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "customer_name",
+  "customer_phone",
+  "address",
+  "landmark",
+  "state",
+  "lga",
+  "order_status",
+  "package_name",
+  "product_amount",
+  "delivery_fee",
+  "total_payable",
+  "delivery_agent",
+  "telesales_closer",
+  "brand",
+  "delivered_at",
+  "paid_at",
+  "expected_delivery_date",
+  "reschedule_note",
+  "cancellation_source",
+  "attempt_count",
+  "call_back_time"
+ ],
+ "fields": [
+  {
+   "fieldname": "customer_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Customer Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "customer_phone",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Customer Phone",
+   "reqd": 1
+  },
+  {
+   "fieldname": "address",
+   "fieldtype": "Text",
+   "in_list_view": 1,
+   "label": "Address",
+   "reqd": 1
+  },
+  {
+   "fieldname": "landmark",
+   "fieldtype": "Data",
+   "label": "Landmark"
+  },
+  {
+   "fieldname": "state",
+   "fieldtype": "Data",
+   "label": "State"
+  },
+  {
+   "fieldname": "lga",
+   "fieldtype": "Data",
+   "label": "LGA"
+  },
+  {
+   "default": "Pending",
+   "fieldname": "order_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Order Status",
+   "options": "Pending\nConfirmed\nIn Transit\nDelivered\nCancelled\nRescheduled",
+   "reqd": 1
+  },
+  {
+   "fieldname": "package_name",
+   "fieldtype": "Data",
+   "label": "Package Name"
+  },
+  {
+   "fieldname": "product_amount",
+   "fieldtype": "Currency",
+   "label": "Product Amount",
+   "precision": "2"
+  },
+  {
+   "fieldname": "delivery_fee",
+   "fieldtype": "Currency",
+   "label": "Delivery Fee",
+   "precision": "2"
+  },
+  {
+   "fieldname": "total_payable",
+   "fieldtype": "Currency",
+   "label": "Total Payable",
+   "precision": "2"
+  },
+  {
+   "fieldname": "delivery_agent",
+   "fieldtype": "Data",
+   "label": "Delivery Agent"
+  },
+  {
+   "fieldname": "telesales_closer",
+   "fieldtype": "Data",
+   "label": "Telesales Closer"
+  },
+  {
+   "fieldname": "brand",
+   "fieldtype": "Data",
+   "label": "Brand"
+  },
+  {
+   "fieldname": "delivered_at",
+   "fieldtype": "Datetime",
+   "label": "Delivered At"
+  },
+  {
+   "fieldname": "paid_at",
+   "fieldtype": "Datetime",
+   "label": "Paid At"
+  },
+  {
+   "fieldname": "expected_delivery_date",
+   "fieldtype": "Date",
+   "label": "Expected Delivery Date"
+  },
+  {
+   "fieldname": "reschedule_note",
+   "fieldtype": "Text",
+   "label": "Reschedule Note"
+  },
+  {
+   "fieldname": "cancellation_source",
+   "fieldtype": "Data",
+   "label": "Cancellation Source"
+  },
+  {
+   "default": "0",
+   "fieldname": "attempt_count",
+   "fieldtype": "Int",
+   "label": "Attempt Count"
+  },
+  {
+   "fieldname": "call_back_time",
+   "fieldtype": "Datetime",
+   "label": "Call Back Time"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-04-13 16:01:04.732100",
+ "modified_by": "Administrator",
+ "module": "Vitalvida",
+ "name": "Order",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

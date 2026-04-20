@@ -27,184 +27,175 @@
   "commitment_fee_amount",
   "commitment_refund_orders",
   "max_active_buyers",
-  "zero_weeks_suspend_threshold"
+  "zero_weeks_suspend_threshold",
+  "max_storekeeper_fee",
+  "max_da_pickup_transport"
  ],
  "fields": [
   {
    "fieldname": "section_break_akrq",
-   "fieldtype": "Section Break",
-   "in_create": 0
+   "fieldtype": "Section Break"
   },
   {
    "fieldname": "webhook_secret",
    "fieldtype": "Data",
-   "label": "Webhook Secret",
-   "in_create": 0
+   "label": "Webhook Secret"
   },
   {
    "fieldname": "section_break_tier",
    "fieldtype": "Section Break",
-   "label": "Customer Tier Thresholds",
-   "in_create": 0
+   "label": "Customer Tier Thresholds"
   },
   {
-   "fieldname": "whale_threshold",
-   "fieldtype": "Currency",
-   "label": "Whale Threshold",
    "default": "50000",
    "description": "Minimum total_payable to qualify as Whale. Default: 50000",
-   "in_create": 0
+   "fieldname": "whale_threshold",
+   "fieldtype": "Currency",
+   "label": "Whale Threshold"
   },
   {
-   "fieldname": "mini_whale_threshold",
-   "fieldtype": "Currency",
-   "label": "Mini Whale Threshold",
    "default": "20000",
    "description": "Minimum total_payable to qualify as Mini Whale. Default: 20000",
-   "in_create": 0
+   "fieldname": "mini_whale_threshold",
+   "fieldtype": "Currency",
+   "label": "Mini Whale Threshold"
   },
   {
-   "fieldname": "whale_sla_hours",
-   "fieldtype": "Int",
-   "label": "Whale SLA (Hours)",
    "default": "2",
    "description": "M18: Max hours to confirm Whale orders before SLA breach alert",
-   "in_create": 0
+   "fieldname": "whale_sla_hours",
+   "fieldtype": "Int",
+   "label": "Whale SLA (Hours)"
   },
   {
-   "fieldname": "mini_whale_sla_hours",
-   "fieldtype": "Int",
-   "label": "Mini Whale SLA (Hours)",
    "default": "4",
    "description": "M18: Max hours to confirm Mini Whale orders before SLA breach alert",
-   "in_create": 0
+   "fieldname": "mini_whale_sla_hours",
+   "fieldtype": "Int",
+   "label": "Mini Whale SLA (Hours)"
   },
   {
    "fieldname": "section_break_telesales",
    "fieldtype": "Section Break",
-   "label": "Telesales Assignment",
-   "in_create": 0
+   "label": "Telesales Assignment"
   },
   {
+   "default": "Round Robin",
    "fieldname": "telesales_assignment_mode",
    "fieldtype": "Select",
    "label": "Assignment Mode",
    "options": "Round Robin\nPerformance Weighted",
-   "default": "Round Robin",
-   "permlevel": 1,
-   "in_create": 0
+   "permlevel": 1
   },
   {
+   "default": "20.0",
+   "description": "Top X% of closers by weekly_delivery_rate",
    "fieldname": "performance_weight_top_percent",
    "fieldtype": "Float",
    "label": "Performance Weight Top %",
-   "default": "20.0",
-   "description": "Top X% of closers by weekly_delivery_rate",
-   "permlevel": 1,
-   "in_create": 0
+   "permlevel": 1
   },
   {
+   "default": "40.0",
+   "description": "% of leads the top group receives",
    "fieldname": "performance_weight_lead_share",
    "fieldtype": "Float",
    "label": "Performance Weight Lead Share %",
-   "default": "40.0",
-   "description": "% of leads the top group receives",
-   "permlevel": 1,
-   "in_create": 0
+   "permlevel": 1
   },
   {
    "fieldname": "section_break_variance",
    "fieldtype": "Section Break",
-   "label": "Stock Variance Thresholds",
-   "in_create": 0
+   "label": "Stock Variance Thresholds"
   },
   {
-   "fieldname": "variance_warning_percent",
-   "fieldtype": "Float",
-   "label": "Variance Warning %",
    "default": "5.0",
    "description": "Warn if variance percent >= this value",
-   "in_create": 0
+   "fieldname": "variance_warning_percent",
+   "fieldtype": "Float",
+   "label": "Variance Warning %"
   },
   {
-   "fieldname": "variance_critical_percent",
-   "fieldtype": "Float",
-   "label": "Variance Critical %",
    "default": "15.0",
    "description": "Critical if variance percent >= this value",
-   "in_create": 0
+   "fieldname": "variance_critical_percent",
+   "fieldtype": "Float",
+   "label": "Variance Critical %"
   },
   {
+   "default": "0.0",
    "fieldname": "variance_tolerance_percent",
    "fieldtype": "Float",
-   "label": "Variance Tolerance %",
-   "default": "0.0",
-   "in_create": 0
+   "label": "Variance Tolerance %"
   },
   {
+   "default": "24",
    "fieldname": "stock_movement_sla_hours",
    "fieldtype": "Int",
-   "label": "Stock Movement SLA (Hours)",
-   "default": "24",
-   "in_create": 0
+   "label": "Stock Movement SLA (Hours)"
   },
   {
    "fieldname": "section_break_inventory_report",
    "fieldtype": "Section Break",
-   "label": "Daily Inventory Report",
-   "in_create": 0
+   "label": "Daily Inventory Report"
   },
   {
+   "description": "M20: Recipient email for daily 7AM inventory report. Leave blank to disable.",
    "fieldname": "inventory_report_email",
    "fieldtype": "Data",
-   "label": "Inventory Report Email",
-   "description": "M20: Recipient email for daily 7AM inventory report. Leave blank to disable.",
-   "in_create": 0
+   "label": "Inventory Report Email"
   },
   {
    "fieldname": "section_break_media_buyer",
    "fieldtype": "Section Break",
-   "label": "Media Buyer Settings (M32)",
-   "in_create": 0
+   "label": "Media Buyer Settings (M32)"
   },
   {
-   "fieldname": "commitment_fee_amount",
-   "fieldtype": "Currency",
-   "label": "Commitment Fee",
    "default": "50000",
    "description": "Refundable fee charged to new media buyers",
-   "in_create": 0
+   "fieldname": "commitment_fee_amount",
+   "fieldtype": "Currency",
+   "label": "Commitment Fee"
   },
   {
-   "fieldname": "commitment_refund_orders",
-   "fieldtype": "Int",
-   "label": "Refund After N Orders",
    "default": "10",
    "description": "Commitment fee refunded after this many delivered orders",
-   "in_create": 0
+   "fieldname": "commitment_refund_orders",
+   "fieldtype": "Int",
+   "label": "Refund After N Orders"
   },
   {
-   "fieldname": "max_active_buyers",
-   "fieldtype": "Int",
-   "label": "Max Active Buyers",
    "default": "30",
    "description": "Slot cap. 0 = unlimited. Block new buyers when cap is hit.",
-   "in_create": 0
+   "fieldname": "max_active_buyers",
+   "fieldtype": "Int",
+   "label": "Max Active Buyers"
   },
   {
-   "fieldname": "zero_weeks_suspend_threshold",
-   "fieldtype": "Int",
-   "label": "Suspend After N Zero Weeks",
    "default": "4",
    "description": "Auto-suspend buyer after N consecutive weeks with 0 sales",
-   "in_create": 0
+   "fieldname": "zero_weeks_suspend_threshold",
+   "fieldtype": "Int",
+   "label": "Suspend After N Zero Weeks"
+  },
+  {
+   "default": "1000",
+   "fieldname": "max_storekeeper_fee",
+   "fieldtype": "Currency",
+   "label": "Max Storekeeper Fee"
+  },
+  {
+   "default": "1000",
+   "fieldname": "max_da_pickup_transport",
+   "fieldtype": "Currency",
+   "label": "Max DA Pickup Transport"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-03-11 00:00:00.000000",
+ "modified": "2026-04-11 13:55:05.379454",
  "modified_by": "Administrator",
  "module": "Vitalvida",
  "name": "Vitalvida Settings",

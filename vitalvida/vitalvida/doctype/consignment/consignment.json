@@ -1,103 +1,152 @@
 {
- "name": "Consignment",
- "doctype": "DocType",
- "module": "Vitalvida",
+ "actions": [],
  "autoname": "field:consignment_id",
- "title_field": "consignment_id",
+ "creation": "2026-04-09 14:39:46.914526",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "consignment_id",
+  "status",
+  "column_break_1",
+  "from_location",
+  "to_location",
+  "driver_phone",
+  "section_break_items",
+  "items",
+  "section_break_notes",
+  "notes",
+  "delivery_agent",
+  "dispatch_date",
+  "eta_date",
+  "linked_dispatch",
+  "confirmed_at",
+  "confirmed_by"
+ ],
  "fields": [
   {
    "fieldname": "consignment_id",
    "fieldtype": "Data",
-   "label": "Consignment ID",
-   "reqd": 1,
-   "unique": 1,
    "in_list_view": 1,
+   "label": "Consignment ID",
    "read_only": 1,
-   "in_create": 0
+   "reqd": 1,
+   "unique": 1
   },
   {
+   "default": "Pending",
    "fieldname": "status",
    "fieldtype": "Select",
-   "options": "\nPending\nIn Transit\nDelivered\nCancelled\nConfirmed",
-   "label": "Status",
-   "default": "Pending",
    "in_list_view": 1,
-   "in_create": 0
+   "label": "Status",
+   "options": "\nPending\nIn Transit\nDelivered\nCancelled\nConfirmed"
   },
   {
    "fieldname": "column_break_1",
-   "fieldtype": "Column Break",
-   "in_create": 0
+   "fieldtype": "Column Break"
   },
   {
    "fieldname": "from_location",
    "fieldtype": "Link",
-   "options": "Warehouse",
    "label": "From Location",
-   "reqd": 1,
-   "in_create": 0
+   "options": "Warehouse",
+   "reqd": 1
   },
   {
    "fieldname": "to_location",
    "fieldtype": "Link",
-   "options": "Delivery Agent",
    "label": "To (Delivery Agent)",
-   "reqd": 1,
-   "in_create": 0
+   "options": "Delivery Agent",
+   "reqd": 1
   },
   {
    "fieldname": "driver_phone",
    "fieldtype": "Data",
-   "label": "Driver Phone",
-   "in_create": 0
+   "label": "Driver Phone"
   },
   {
    "fieldname": "section_break_items",
    "fieldtype": "Section Break",
-   "label": "Items",
-   "in_create": 0
+   "label": "Items"
   },
   {
    "fieldname": "items",
    "fieldtype": "Table",
-   "options": "Consignment Item",
    "label": "Items",
-   "in_create": 0
+   "options": "Consignment Item"
   },
   {
    "fieldname": "section_break_notes",
    "fieldtype": "Section Break",
-   "label": "Notes",
-   "in_create": 0
+   "label": "Notes"
   },
   {
    "fieldname": "notes",
    "fieldtype": "Text",
-   "label": "Notes",
-   "in_create": 0
+   "label": "Notes"
+  },
+  {
+   "fieldname": "delivery_agent",
+   "fieldtype": "Link",
+   "label": "Delivery Agent",
+   "options": "Delivery Agent",
+   "reqd": 1
+  },
+  {
+   "fieldname": "dispatch_date",
+   "fieldtype": "Date",
+   "label": "Dispatch Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "eta_date",
+   "fieldtype": "Date",
+   "label": "ETA Date"
+  },
+  {
+   "fieldname": "linked_dispatch",
+   "fieldtype": "Link",
+   "label": "Linked Dispatch",
+   "options": "Stock Dispatch"
+  },
+  {
+   "fieldname": "confirmed_at",
+   "fieldtype": "Datetime",
+   "label": "Confirmed At"
+  },
+  {
+   "fieldname": "confirmed_by",
+   "fieldtype": "Link",
+   "label": "Confirmed By",
+   "options": "User"
   }
  ],
+ "links": [],
+ "modified": "2026-04-11 01:44:24.238249",
+ "modified_by": "Administrator",
+ "module": "Vitalvida",
+ "name": "Consignment",
+ "owner": "Administrator",
  "permissions": [
   {
+   "create": 1,
+   "read": 1,
    "role": "System Manager",
-   "read": 1,
-   "write": 1,
-   "create": 1,
-   "delete": 0
+   "write": 1
   },
   {
+   "create": 1,
+   "read": 1,
    "role": "Operations Manager",
-   "read": 1,
-   "write": 1,
-   "create": 1,
-   "delete": 0
+   "write": 1
   },
   {
-   "role": "Delivery Agent",
    "read": 1,
-   "write": 0,
-   "create": 0,
-   "delete": 0
+   "role": "Delivery Agent"
   }
- ]
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "consignment_id"
 }

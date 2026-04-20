@@ -6,6 +6,8 @@ app_email = "olaniyisulaimon221@gmail.com"
 app_license = "mit"
 
 
+
+notification_config = []
 override_whitelisted_methods = {
     "vitalvida.orders.ingest": "vitalvida.orders.ingest",
     "vitalvida.notifications.webhook": "vitalvida.notifications.webhook",

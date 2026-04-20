@@ -1,7 +1,7 @@
 {
  "actions": [],
  "autoname": "format:{delivery_agent}-{product}",
- "creation": "2026-03-12 00:00:00.000000",
+ "creation": "2026-03-12 00:00:00",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -14,36 +14,38 @@
   "is_frozen",
   "freeze_reason",
   "section_break_notes",
-  "notes"
+  "notes",
+  "last_dispatch_date",
+  "dsr_percentage"
  ],
  "fields": [
   {
    "fieldname": "delivery_agent",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Delivery Agent",
    "options": "Delivery Agent",
-   "reqd": 1,
-   "in_list_view": 1
+   "reqd": 1
   },
   {
    "fieldname": "product",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Product",
    "options": "Item",
-   "reqd": 1,
-   "in_list_view": 1
+   "reqd": 1
   },
   {
    "fieldname": "column_break_1",
    "fieldtype": "Column Break"
   },
   {
+   "default": "0",
    "fieldname": "current_stock",
    "fieldtype": "Float",
+   "in_list_view": 1,
    "label": "Current Stock",
-   "default": "0",
-   "read_only": 1,
-   "in_list_view": 1
+   "read_only": 1
   },
   {
    "fieldname": "last_updated",
@@ -57,11 +59,11 @@
    "label": "Freeze Status"
   },
   {
+   "default": "0",
+   "description": "Set by M15 when stock variance detected",
    "fieldname": "is_frozen",
    "fieldtype": "Check",
-   "label": "Is Frozen",
-   "default": "0",
-   "description": "Set by M15 when stock variance detected"
+   "label": "Is Frozen"
   },
   {
    "fieldname": "freeze_reason",
@@ -77,36 +79,43 @@
    "fieldname": "notes",
    "fieldtype": "Text",
    "label": "Notes"
+  },
+  {
+   "fieldname": "last_dispatch_date",
+   "fieldtype": "Date",
+   "label": "Last Dispatch Date"
+  },
+  {
+   "fieldname": "dsr_percentage",
+   "fieldtype": "Percent",
+   "label": "DSR Percentage"
   }
  ],
  "links": [],
- "modified": "2026-03-12 00:00:00.000000",
+ "modified": "2026-04-11 01:43:09.377740",
  "modified_by": "Administrator",
  "module": "Vitalvida",
  "name": "DA Warehouse",
- "naming_rule": "Expression",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {
    "create": 1,
-   "delete": 0,
-   "read": 1,
-   "write": 1,
-   "report": 1,
    "export": 1,
-   "role": "System Manager"
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "write": 1
   },
   {
-   "create": 0,
-   "delete": 0,
    "read": 1,
-   "write": 0,
    "report": 1,
-   "export": 0,
    "role": "Delivery Agent"
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "delivery_agent",
  "sort_order": "ASC",
+ "states": [],
  "track_changes": 1
 }
