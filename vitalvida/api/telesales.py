@@ -8,6 +8,37 @@ from datetime import date, timedelta
 from collections import Counter
 
 
+def _resolve_closer(closer=None):
+    """
+    Returns the closer name to use for queries.
+    If closer is provided and non-empty, use it directly.
+    Otherwise look up the Telesales Closer record linked to the
+    current session user and return its name.
+    Raises frappe.ValidationError if no closer can be resolved.
+    """
+    if closer and str(closer).strip():
+        return closer
+
+    user = frappe.session.user
+    if not user or user == 'Guest':
+        frappe.throw('Not authenticated.', frappe.AuthenticationError)
+
+    # Look up Telesales Closer by linked user
+    closer_name = frappe.db.get_value('Telesales Closer', {'user': user}, 'name')
+    if not closer_name:
+        # Fallback: try matching by email directly as the name
+        closer_name = frappe.db.exists('Telesales Closer', user)
+
+    if not closer_name:
+        frappe.throw(
+            f'No Telesales Closer record found for user {user}. '
+            f'Ask your administrator to link your account.',
+            frappe.DoesNotExistError
+        )
+
+    return closer_name
+
+
 @frappe.whitelist()
 def get_my_closer(user=None):
     """
@@ -26,11 +57,16 @@ def get_my_closer(user=None):
 
 
 @frappe.whitelist()
-def get_my_queue(closer):
+def get_my_queue(closer=None):
     """
     API 1: Returns all VV Orders assigned to this closer.
     Covers CALL NOW, CONFIRMED, ON THE WAY, CALL BACK, DONE tabs.
+
+    FIX: Made closer optional. If not provided (or undefined sent from React
+    before state.currentCloser is populated), resolve from the current session
+    user's linked Telesales Closer record. Prevents TypeError on page load.
     """
+    closer = _resolve_closer(closer)
     orders = frappe.get_all(
         'VV Order',
         filters={'telesales_rep': closer},
@@ -66,33 +102,58 @@ def get_my_queue(closer):
 
 
 @frappe.whitelist()
-def update_order_status(order, status, note='', reschedule_date=''):
+def update_order_status(order, status, note='', reschedule_date='', cancellation_source=None):
     """
     API 2: Updates the status of a VV Order.
     Also increments attempt_count on every call.
+
+    FIX:
+    - Accepts cancellation_source
+    - Enforces it when status = Cancelled
     """
     try:
         doc = frappe.get_doc('VV Order', order)
+
         doc.order_status = status
         doc.attempt_count = (doc.attempt_count or 0) + 1
+
         if note:
             doc.reschedule_note = note
+
         if reschedule_date:
             doc.expected_delivery_date = reschedule_date
+
+        # ✅ FIX: handle cancellation_source properly
+        if status == 'Cancelled':
+            if not cancellation_source:
+                frappe.throw('cancellation_source is required when cancelling an order.')
+            doc.cancellation_source = cancellation_source
+
         doc.save(ignore_permissions=True)
         frappe.db.commit()
-        return {'success': True, 'order': order, 'status': status}
+
+        return {
+            'success': True,
+            'order': order,
+            'status': status
+        }
+
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), 'update_order_status')
-        return {'success': False, 'error': str(e)}
-
+        return {
+            'success': False,
+            'error': str(e)
+        }
 
 @frappe.whitelist()
-def get_my_stats(closer, period='d'):
+def get_my_stats(closer=None, period='d'):
     """
     API 3: Returns performance stats for this closer.
     period: 'd' = today, 'w' = this week, 'm' = this month
+
+    FIX: Made closer optional — resolves from session if not provided.
     """
+    closer = _resolve_closer(closer)
     today = date.today()
 
     if period == 'w':
@@ -231,3 +292,4 @@ def assign_da_to_order(order, da):
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), 'assign_da_to_order')
         return {'success': False, 'error': str(e)}
+

@@ -4,6 +4,13 @@ M26 — DA Payout Record Controller
 Dual approval: Draft → Intent Marked → Finance Approved → CEO Approved → Paid
 Compliance score: OTP(40%) + Photo(30%) + Amount(30%)
 Immutable after Finance Approved.
+
+FIXES:
+  - Added backend guard: cannot transition to Finance Approved without
+    photo_attachment uploaded (proof upload enforcement — Phase 7.2)
+  - Added backend guard: cannot create payout if order payment_confirmed = 0
+    (prevents paying DA fee on unconfirmed payment — Phase 17.3)
+  - Added backend guard: cannot transition to any approved state if DA is frozen
 """
 
 import frappe
@@ -15,6 +22,7 @@ class DAPayoutRecord(Document):
     def before_insert(self):
         self.status = "Draft"
         self._validate_da_owns_order()
+        self._validate_order_payment_confirmed()  # FIX: Phase 17.3 guard
         self._compute_compliance_score()
         self._compute_bonuses()
         self._check_flagged()
@@ -46,6 +54,19 @@ class DAPayoutRecord(Document):
         # Validate status transitions
         self._validate_transition(doc_before.status, self.status)
 
+        # FIX: Proof upload enforcement — backend guard (Phase 7.2)
+        # Block Finance Approved transition if no photo_attachment uploaded.
+        # This is the backend equivalent of the greyed-out Pay button in the UI.
+        if (
+            doc_before.status != "Finance Approved"
+            and self.status == "Finance Approved"
+        ):
+            self._validate_proof_uploaded()
+
+        # FIX: DA freeze guard — block approval if DA is currently frozen
+        if self.status in ("Finance Approved", "CEO Approved"):
+            self._validate_da_not_frozen()
+
     def on_update(self):
         doc_before = self.get_doc_before_save()
         if not doc_before:
@@ -57,6 +78,8 @@ class DAPayoutRecord(Document):
             elif self.status == "CEO Approved":
                 self._on_ceo_approved()
 
+    # ── Validations ──────────────────────────────────────────────────
+
     def _validate_da_owns_order(self):
         """DA can only create payout on orders assigned to them."""
         if not self.order or not self.delivery_agent:
@@ -66,6 +89,70 @@ class DAPayoutRecord(Document):
             frappe.throw(
                 "You can only create a payout record for orders assigned to you."
             )
+
+    def _validate_order_payment_confirmed(self):
+        """
+        FIX: Phase 17.3 — Backend guard.
+        Block DA payout record creation if the linked order's payment has not
+        been confirmed. A DA fee can only be paid when the customer has paid.
+        """
+        if not self.order:
+            return
+        payment_confirmed = frappe.db.get_value(
+            "VV Order", self.order, "payment_confirmed"
+        )
+        if not payment_confirmed:
+            frappe.throw(
+                f"Cannot create a payout record for order {self.order}. "
+                f"Customer payment has not been confirmed yet (payment_confirmed = 0). "
+                f"Wait for Moniepoint reconciliation to confirm the payment first.",
+                frappe.ValidationError
+            )
+
+    def _validate_proof_uploaded(self):
+        """
+        FIX: Phase 7.2 — Backend proof upload enforcement.
+        Block Finance Approved transition if photo_attachment is not uploaded.
+        Ensures the greyed-out button in the UI is also enforced at the API level.
+        """
+        if not (self.photo_attachment or "").strip():
+            frappe.throw(
+                "Proof of payment (photo_attachment) must be uploaded before "
+                "approving this payout. Upload a receipt or screenshot first.",
+                frappe.ValidationError
+            )
+
+    def _validate_da_not_frozen(self):
+        """
+        Block Finance/CEO approval if the DA is currently frozen on any product.
+        A frozen DA's fees should not be payable until the freeze is resolved.
+        """
+        try:
+            # Check if any DA Warehouse record for this DA is frozen
+            frozen_exists = frappe.db.exists("DA Warehouse", {
+                "delivery_agent": self.delivery_agent,
+                "is_frozen": 1,
+            })
+            if frozen_exists:
+                da_name = (
+                    frappe.db.get_value(
+                        "Delivery Agent", self.delivery_agent, "agent_name"
+                    ) or self.delivery_agent
+                )
+                frappe.throw(
+                    f"DA {da_name} is currently frozen. "
+                    f"Resolve the freeze in Operations before approving this payout.",
+                    frappe.ValidationError
+                )
+        except frappe.ValidationError:
+            raise
+        except Exception as e:
+            frappe.log_error(
+                f"M26: DA freeze check failed for payout {self.name}: {str(e)}",
+                "M26 DA Freeze Check Error"
+            )
+
+    # ── Computations ─────────────────────────────────────────────────
 
     def _compute_compliance_score(self):
         """OTP = 40pts, Photo = 30pts, Amount Match = 30pts."""
@@ -124,6 +211,8 @@ class DAPayoutRecord(Document):
         except Exception:
             pass
 
+    # ── State machine ─────────────────────────────────────────────────
+
     def _validate_transition(self, from_status, to_status):
         """Enforce status machine: Draft → Intent Marked → Finance → CEO → Paid."""
         valid = {
@@ -138,6 +227,8 @@ class DAPayoutRecord(Document):
                 f"Cannot transition from '{from_status}' to '{to_status}'. "
                 f"Allowed: {', '.join(allowed)}"
             )
+
+    # ── Transition handlers ───────────────────────────────────────────
 
     def _on_finance_approved(self):
         self.finance_approved_by = frappe.session.user
@@ -186,3 +277,4 @@ class DAPayoutRecord(Document):
         if self.status in ("Finance Approved", "CEO Approved", "Paid"):
             frappe.throw("Approved payout records cannot be deleted.",
                          frappe.PermissionError)
+

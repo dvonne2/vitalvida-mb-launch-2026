@@ -15,15 +15,10 @@ from datetime import date, timedelta
 def _require_logistics():
     user = frappe.session.user
     roles = frappe.get_roles(user)
-    
-    # DEBUG: Force the API to return the roles it sees in the error message
     allowed = ["Logistics Manager", "Logistics User", "Operations Manager", "System Manager"]
-    
-    # The check
+    # FIX BUG 8: Removed debug message that leaked user's full role list in 403 response
     if not any(r in roles for r in allowed):
-        # This error message now includes the roles the server actually sees
-        return {"error": f"Access denied. Required: {allowed}. Actual roles found: {roles}", "code": 403}
-    
+        return {"error": "Access denied. Logistics role required.", "code": 403}
     return None
 
 
@@ -179,7 +174,7 @@ def get_da_stock(search="", state_filter="", stock_status=""):
             filters["state"] = state_filter
 
         da_fields = _safe_fields("Delivery Agent", [
-            "name", "agent_name", "state", "is_double_risk",
+            "name", "agent_name", "state",
             "current_stock", "dsr_strict", "dsr_adjusted",
         ])
         das = frappe.get_all("Delivery Agent", filters=filters, fields=da_fields)
@@ -192,7 +187,8 @@ def get_da_stock(search="", state_filter="", stock_status=""):
             if search and search.lower() not in da_name.lower():
                 continue
 
-            frozen = bool(da.get("is_double_risk"))
+            # FIX BUG 7: Use DA Warehouse.is_frozen as source of truth
+            frozen = bool(frappe.db.exists("DA Warehouse", {"delivery_agent": da.get("name"), "is_frozen": 1}))
             dsr    = flt(da.get("dsr_strict") or da.get("dsr_adjusted") or 0)
 
             # Get per-product stock
@@ -509,7 +505,7 @@ def get_form_options():
     try:
         # Active DAs
         da_fields = _safe_fields("Delivery Agent", [
-            "name", "agent_name", "state", "is_double_risk", "current_stock",
+            "name", "agent_name", "state", "current_stock",
         ])
         das_raw = frappe.get_all("Delivery Agent",
             filters={"active": 1},
@@ -517,7 +513,8 @@ def get_form_options():
         )
         das = []
         for da in das_raw:
-            frozen = bool(da.get("is_double_risk"))
+            # FIX BUG 7: Use DA Warehouse.is_frozen as source of truth
+            frozen = bool(frappe.db.exists("DA Warehouse", {"delivery_agent": da.get("name"), "is_frozen": 1}))
             stock  = cint(da.get("current_stock") or 0)
             s      = da.get("state") or ""
             das.append({
@@ -590,7 +587,8 @@ def create_dispatch(da_id, driver_phone, motor_park, eta_date, items,
             return {"success": False, "error": "Delivery Agent is required"}
 
         # Check DA is not frozen
-        frozen = frappe.db.get_value("Delivery Agent", da_id, "is_double_risk")
+        # FIX BUG 7: Check DA Warehouse not Delivery Agent
+        frozen = frappe.db.exists("DA Warehouse", {"delivery_agent": da_id, "is_frozen": 1})
         if frozen:
             return {"success": False, "error": "Cannot dispatch to a frozen DA warehouse"}
 
@@ -889,20 +887,28 @@ def unfreeze_da_warehouse(da_id):
     if guard: return guard
 
     try:
-        frappe.db.set_value("Delivery Agent", da_id, "is_double_risk", 0)
+        # FIX BUG 7: Unfreeze via freeze.py which correctly clears DA Warehouse records
+        try:
+            from vitalvida.freeze import unfreeze_da_warehouse
+            frozen_warehouses = frappe.get_all(
+                "DA Warehouse",
+                filters={"delivery_agent": da_id, "is_frozen": 1},
+                fields=["name", "product"]
+            )
+            for wh in frozen_warehouses:
+                unfreeze_da_warehouse(
+                    delivery_agent=da_id,
+                    product=wh.product,
+                    actioned_by=frappe.session.user,
+                    reason=f"Unfrozen by Logistics: {frappe.session.user}",
+                )
+        except ImportError:
+            frappe.db.sql(
+                "UPDATE `tabDA Warehouse` SET is_frozen=0, freeze_reason=\'\' "
+                "WHERE delivery_agent=%s AND is_frozen=1", da_id
+            )
+            frappe.db.commit()
         frappe.db.commit()
-        if _table_exists("Freeze Log"):
-            try:
-                frappe.get_doc({
-                    "doctype":        "Freeze Log",
-                    "delivery_agent": da_id,
-                    "action":         "Unfreeze",
-                    "actioned_by":    frappe.session.user,
-                    "actioned_at":    now_datetime(),
-                }).insert(ignore_permissions=True)
-                frappe.db.commit()
-            except Exception:
-                pass
         return {"success": True}
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "unfreeze_da_warehouse Error")
@@ -946,3 +952,4 @@ def get_dashboard_badges():
 
     except Exception as e:
         return {"dispatch_badge": 0, "consign_badge": 0, "returns_badge": 0, "error": str(e)}
+

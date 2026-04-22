@@ -116,16 +116,89 @@ def unfreeze_da_warehouse(delivery_agent):
 
 @frappe.whitelist()
 def confirm_consignment(consignment_id):
-    """Mark consignment as confirmed/delivered"""
+    """
+    Mark consignment as confirmed/delivered and add stock to DA Warehouse.
+
+    FIX ISSUE 14: Old code only set status='Delivered' on the Consignment doc
+    but never added items to DA Warehouse. DA stock never increased on delivery.
+    Now reads items from the linked Stock Dispatch and credits DA Warehouse
+    for each product received.
+    """
     try:
         doc = frappe.get_doc("Consignment", consignment_id)
+        if doc.status == "Delivered":
+            return {"success": False, "error": "Consignment already confirmed."}
+
         doc.status = "Delivered"
         doc.confirmed_at = frappe.utils.now()
         doc.confirmed_by = frappe.session.user
         doc.save(ignore_permissions=True)
+
+        # FIX: Credit DA Warehouse for each item in the linked Stock Dispatch
+        if doc.linked_dispatch:
+            try:
+                dispatch = frappe.get_doc("Stock Dispatch", doc.linked_dispatch)
+                now = frappe.utils.now_datetime()
+
+                for item in (dispatch.items or []):
+                    product = item.get("product") or item.product
+                    qty = float(item.get("qty") or item.qty or 0)
+                    if not product or qty <= 0:
+                        continue
+
+                    # Get or create DA Warehouse record for this product
+                    warehouse_name = frappe.db.exists("DA Warehouse", {
+                        "delivery_agent": doc.delivery_agent,
+                        "product": product,
+                    })
+                    if warehouse_name:
+                        current = float(
+                            frappe.db.get_value("DA Warehouse", warehouse_name, "current_stock") or 0
+                        )
+                        frappe.db.set_value("DA Warehouse", warehouse_name, {
+                            "current_stock": current + qty,
+                            "last_updated": now,
+                        })
+                    else:
+                        frappe.get_doc({
+                            "doctype": "DA Warehouse",
+                            "delivery_agent": doc.delivery_agent,
+                            "product": product,
+                            "current_stock": qty,
+                            "is_frozen": 0,
+                            "last_updated": now,
+                        }).insert(ignore_permissions=True)
+
+                    # Create DA Stock Entry for the receipt
+                    try:
+                        frappe.get_doc({
+                            "doctype": "DA Stock Entry",
+                            "delivery_agent": doc.delivery_agent,
+                            "product": product,
+                            "entry_type": "Receipt",
+                            "quantity_change": qty,
+                            "reference_dispatch": doc.linked_dispatch,
+                            "reference_consignment": consignment_id,
+                            "entry_date": now,
+                            "notes": f"Consignment {consignment_id} confirmed",
+                        }).insert(ignore_permissions=True)
+                    except Exception as entry_err:
+                        frappe.log_error(str(entry_err), "confirm_consignment Stock Entry Error")
+
+                # Mark dispatch as Received
+                frappe.db.set_value("Stock Dispatch", doc.linked_dispatch, "status", "Received")
+
+            except Exception as stock_err:
+                frappe.log_error(
+                    f"confirm_consignment: stock update failed for "
+                    f"{consignment_id}: {str(stock_err)}",
+                    "confirm_consignment Stock Error"
+                )
+
         frappe.db.commit()
         return {"success": True, "message": f"Consignment {consignment_id} confirmed"}
     except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "confirm_consignment Error")
         return {"success": False, "error": str(e)}
 
 @frappe.whitelist()
@@ -147,3 +220,4 @@ def process_return(return_id, status):
         return {"success": True, "message": f"Return {return_id} processed"}
     except Exception as e:
         return {"success": False, "error": str(e)}
+

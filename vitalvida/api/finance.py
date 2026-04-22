@@ -46,9 +46,17 @@ def _pf(period):
     if period == "y": return str(today.replace(month=1, day=1))
     return str(today)  # today
 
-def _sql1(q):
+def _sql1(q, params=None):
+    # FIX BUG 9: Accept optional params tuple for parameterised queries
     try:
-        r = frappe.db.sql(q, as_dict=False)
+        r = frappe.db.sql(q, params or (), as_dict=False)
+        return flt(r[0][0]) if r else 0
+    except: return 0
+
+def _sql1p(q, params):
+    """Parameterised _sql1 — use this for any query with date/user input."""
+    try:
+        r = frappe.db.sql(q, params, as_dict=False)
         return flt(r[0][0]) if r else 0
     except: return 0
 
@@ -156,8 +164,8 @@ def get_dashboard(period="w"):
         da_exposure = _sql1("SELECT COALESCE(SUM(total_payable),0) FROM `tabVV Order` WHERE order_status='Delivered'")
 
         # Unmatched payments
-        unmatched_count = frappe.db.count("Moniepoint Webhook Log", {"status": "Unmatched"}) if _tbl("Moniepoint Webhook Log") else 0
-        unmatched_amt   = _sql1(f"SELECT COALESCE(SUM(amount),0) FROM `tabMoniepoint Webhook Log` WHERE status='Unmatched'" if _tbl("Moniepoint Webhook Log") else "SELECT 0")
+        unmatched_count = frappe.db.count("Moniepoint Webhook Log", {"processing_status": "Unmatched"}) if _tbl("Moniepoint Webhook Log") else 0
+        unmatched_amt   = _sql1(f"SELECT COALESCE(SUM(amount),0) FROM `tabMoniepoint Webhook Log` WHERE processing_status='Unmatched'" if _tbl("Moniepoint Webhook Log") else "SELECT 0")
 
         # DA fee requests
         da_fee_count = frappe.db.count("Fee Payment Request", {"status": "Pending"}) if _tbl("Fee Payment Request") else 0
@@ -187,7 +195,7 @@ def get_dashboard(period="w"):
 
         # Frozen DA exposure
         try:
-            frozen_das = frappe.get_all("Delivery Agent", filters={"is_double_risk": 1, "active": 1}, fields=["agent_name", "current_stock"])
+            frozen_das = frappe.get_all("Delivery Agent", filters={"is_double_risk": 1}, fields=["agent_name", "current_stock"])
             for da in frozen_das:
                 stuck = cint(da.current_stock or 0) * COGS_PER
                 alerts.append({"type": "amber", "icon": "📦", "msg": f"<strong>{da.agent_name} exposure {_fmt(stuck)}</strong> — Frozen. Stock stuck. No remittance possible."})
@@ -259,7 +267,7 @@ def get_da_fees():
             for r in reqs:
                 da = r.delivery_agent
                 if da not in da_groups:
-                    frozen = bool(frappe.db.get_value("Delivery Agent", da, "is_double_risk") or 0)
+                    frozen = bool(frappe.db.exists("DA Warehouse", {"delivery_agent": da, "is_frozen": 1}) or 0)
                     bank   = frappe.db.get_value("Delivery Agent", da, ["bank_name","bank_account_number","bank_account_name","agent_name"], as_dict=True) or {}
                     # Check for open disputes on this DA
                     has_dispute = bool(_tbl("Fee Dispute") and frappe.db.count("Fee Dispute", {"delivery_agent": da, "status": "Open"}))
@@ -586,13 +594,13 @@ def get_recon():
         unmatched_list = low_conf_list = []
 
         if _tbl("Moniepoint Webhook Log"):
-            auto_matched    = frappe.db.count("Moniepoint Webhook Log", {"status": "Matched"})
-            unmatched_count = frappe.db.count("Moniepoint Webhook Log", {"status": "Unmatched"})
+            auto_matched    = frappe.db.count("Moniepoint Webhook Log", {"processing_status": "Matched"})
+            unmatched_count = frappe.db.count("Moniepoint Webhook Log", {"processing_status": "Unmatched"})
             total_wh        = frappe.db.count("Moniepoint Webhook Log")
             match_rate      = round(auto_matched / total_wh * 100, 1) if total_wh else 0
 
             rows = frappe.get_all("Moniepoint Webhook Log",
-                filters={"status": "Unmatched"},
+                filters={"processing_status": "Unmatched"},
                 fields=_safe("Moniepoint Webhook Log", ["name","amount","payer_phone","reference","received_at","closest_order"]),
                 order_by="received_at desc", limit=20)
             for r in rows:
@@ -1040,7 +1048,7 @@ def get_audit_trail(action_filter="", user_filter="", date_filter="", limit=30, 
         # Reconciliation actions
         if _tbl("Payment Reconciliation Log"):
             recon_rows = frappe.get_all("Payment Reconciliation Log",
-                filters={"status": ["in", ["Matched"]]},
+                filters={"processing_status": ["in", ["Matched"]]},
                 fields=_safe("Payment Reconciliation Log", ["name","webhook_ref","matched_order","match_type","confidence","matched_by","matched_at"]),
                 order_by="matched_at desc", limit=10)
             for r in recon_rows:
@@ -1168,7 +1176,7 @@ def get_badges():
     try:
         return {
             "dafees":   frappe.db.count("Fee Payment Request", {"status": "Pending"}) if _tbl("Fee Payment Request") else 0,
-            "recon":    frappe.db.count("Moniepoint Webhook Log", {"status": "Unmatched"}) if _tbl("Moniepoint Webhook Log") else 0,
+            "recon":    frappe.db.count("Moniepoint Webhook Log", {"processing_status": "Unmatched"}) if _tbl("Moniepoint Webhook Log") else 0,
             "payouts":  frappe.db.count("Affiliate Payout Batch", {"status": ["in", ["Pending","Pending Approval"]]}) if _tbl("Affiliate Payout Batch") else 0,
             "disputes": frappe.db.count("Fee Dispute", {"status": "Open"}) if _tbl("Fee Dispute") else 0,
         }
@@ -1181,60 +1189,130 @@ def get_badges():
 # ═══════════════════════════════════════════════════════════
 
 @frappe.whitelist()
-def action_pay_da_fee(request_id, transfer_reference=""):
-    g = _guard(); 
+def action_pay_da_fee(request_id, transfer_reference="", proof_url=""):
+    g = _guard()
     if g: return g
+    # FIX BUG 4: Require proof_url — backend enforcement of proof upload
+    if not (proof_url or "").strip():
+        return {"success": False, "error": "Payment proof is required. Upload a screenshot of the transfer before marking as paid."}
+    if not (transfer_reference or "").strip():
+        return {"success": False, "error": "Transfer reference is required."}
     try:
         doc = frappe.get_doc("Fee Payment Request", request_id)
-        # Verify order is paid before allowing
+        # Verify order is paid
         order_status = frappe.db.get_value("VV Order", doc.order, "order_status") if doc.order else ""
         if order_status != "Paid":
             return {"success": False, "error": "Order payment not confirmed. Cannot pay DA fee."}
-        frozen = frappe.db.get_value("Delivery Agent", doc.delivery_agent, "is_double_risk")
-        if frozen:
+        # FIX BUG 7: Use DA Warehouse is_frozen as source of truth (consistent with freeze.py)
+        frozen_warehouse = frappe.db.exists("DA Warehouse", {
+            "delivery_agent": doc.delivery_agent, "is_frozen": 1
+        })
+        if frozen_warehouse:
             return {"success": False, "error": "DA is frozen. Cannot process fee payment."}
         frappe.db.set_value("Fee Payment Request", request_id, {
             "status": "Accountant Paid",
             "paid_at": now_datetime(),
             "paid_by": frappe.session.user,
             "transfer_reference": transfer_reference,
+            "proof_url": proof_url,
         })
+        # FIX BUG 10: Also update the linked VV Order so DA portal shows payment status
+        if doc.order:
+            update_vals = {}
+            vv_fields = [f.fieldname for f in frappe.get_meta("VV Order").fields]
+            if "fee_accountant_paid" in vv_fields:
+                update_vals["fee_accountant_paid"] = 1
+            if "fee_accountant_paid_date" in vv_fields:
+                update_vals["fee_accountant_paid_date"] = now_datetime()
+            if "da_fee_proof" in vv_fields:
+                update_vals["da_fee_proof"] = proof_url
+            if update_vals:
+                frappe.db.set_value("VV Order", doc.order, update_vals)
         frappe.db.commit()
         return {"success": True}
     except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "action_pay_da_fee Error")
         return {"success": False, "error": str(e)}
 
 
 @frappe.whitelist()
 def action_mark_payout_paid(batch_id, transfer_reference=""):
-    g = _guard(); 
+    g = _guard()
     if g: return g
     try:
+        batch = frappe.get_doc("Affiliate Payout Batch", batch_id)
+        # FIX BUG 5: Block payout if media buyer has unresolved high/critical fraud flags
+        if _tbl("Affiliate Fraud Flag"):
+            fraud_count = frappe.db.count("Affiliate Fraud Flag", {
+                "media_buyer": batch.media_buyer,
+                "severity": ["in", ["High", "Critical"]],
+                "resolved": 0,
+            })
+            if fraud_count:
+                return {
+                    "success": False,
+                    "error": f"BLOCKED: {fraud_count} unresolved fraud flag(s) on this media buyer. "
+                             f"Resolve all fraud flags before processing payout."
+                }
         frappe.db.set_value("Affiliate Payout Batch", batch_id, {
             "status": "Paid",
             "paid_on": now_datetime(),
             "paid_by": frappe.session.user,
-            "transfer_reference": transfer_reference,
+            "payment_reference": transfer_reference,
         })
         frappe.db.commit()
         return {"success": True}
     except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "action_mark_payout_paid Error")
         return {"success": False, "error": str(e)}
 
 
 @frappe.whitelist()
 def action_match_webhook(webhook_id, order_id):
-    g = _guard(); 
+    g = _guard()
     if g: return g
     try:
+        # FIX BUG 1+2: Set payment_confirmed=1 and call _finalize_paid_order
+        # Old code set order_status=Paid directly — bypassed dual-gate stock deduction
         frappe.db.set_value("Moniepoint Webhook Log", webhook_id, {
-            "status": "Matched", "matched_order": order_id,
-            "matched_by": frappe.session.user, "matched_at": now_datetime(),
+            "processing_status": "Matched",  # FIX: correct field name
+            "matched_order": order_id,
         })
-        frappe.db.set_value("VV Order", order_id, {"order_status": "Paid", "paid_at": now_datetime()})
+        frappe.db.set_value("VV Order", order_id, {
+            "payment_confirmed": 1,
+            "payment_confirmed_at": now_datetime(),
+            "paid_at": now_datetime(),
+        })
         frappe.db.commit()
+        # Trigger full finalization: stock deduction + DA fee eligibility
+        try:
+            from vitalvida.reconciliation import _finalize_paid_order
+            _finalize_paid_order(order_id)
+        except Exception as fin_err:
+            frappe.log_error(
+                f"finance.action_match_webhook: _finalize_paid_order failed "
+                f"for order {order_id}: {str(fin_err)}",
+                "Manual Match Finalization Error"
+            )
+        # Audit log
+        try:
+            if _tbl("Payment Reconciliation Log"):
+                frappe.get_doc({
+                    "doctype": "Payment Reconciliation Log",
+                    "webhook_ref": webhook_id,
+                    "matched_order": order_id,
+                    "match_type": "Manual",
+                    "status": "Matched",
+                    "matched_by": frappe.session.user,
+                    "matched_at": now_datetime(),
+                    "confidence": 100,
+                }).insert(ignore_permissions=True)
+                frappe.db.commit()
+        except Exception:
+            pass
         return {"success": True}
     except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "finance.action_match_webhook Error")
         return {"success": False, "error": str(e)}
 
 
@@ -1250,3 +1328,4 @@ def action_confirm_recon(recon_id):
         return {"success": True}
     except Exception as e:
         return {"success": False, "error": str(e)}
+

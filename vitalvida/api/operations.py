@@ -153,7 +153,8 @@ def _get_alerts():
     alerts = []
     try:
         frozen_das = frappe.get_all("Delivery Agent",
-            filters={"is_double_risk": 1},
+            filters={"is_frozen": 1},
+            pluck="delivery_agent",
             fields=["agent_name", "name"],
             limit=5
         )
@@ -243,7 +244,7 @@ def _get_da_summary():
     try:
         # Fixed: use is_active not active
         total  = frappe.db.count("Delivery Agent", {"is_active": 1})
-        frozen = frappe.db.count("Delivery Agent", {"is_double_risk": 1})
+        frozen = frappe.db.count("DA Warehouse", {"is_frozen": 1})
         try:
             dsrs = frappe.get_all("Delivery Agent",
                 filters={"is_active": 1},
@@ -397,7 +398,7 @@ def get_da_management(status_filter="", da_filter=""):
         da_fields = [
             "name", "agent_name", "state", "dsr_strict",
             "strike_count", "strike_status", "current_stock",
-            "is_double_risk", "is_active",
+            "is_active",
         ]
         try:
             meta_fields = {f.fieldname for f in frappe.get_meta("Delivery Agent").fields}
@@ -412,7 +413,8 @@ def get_da_management(status_filter="", da_filter=""):
         for da in das:
             dsr     = flt(da.get("dsr_strict") or 0)
             strikes = cint(da.get("strike_count") or 0)
-            frozen  = bool(da.get("is_double_risk"))
+            # FIX BUG 7: Frozen state lives on DA Warehouse.is_frozen, not Delivery Agent
+            frozen  = bool(frappe.db.exists("DA Warehouse", {"delivery_agent": da.name, "is_frozen": 1}))
 
             if frozen:
                 da_status, pill = "Frozen", "red"
@@ -937,20 +939,37 @@ def _get_webhook_log():
 def action_unfreeze_da(da_id):
     _require_ops_role()
     try:
-        frappe.db.set_value("Delivery Agent", da_id, "is_double_risk", 0)
+        # FIX BUG 7: Old code only set Delivery Agent.is_double_risk = 0 which
+        # had no effect because freeze guards read DA Warehouse.is_frozen.
+        # Now calls unfreeze_da_warehouse() from freeze.py for every frozen
+        # product the DA has, which correctly clears is_frozen on DA Warehouse
+        # and creates a proper Freeze Log entry for each.
+        try:
+            from vitalvida.freeze import unfreeze_da_warehouse
+            frozen_warehouses = frappe.get_all(
+                "DA Warehouse",
+                filters={"delivery_agent": da_id, "is_frozen": 1},
+                fields=["name", "product"]
+            )
+            for wh in frozen_warehouses:
+                unfreeze_da_warehouse(
+                    delivery_agent=da_id,
+                    product=wh.product,
+                    actioned_by=frappe.session.user,
+                    reason=f"Unfrozen by Operations: {frappe.session.user}",
+                )
+            if not frozen_warehouses:
+                # DA not frozen in warehouse — nothing to do
+                return {"success": True, "message": f"DA {da_id} was not frozen."}
+        except ImportError:
+            # freeze.py not deployed — fallback: directly clear DA Warehouse records
+            frappe.db.sql(
+                "UPDATE `tabDA Warehouse` SET is_frozen=0, freeze_reason='' "
+                "WHERE delivery_agent=%s AND is_frozen=1",
+                da_id
+            )
+            frappe.db.commit()
         frappe.db.commit()
-        if _table_exists("Freeze Log"):
-            try:
-                frappe.get_doc({
-                    "doctype": "Freeze Log",
-                    "delivery_agent": da_id,
-                    "action": "Unfreeze",
-                    "actioned_by": frappe.session.user,
-                    "actioned_at": now_datetime(),
-                }).insert(ignore_permissions=True)
-                frappe.db.commit()
-            except Exception:
-                pass
         return {"success": True, "message": f"DA {da_id} unfrozen successfully"}
     except frappe.PermissionError:
         raise
@@ -1000,19 +1019,33 @@ def action_reject_payout(payout_id, reason=""):
 def action_manual_confirm_payment(order_id):
     _require_ops_role()
     try:
-        doc = frappe.get_doc("VV Order", order_id)
-        doc.db_set("order_status", "Paid")
-        doc.db_set("paid_at", now_datetime())
+        # FIX BUG 1+2: Set payment_confirmed=1 before calling _finalize_paid_order
+        # Old code used db_set("order_status","Paid") directly — no stock deduction fired
+        frappe.db.set_value("VV Order", order_id, {
+            "payment_confirmed": 1,
+            "payment_confirmed_at": now_datetime(),
+            "paid_at": now_datetime(),
+        })
         frappe.db.commit()
+        try:
+            from vitalvida.reconciliation import _finalize_paid_order
+            _finalize_paid_order(order_id)
+        except Exception as fin_err:
+            frappe.log_error(
+                f"operations.action_manual_confirm_payment: _finalize_paid_order "
+                f"failed for {order_id}: {str(fin_err)}",
+                "Manual Confirm Finalization Error"
+            )
         if _table_exists("Payment Reconciliation Log"):
             try:
                 frappe.get_doc({
                     "doctype": "Payment Reconciliation Log",
-                    "order": order_id,
+                    "matched_order": order_id,
                     "status": "Matched",
                     "match_type": "Manual",
                     "matched_by": frappe.session.user,
                     "matched_at": now_datetime(),
+                    "confidence": 100,
                 }).insert(ignore_permissions=True)
                 frappe.db.commit()
             except Exception:
@@ -1029,17 +1062,41 @@ def action_manual_confirm_payment(order_id):
 def action_match_webhook(webhook_id, order_id):
     _require_ops_role()
     try:
+        # FIX BUG 1+2+7: Use processing_status, set payment_confirmed, call _finalize_paid_order
         frappe.db.set_value("Moniepoint Webhook Log", webhook_id, {
-            "status": "Matched",
+            "processing_status": "Matched",
             "matched_order": order_id,
-            "matched_by": frappe.session.user,
-            "matched_at": now_datetime(),
         })
         frappe.db.set_value("VV Order", order_id, {
-            "order_status": "Paid",
+            "payment_confirmed": 1,
+            "payment_confirmed_at": now_datetime(),
             "paid_at": now_datetime(),
         })
         frappe.db.commit()
+        try:
+            from vitalvida.reconciliation import _finalize_paid_order
+            _finalize_paid_order(order_id)
+        except Exception as fin_err:
+            frappe.log_error(
+                f"operations.action_match_webhook: _finalize_paid_order failed "
+                f"for {order_id}: {str(fin_err)}",
+                "Ops Match Finalization Error"
+            )
+        if _table_exists("Payment Reconciliation Log"):
+            try:
+                frappe.get_doc({
+                    "doctype": "Payment Reconciliation Log",
+                    "webhook_ref": webhook_id,
+                    "matched_order": order_id,
+                    "match_type": "Manual",
+                    "status": "Matched",
+                    "matched_by": frappe.session.user,
+                    "matched_at": now_datetime(),
+                    "confidence": 100,
+                }).insert(ignore_permissions=True)
+                frappe.db.commit()
+            except Exception:
+                pass
         return {"success": True}
     except frappe.PermissionError:
         raise

@@ -329,26 +329,22 @@ def get_da_stock(da_id=None):
         products = ["Shampoo", "Pomade", "Conditioner"]
         result = {p: 0 for p in products}
 
-        # Try DA Stock Balance table first
-        if _doctype_exists("DA Stock Balance"):
+        # FIX: Read from DA Warehouse (correct doctype). DA Stock Balance doesn't exist.
+        # Old fallback to Delivery Agent.current_stock returned same number for all products.
+        if _doctype_exists("DA Warehouse"):
             for product in products:
                 try:
-                    stock = frappe.db.get_value(
-                        "DA Stock Balance",
-                        {"delivery_agent": da_id, "product": product},
-                        "balance"
-                    )
-                    result[product] = cint(stock) if stock is not None else 0
+                    warehouse_name = frappe.db.exists("DA Warehouse", {
+                        "delivery_agent": da_id,
+                        "product": product,
+                    })
+                    if warehouse_name:
+                        stock = frappe.db.get_value("DA Warehouse", warehouse_name, "current_stock")
+                        result[product] = cint(stock) if stock is not None else 0
+                    else:
+                        result[product] = 0
                 except Exception:
                     result[product] = 0
-        else:
-            # Fall back to current_stock on Delivery Agent
-            try:
-                current_stock = frappe.db.get_value("Delivery Agent", da_id, "current_stock") or 0
-                for product in products:
-                    result[product] = cint(current_stock)
-            except Exception:
-                pass
 
         return result
 
@@ -935,3 +931,4 @@ def get_da_returns(da_id=None):
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "get_da_returns Error")
         return []
+
