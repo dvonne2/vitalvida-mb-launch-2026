@@ -1,161 +1,195 @@
 import frappe
-from frappe import _
-from datetime import datetime, timedelta
+from frappe.utils import cint, now_datetime
 
-@frappe.whitelist()
-def dispatch_stock(dispatch_name=None, delivery_agent=None, items=None, 
-                   storekeeper_fee=0, da_pickup_transport=0, driver_transport=0,
-                   driver_phone=None, motor_park=None, eta_date=None,
-                   notes=None, approval_required=False):
-    """
-    Create or update a Stock Dispatch with business logic validation.
-    
-    If approval_required=True, creates dispatch with status=Pending Approval
-    and escalates to Operations Manager.
-    
-    Otherwise, creates with status=In Transit, decrements factory stock,
-    and creates linked Consignment.
-    """
-    
-    # Validate cost limits
-    limits = frappe.get_value('Vitalvida Settings', 'Vitalvida Settings', 
-                             ['max_storekeeper_fee', 'max_da_pickup_transport'])
-    
-    if float(storekeeper_fee) > float(limits[0]):
-        if not approval_required:
-            frappe.throw(_("Storekeeper fee exceeds limit. Resubmit with approval."))
-    
-    if float(da_pickup_transport) > float(limits[1]):
-        if not approval_required:
-            frappe.throw(_("DA pickup transport exceeds limit. Resubmit with approval."))
-    
-    # Check if DA is frozen
-    da_frozen = frappe.db.get_value('DA Warehouse', 
-                                    {'delivery_agent': delivery_agent},
-                                    'is_frozen')
-    if da_frozen:
-        frappe.throw(_("Cannot dispatch to a frozen DA warehouse"))
-    
-    # Validate ETA (max 5 days)
-    if eta_date:
-        eta = datetime.strptime(eta_date, '%Y-%m-%d')
-        today = datetime.now()
-        days_until_eta = (eta - today).days
-        if days_until_eta > 5:
-            frappe.msgprint(_("⚠ ETA exceeds 5 days — flagged for review"), 
-                          alert=True)
-    
-    # Handle approval flow
-    if approval_required:
-        doc = frappe.new_doc('Stock Dispatch')
-        doc.delivery_agent = delivery_agent
-        doc.dispatch_date = datetime.now().date()
-        doc.eta_date = eta_date
-        doc.driver_phone = driver_phone
-        doc.motor_park = motor_park
-        doc.storekeeper_fee = storekeeper_fee
-        doc.da_pickup_transport = da_pickup_transport
-        doc.driver_transport = driver_transport
-        doc.total_cost = float(storekeeper_fee) + float(da_pickup_transport) + float(driver_transport)
-        doc.notes = notes
-        doc.approval_required = 1
-        doc.status = 'Pending Approval'
-        
-        # Add items
-        if items:
-            for item in items:
-                doc.append('items', {'product': item['product'], 'qty': item['qty']})
-        
-        doc.insert()
-        frappe.db.commit()
-        
-        # Create escalation request
-        esc = frappe.new_doc('Escalation Request')
-        esc.type = 'Cost Approval'
-        esc.subject = f"Dispatch {doc.name} — Cost Approval Required"
-        esc.description = f"Storekeeper: ₦{storekeeper_fee}, DA Pickup: ₦{da_pickup_transport}"
-        esc.linked_doctype = 'Stock Dispatch'
-        esc.linked_name = doc.name
-        esc.status = 'Open'
-        esc.insert()
-        frappe.db.commit()
-        
-        # Notify Operations Manager (placeholder)
-        frappe.msgprint(_("Dispatch created and sent for approval to Operations Manager"))
-        
-        return {'dispatch_name': doc.name, 'status': 'Pending Approval', 'consignment_name': None}
-    
-    # Normal flow: create dispatch and ship immediately
-    if dispatch_name:
-        doc = frappe.get_doc('Stock Dispatch', dispatch_name)
-    else:
-        doc = frappe.new_doc('Stock Dispatch')
-        doc.delivery_agent = delivery_agent
-        doc.dispatch_date = datetime.now().date()
-        doc.dispatched_by = frappe.session.user
-    
-    doc.eta_date = eta_date
-    doc.driver_phone = driver_phone
-    doc.motor_park = motor_park
-    doc.storekeeper_fee = storekeeper_fee
-    doc.da_pickup_transport = da_pickup_transport
-    doc.driver_transport = driver_transport
-    doc.total_cost = float(storekeeper_fee) + float(da_pickup_transport) + float(driver_transport)
-    doc.notes = notes
-    doc.status = 'In Transit'
-    
-    # Add items
-    if items:
-        doc.items = []
-        for item in items:
-            doc.append('items', {'product': item['product'], 'qty': item['qty']})
-    
-    doc.save()
-    
-    # Decrement factory stock (atomic)
-    for item in items:
-        stock_qty = frappe.db.get_value('Item', item['product'], 'stock_qty') or 0
-        if float(item['qty']) > float(stock_qty):
-            frappe.throw(_("Insufficient factory stock for {0}").format(item['product']))
-        
-        frappe.db.set_value('Item', item['product'], 'stock_qty', 
-                           float(stock_qty) - float(item['qty']))
-    
-    # Create Consignment
-    consignment = frappe.new_doc('Consignment')
-    consignment.delivery_agent = delivery_agent
-    consignment.dispatch_date = doc.dispatch_date
-    consignment.eta_date = eta_date
-    consignment.driver_phone = driver_phone
-    consignment.linked_dispatch = doc.name
-    consignment.status = 'Pending Receipt'
-    
-    for item in items:
-        consignment.append('items', {'product': item['product'], 'qty': item['qty']})
-    
-    consignment.insert()
-    frappe.db.commit()
-    
-    # Notify DA (placeholder)
-    frappe.msgprint(_("Dispatch shipped and DA notified via WhatsApp"))
-    
-    return {
-        'dispatch_name': doc.name, 
-        'status': 'In Transit', 
-        'consignment_name': consignment.name
-    }
 
-@frappe.whitelist()
-def dispatch_stats():
+def deduct_on_payment(order_name):
     """
-    Get dispatch statistics: pending, in_transit, delivered counts
+    FIX SHOWSTOPPER 1+2: Complete rewrite.
+    - Parses bundle contents to deduct ALL component products (not just 1)
+    - Creates DA Stock Entry + updates DA Warehouse balance directly
+    - Guards against double-deduction (idempotent)
+    - Guards against negative stock
     """
-    pending = frappe.db.count('Stock Dispatch', {'status': 'Pending'})
-    in_transit = frappe.db.count('Stock Dispatch', {'status': 'In Transit'})
-    delivered = frappe.db.count('Stock Dispatch', {'status': 'Confirmed'})
-    
-    return {
-        'pending': pending,
-        'in_transit': in_transit,
-        'delivered': delivered
-    }
+    try:
+        # 0. Guard against double-deduction
+        already_deducted = frappe.db.exists("DA Stock Entry", {
+            "order": order_name,
+            "entry_type": "Deduction",
+        })
+        if already_deducted:
+            return  # Stock already deducted for this order — idempotent
+
+        # 1. Load the VV Order
+        order = frappe.get_doc("VV Order", order_name)
+
+        # 2. Check delivery_agent is set
+        if not order.delivery_agent:
+            frappe.log_error(
+                f"M13: Order {order_name} has no delivery_agent — deduction skipped.",
+                "M13 Deduction Error"
+            )
+            return
+
+        # 3. Resolve components from package contents
+        if not order.package_name:
+            frappe.log_error(
+                f"M13: Order {order_name} has no package_name — deduction skipped.",
+                "M13 Deduction Error"
+            )
+            return
+
+        # Try VV Package first, fall back to Package
+        contents = ""
+        for dt in ["VV Package", "Package"]:
+            try:
+                contents = frappe.db.get_value(dt, order.package_name, "contents") or ""
+                if contents:
+                    break
+            except Exception:
+                continue
+
+        if not contents:
+            # Fallback: try single item field
+            product = None
+            for dt in ["VV Package", "Package"]:
+                try:
+                    product = frappe.db.get_value(dt, order.package_name, "item")
+                    if product:
+                        break
+                except Exception:
+                    continue
+            if product:
+                contents = f"1 {product}"
+            else:
+                frappe.log_error(
+                    f"M13: Package {order.package_name} has no contents or item — "
+                    f"deduction skipped for order {order_name}.",
+                    "M13 Deduction Error"
+                )
+                return
+
+        # 4. Parse contents: "1 Shampoo · 1 Pomade · 1 Conditioner"
+        components = _parse_contents(contents)
+        if not components:
+            frappe.log_error(
+                f"M13: Could not parse contents '{contents}' for package "
+                f"{order.package_name} on order {order_name}.",
+                "M13 Deduction Error"
+            )
+            return
+
+        # 5. Deduct each component from DA warehouse
+        for product, qty in components:
+            _deduct_da_stock(
+                delivery_agent=order.delivery_agent,
+                product=product,
+                quantity=qty,
+                order=order_name,
+            )
+
+    except Exception as e:
+        # Catch everything — payment confirmation must never be blocked
+        frappe.log_error(
+            f"M13 deduction failed for order {order_name}: {str(e)}",
+            "M13 Deduction Error"
+        )
+
+
+def _parse_contents(contents):
+    """
+    Parse "1 Shampoo · 1 Pomade · 1 Conditioner" → [("Shampoo", 1), ("Pomade", 1), ("Conditioner", 1)]
+    Also handles "3 Shampoo · 3 Pomade" for B2GOF bundles.
+    """
+    items = []
+    if not contents:
+        return items
+    for part in contents.split("·"):
+        part = part.strip()
+        if not part:
+            continue
+        tokens = part.split()
+        if tokens and tokens[0].isdigit():
+            qty = int(tokens[0])
+            product = " ".join(tokens[1:])
+        else:
+            qty = 1
+            product = part
+        if product:
+            items.append((product.strip(), qty))
+    return items
+
+
+def _deduct_da_stock(delivery_agent, product, quantity, order):
+    """
+    Create a DA Stock Entry (Deduction) and decrement DA Warehouse balance.
+    Uses DA Stock Balance if available, falls back to DA Warehouse.
+    """
+    now = now_datetime()
+
+    # Create DA Stock Entry record
+    try:
+        entry = frappe.get_doc({
+            "doctype": "DA Stock Entry",
+            "delivery_agent": delivery_agent,
+            "product": product,
+            "entry_type": "Deduction",
+            "direction": "Out",
+            "quantity": quantity,
+            "order": order,
+            "creation": now,
+        })
+        entry.insert(ignore_permissions=True)
+    except Exception as e:
+        frappe.log_error(
+            f"M13: DA Stock Entry creation failed for DA={delivery_agent}, "
+            f"product={product}, order={order}: {str(e)}",
+            "M13 Stock Entry Error"
+        )
+        return
+
+    # Update DA Warehouse balance
+    try:
+        # Try DA Stock Balance first (per-product balances)
+        if frappe.db.table_exists("tabDA Stock Balance"):
+            bal = frappe.db.get_value(
+                "DA Stock Balance",
+                {"delivery_agent": delivery_agent, "product": product},
+                ["name", "balance"],
+                as_dict=True
+            )
+            if bal:
+                new_balance = max(0, cint(bal.balance) - quantity)
+                frappe.db.set_value("DA Stock Balance", bal.name, "balance", new_balance)
+            else:
+                # No balance record exists — create one at 0 (will go negative if we don't guard)
+                frappe.log_error(
+                    f"M13: No DA Stock Balance found for DA={delivery_agent}, "
+                    f"product={product}. Deduction recorded but balance not decremented.",
+                    "M13 Missing Balance"
+                )
+        else:
+            # Fall back to DA Warehouse
+            wh = frappe.db.get_value(
+                "DA Warehouse",
+                {"delivery_agent": delivery_agent, "product": product},
+                ["name", "current_stock"],
+                as_dict=True
+            )
+            if wh:
+                new_stock = max(0, cint(wh.current_stock) - quantity)
+                frappe.db.set_value("DA Warehouse", wh.name, "current_stock", new_stock)
+            else:
+                frappe.log_error(
+                    f"M13: No DA Warehouse found for DA={delivery_agent}, "
+                    f"product={product}. Deduction recorded but stock not decremented.",
+                    "M13 Missing Warehouse"
+                )
+
+        frappe.db.commit()
+
+    except Exception as e:
+        frappe.log_error(
+            f"M13: Stock balance update failed for DA={delivery_agent}, "
+            f"product={product}: {str(e)}",
+            "M13 Balance Update Error"
+        )

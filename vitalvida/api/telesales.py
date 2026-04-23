@@ -8,6 +8,23 @@ from datetime import date, timedelta
 from collections import Counter
 
 
+# ── Valid state transitions — FIX FRAUD #1 ──────────────────────────────────
+# Only these transitions are allowed. Any other transition is blocked.
+VALID_TRANSITIONS = {
+    "Pending":          ["Confirmed", "Cancelled", "Rescheduled"],
+    "Confirmed":        ["Assigned", "Cancelled", "Rescheduled"],
+    "Assigned":         ["Out for Delivery", "Cancelled", "Rescheduled"],
+    "Out for Delivery": ["Delivered", "Rescheduled", "Unreachable"],
+    "Delivered":        [],  # Only system can move to Paid via reconciliation
+    "Paid":             [],  # Terminal
+    "Rescheduled":      ["Confirmed", "Cancelled"],
+    "Unreachable":      ["Rescheduled", "Cancelled"],
+    "Cancelled":        [],  # Terminal
+    "Returned":         [],  # Terminal
+    "Hold":             ["Assigned", "Cancelled"],
+}
+
+
 def _resolve_closer(closer=None):
     """
     Returns the closer name to use for queries.
@@ -105,25 +122,38 @@ def get_my_queue(closer=None):
 def update_order_status(order, status, note='', reschedule_date='', cancellation_source=None):
     """
     API 2: Updates the status of a VV Order.
-    Also increments attempt_count on every call.
-
-    FIX:
-    - Accepts cancellation_source
-    - Enforces it when status = Cancelled
+    FIX FRAUD #1: State machine validation — blocks invalid transitions.
+    FIX FRAUD #2: Blocks manual Paid/Delivered — must come through proper channels.
     """
     try:
         doc = frappe.get_doc('VV Order', order)
+        current_status = doc.order_status or "Pending"
+
+        # Block: nobody can manually set status to Paid
+        if status == "Paid":
+            return {'success': False, 'error': 'Cannot manually set to Paid. Payment must come through Moniepoint reconciliation.'}
+
+        # Block: nobody can manually set status to Delivered via telesales
+        if status == "Delivered":
+            return {'success': False, 'error': 'Cannot set to Delivered from telesales. DA must use delivery flow with proof.'}
+
+        # Validate transition
+        allowed = VALID_TRANSITIONS.get(current_status, [])
+        if status not in allowed:
+            return {
+                'success': False,
+                'error': f'Invalid transition: {current_status} → {status}. '
+                         f'Allowed: {", ".join(allowed) if allowed else "none (terminal)"}'
+            }
 
         doc.order_status = status
         doc.attempt_count = (doc.attempt_count or 0) + 1
 
         if note:
             doc.reschedule_note = note
-
         if reschedule_date:
             doc.expected_delivery_date = reschedule_date
 
-        # ✅ FIX: handle cancellation_source properly
         if status == 'Cancelled':
             if not cancellation_source:
                 frappe.throw('cancellation_source is required when cancelling an order.')
@@ -132,18 +162,11 @@ def update_order_status(order, status, note='', reschedule_date='', cancellation
         doc.save(ignore_permissions=True)
         frappe.db.commit()
 
-        return {
-            'success': True,
-            'order': order,
-            'status': status
-        }
+        return {'success': True, 'order': order, 'status': status}
 
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), 'update_order_status')
-        return {
-            'success': False,
-            'error': str(e)
-        }
+        return {'success': False, 'error': str(e)}
 
 @frappe.whitelist()
 def get_my_stats(closer=None, period='d'):
@@ -229,8 +252,8 @@ def get_my_stats(closer=None, period='d'):
 @frappe.whitelist()
 def get_available_das(state=''):
     """
-    API 4: Returns active Delivery Agents.
-    Optionally filtered by state.
+    API 4: Returns active, NON-FROZEN Delivery Agents.
+    FIX BUG #15: Frozen DAs no longer appear in dropdown.
     """
     try:
         meta = frappe.get_meta('Delivery Agent')
@@ -239,6 +262,9 @@ def get_available_das(state=''):
         filters = {}
         if 'is_active' in field_names:
             filters['is_active'] = 1
+        # FIX: Exclude frozen DAs
+        if 'is_double_risk' in field_names:
+            filters['is_double_risk'] = 0
 
         fields = ['name']
         for f in ['agent_name', 'phone', 'state', 'current_stock']:
@@ -256,6 +282,18 @@ def get_available_das(state=''):
         # Filter by state after fetch
         if state and 'state' in field_names:
             das = [d for d in das if (d.get('state') or '') == state]
+
+        # Also exclude DAs with frozen DA Warehouse
+        for da in das[:]:
+            try:
+                frozen_wh = frappe.db.exists("DA Warehouse", {
+                    "delivery_agent": da.name, "is_frozen": 1
+                })
+                if frozen_wh:
+                    das.remove(da)
+                    continue
+            except Exception:
+                pass
 
         # Add DSR score per DA
         for da in das:
@@ -280,10 +318,27 @@ def get_available_das(state=''):
 def assign_da_to_order(order, da):
     """
     API 5: Assigns a Delivery Agent to an order.
-    Sets status to Assigned.
+    FIX BUG #3: Checks DA is not frozen before assignment.
     """
     try:
+        # Check DA is not frozen (both fields)
+        da_doc = frappe.get_doc('Delivery Agent', da)
+        if getattr(da_doc, 'is_double_risk', 0):
+            return {'success': False, 'error': f'Cannot assign to {da} — DA is frozen.'}
+
+        # Also check DA Warehouse frozen status
+        frozen_wh = frappe.db.exists("DA Warehouse", {
+            "delivery_agent": da, "is_frozen": 1
+        })
+        if frozen_wh:
+            return {'success': False, 'error': f'Cannot assign to {da} — DA warehouse is frozen.'}
+
         doc = frappe.get_doc('VV Order', order)
+
+        # Validate transition
+        if doc.order_status not in ['Confirmed', 'Rescheduled']:
+            return {'success': False, 'error': f'Cannot assign — order is {doc.order_status}. Must be Confirmed or Rescheduled.'}
+
         doc.delivery_agent = da
         doc.order_status = 'Assigned'
         doc.save(ignore_permissions=True)
