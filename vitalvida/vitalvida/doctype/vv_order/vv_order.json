@@ -52,6 +52,7 @@
   "column_break_4",
   "expected_delivery_date",
   "delivered_at",
+  "delivered_by",
   "paid_at",
   "payment_confirmed",
   "payment_confirmed_at",
@@ -329,6 +330,13 @@
    "fieldname": "delivered_at",
    "fieldtype": "Datetime",
    "label": "Delivered At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "delivered_by",
+   "fieldtype": "Link",
+   "label": "Delivered By",
+   "options": "Delivery Agent",
    "read_only": 1
   },
   {
