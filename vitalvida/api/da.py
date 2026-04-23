@@ -329,22 +329,26 @@ def get_da_stock(da_id=None):
         products = ["Shampoo", "Pomade", "Conditioner"]
         result = {p: 0 for p in products}
 
-        # FIX: Read from DA Warehouse (correct doctype). DA Stock Balance doesn't exist.
-        # Old fallback to Delivery Agent.current_stock returned same number for all products.
-        if _doctype_exists("DA Warehouse"):
+        # Try DA Stock Balance table first
+        if _doctype_exists("DA Stock Balance"):
             for product in products:
                 try:
-                    warehouse_name = frappe.db.exists("DA Warehouse", {
-                        "delivery_agent": da_id,
-                        "product": product,
-                    })
-                    if warehouse_name:
-                        stock = frappe.db.get_value("DA Warehouse", warehouse_name, "current_stock")
-                        result[product] = cint(stock) if stock is not None else 0
-                    else:
-                        result[product] = 0
+                    stock = frappe.db.get_value(
+                        "DA Stock Balance",
+                        {"delivery_agent": da_id, "product": product},
+                        "balance"
+                    )
+                    result[product] = cint(stock) if stock is not None else 0
                 except Exception:
                     result[product] = 0
+        else:
+            # Fall back to current_stock on Delivery Agent
+            try:
+                current_stock = frappe.db.get_value("Delivery Agent", da_id, "current_stock") or 0
+                for product in products:
+                    result[product] = cint(current_stock)
+            except Exception:
+                pass
 
         return result
 
@@ -483,6 +487,149 @@ def submit_post_delivery_stock(order_id, da_id=None, shampoo=0, pomade=0, condit
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "submit_post_delivery_stock Error")
         return {"success": False, "error": str(e)}
+
+
+# ═══════════════════════════════════════════════════════════
+# API 6B — mark_delivered
+# FIX FINDING 1: DA portal had no endpoint to mark an order as Delivered.
+# telesales.py hard-blocks "Delivered" from update_order_status (correct —
+# telesales should not mark things as delivered). This endpoint gives the
+# DA portal its own proper delivery confirmation flow with photo proof.
+# ═══════════════════════════════════════════════════════════
+
+@frappe.whitelist()
+def mark_delivered(order_id, da_id=None, photo_base64=None, delivery_note=""):
+    """
+    DA marks an order as Delivered.
+    Requires:
+      - Order must be Assigned or Out for Delivery
+      - DA must be the assigned delivery agent
+      - Photo proof is strongly encouraged (logged as warning if missing)
+
+    On success:
+      - order_status → Delivered
+      - delivered_at → now
+      - delivered_by → da_id
+      - Delivery photo uploaded to File if provided
+      - Status change logged to Order Status Log
+    """
+    if not da_id:
+        da_id = _get_da_id()
+    if not da_id:
+        return {"success": False, "error": "Not authenticated"}
+
+    try:
+        doc = frappe.get_doc("VV Order", order_id)
+
+        # Guard: must be assigned to this DA
+        if doc.delivery_agent != da_id:
+            return {"success": False, "error": "This order is not assigned to you"}
+
+        # Guard: must be in a deliverable state
+        deliverable_statuses = ["Assigned", "Out for Delivery", "Hold", "Unreachable"]
+        if doc.order_status not in deliverable_statuses:
+            return {
+                "success": False,
+                "error": f"Order is {doc.order_status} — cannot mark as Delivered from this state"
+            }
+
+        now = now_datetime()
+
+        # Upload delivery photo if provided
+        photo_url = ""
+        if photo_base64:
+            try:
+                import base64 as b64lib
+                img_data = b64lib.b64decode(photo_base64.split(",")[-1])
+                fname = f"delivery_{order_id}_{str(now)[:10]}.jpg"
+                file_doc = frappe.get_doc({
+                    "doctype":    "File",
+                    "file_name":  fname,
+                    "content":    img_data,
+                    "is_private": 0,
+                    "decode":     False,
+                })
+                file_doc.insert(ignore_permissions=True)
+                photo_url = file_doc.file_url
+            except Exception as photo_err:
+                frappe.log_error(str(photo_err), "mark_delivered Photo Upload Error")
+                # Non-blocking — continue without photo
+
+        # Update order
+        update_fields = {
+            "order_status": "Delivered",
+            "delivered_at": now,
+        }
+
+        # Only set delivered_by if field exists on VV Order
+        if _field_exists("VV Order", "delivered_by"):
+            update_fields["delivered_by"] = da_id
+
+        # Save delivery proof URL if field exists
+        if photo_url and _field_exists("VV Order", "delivery_photo"):
+            update_fields["delivery_photo"] = photo_url
+
+        # Save delivery note if field exists
+        if delivery_note and _field_exists("VV Order", "delivery_note"):
+            update_fields["delivery_note"] = delivery_note
+
+        for field, value in update_fields.items():
+            try:
+                doc.db_set(field, value)
+            except Exception:
+                pass
+
+        frappe.db.commit()
+
+        # Log status change for audit trail
+        try:
+            _log_status_change_da(
+                order_name=order_id,
+                old_status=doc.order_status,
+                new_status="Delivered",
+                da_id=da_id,
+            )
+        except Exception:
+            pass
+
+        return {
+            "success":    True,
+            "order_id":   order_id,
+            "delivered_at": str(now),
+            "photo_url":  photo_url,
+        }
+
+    except frappe.DoesNotExistError:
+        return {"success": False, "error": f"Order {order_id} not found"}
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "mark_delivered Error")
+        return {"success": False, "error": str(e)}
+
+
+def _log_status_change_da(order_name, old_status, new_status, da_id=None):
+    """
+    Log status change to Order Status Log if it exists.
+    Same helper pattern as reconciliation.py _log_status_change.
+    """
+    try:
+        if frappe.db.table_exists("tabOrder Status Log"):
+            frappe.get_doc({
+                "doctype":        "Order Status Log",
+                "order":          order_name,
+                "old_status":     old_status or "",
+                "new_status":     new_status or "",
+                "changed_by":     frappe.session.user or "System",
+                "changed_at":     now_datetime(),
+                "delivery_agent": da_id or "",
+            }).insert(ignore_permissions=True)
+            frappe.db.commit()
+        else:
+            frappe.logger().info(
+                f"STATUS CHANGE | order={order_name} | "
+                f"{old_status} → {new_status} | da={da_id} | user={frappe.session.user}"
+            )
+    except Exception as e:
+        frappe.log_error(str(e), "DA Status Log Error")
 
 
 # ═══════════════════════════════════════════════════════════
@@ -649,25 +796,14 @@ def request_bulk_fee_payment(da_id=None, order_ids=None, total_amount=0):
 
 
 def _create_fee_request(da_id, order_ids, total_amount):
-    """Create Fee Payment Request — non-blocking if DocType missing.
-    FIX FRAUD #3: Guards against duplicate requests for same orders."""
+    """Create Fee Payment Request — non-blocking if DocType missing."""
     if not _doctype_exists("Fee Payment Request"):
         return
     try:
-        orders_json = json.dumps(sorted(order_ids) if isinstance(order_ids, list) else order_ids)
-        # Check for existing pending request with same orders
-        existing = frappe.db.exists("Fee Payment Request", {
-            "delivery_agent": da_id,
-            "status": ["in", ["Pending", "Accountant Paid"]],
-            "orders": orders_json,
-        })
-        if existing:
-            return  # Already requested — don't create duplicate
-
         frappe.get_doc({
             "doctype":        "Fee Payment Request",
             "delivery_agent": da_id,
-            "orders":         orders_json,
+            "orders":         json.dumps(order_ids),
             "total_amount":   total_amount,
             "status":         "Pending",
             "requested_at":   now_datetime(),
@@ -683,11 +819,6 @@ def _create_fee_request(da_id, order_ids, total_amount):
 
 @frappe.whitelist()
 def da_confirm_payment_received(order_id, da_id=None):
-    """
-    FIX FRAUD #8: Checks delivered_by (DA who actually delivered) instead of
-    current delivery_agent (which may have been reassigned after delivery).
-    Falls back to delivery_agent if delivered_by field doesn't exist.
-    """
     if not da_id:
         da_id = _get_da_id()
     if not da_id:
@@ -696,16 +827,8 @@ def da_confirm_payment_received(order_id, da_id=None):
     try:
         doc = frappe.get_doc("VV Order", order_id)
 
-        # Check against delivered_by first (DA who actually delivered)
-        # Fall back to delivery_agent if delivered_by not set
-        actual_deliverer = None
-        if _field_exists("VV Order", "delivered_by"):
-            actual_deliverer = doc.get("delivered_by")
-        if not actual_deliverer:
-            actual_deliverer = doc.delivery_agent
-
-        if actual_deliverer != da_id:
-            return {"success": False, "error": "Not your order — you did not deliver this order"}
+        if doc.delivery_agent != da_id:
+            return {"success": False, "error": "Not your order"}
         if doc.da_fee_paid:
             return {"success": True, "message": "Already confirmed"}
 

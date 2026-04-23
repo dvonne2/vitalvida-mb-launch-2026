@@ -21,23 +21,23 @@ def on_vv_order_update(doc, method):
     if old_status == new_status:
         return  # No status change
 
-    # ── Scenario: Just became Delivered ───────────────────────────────
+    # ── FIX: Log every status change for audit trail ──────────────────────
+    try:
+        _log_status_change(doc.name, old_status, new_status, doc.delivery_agent)
+    except Exception as e:
+        frappe.log_error(str(e), "Status Log Error")
+
+    # ── Scenario: Just became Delivered ───────────────────────────────────
     if new_status == "Delivered":
-        # Stamp delivered_at
         if not doc.delivered_at:
             doc.delivered_at = now_datetime()
             doc.db_set("delivered_at", doc.delivered_at)
 
-        # ─── FIX: Robust delivered_by Stamping ──────────────────────────
-        # Locks in WHO delivered at the moment of status change.
-        # Ensure you have added the 'delivered_by' field to the VV Order DocType.
         if not doc.get("delivered_by"):
             doc.db_set("delivered_by", doc.delivery_agent)
-        # ───────────────────────────────────────────────────────────────
 
         # Check if payment was already confirmed (PBD scenario)
         if doc.payment_confirmed:
-            # Both gates met → finalize to Paid + deduct stock + allocate profit
             frappe.enqueue(
                 "vitalvida.reconciliation._finalize_paid_order",
                 queue="short",
@@ -45,7 +45,7 @@ def on_vv_order_update(doc, method):
                 order_name=doc.name,
             )
 
-    # ── Scenario: Finance manually set to Paid via workflow ──────────
+    # ── Scenario: Finance manually set to Paid via workflow ──────────────
     if new_status == "Paid" and old_status == "Delivered":
         now = now_datetime()
         if not doc.payment_confirmed:
@@ -58,8 +58,40 @@ def on_vv_order_update(doc, method):
             doc.payment_confirmed_at = now
             doc.db_set("payment_confirmed_at", now)
 
-        # Trigger finalization logic (Stock + Profit)
         _finalize_paid_order(doc.name)
+
+
+def _log_status_change(order_name, old_status, new_status, delivery_agent=None):
+    """
+    FIX FINDING 3: Log every VV Order status change.
+    Creates an Order Status Log entry so there is a full audit trail
+    of who changed status, when, and from what to what.
+    If the Order Status Log doctype doesn't exist yet, logs to Error Log
+    so nothing crashes.
+    """
+    try:
+        if frappe.db.table_exists("tabOrder Status Log"):
+            frappe.get_doc({
+                "doctype":        "Order Status Log",
+                "order":          order_name,
+                "old_status":     old_status or "",
+                "new_status":     new_status or "",
+                "changed_by":     frappe.session.user or "System",
+                "changed_at":     now_datetime(),
+                "delivery_agent": delivery_agent or "",
+            }).insert(ignore_permissions=True)
+            frappe.db.commit()
+        else:
+            # Doctype not created yet — log to frappe logger so it's not lost
+            frappe.logger().info(
+                f"STATUS CHANGE | order={order_name} | "
+                f"{old_status} → {new_status} | user={frappe.session.user}"
+            )
+    except Exception as e:
+        frappe.log_error(
+            f"_log_status_change failed for {order_name}: {str(e)}",
+            "Order Status Log Error"
+        )
 
 
 # ─── Terminal Statuses & Constants ────────────────────────────────────────────
@@ -95,7 +127,7 @@ def _process_webhook(webhook):
     webhook_name = webhook["name"]
 
     if frappe.db.exists("Payment Reconciliation Log", {"webhook": webhook_name}):
-        return 
+        return
 
     try:
         frappe.db.sql(
@@ -153,19 +185,28 @@ def _tier1_match(webhook):
             order_status = frappe.db.get_value("VV Order", intent["order"], "order_status")
             if order_status in TERMINAL_STATUSES:
                 continue
-            return frappe.db.get_value("VV Order", intent["order"],
-                ["name", "customer_phone", "total_payable", "order_status", "creation"], as_dict=True)
+            return frappe.db.get_value(
+                "VV Order", intent["order"],
+                ["name", "customer_phone", "total_payable", "order_status", "creation"],
+                as_dict=True
+            )
     return None
 
 
 def _tier2_match(webhook):
     amount = float(webhook.get("amount") or 0)
-    sender_phone = _extract_phone(webhook.get("narration")) or _extract_phone(webhook.get("payer_name"))
+    sender_phone = (
+        _extract_phone(webhook.get("narration"))
+        or _extract_phone(webhook.get("payer_name"))
+    )
     cutoff_date = add_days(now_datetime(), -ORDER_AGE_DAYS)
 
     candidates = frappe.get_all(
         "VV Order",
-        filters={"order_status": ["not in", TERMINAL_STATUSES], "creation": [">=", cutoff_date]},
+        filters={
+            "order_status": ["not in", TERMINAL_STATUSES],
+            "creation": [">=", cutoff_date]
+        },
         fields=["name", "customer_phone", "total_payable"]
     )
 
@@ -180,8 +221,10 @@ def _tier2_match(webhook):
                 continue
         matches.append({"order": order, "delta": abs(amount - order_amount)})
 
-    if not matches: return None
-    if len(matches) == 1: return matches[0]["order"]
+    if not matches:
+        return None
+    if len(matches) == 1:
+        return matches[0]["order"]
     matches.sort(key=lambda x: x["delta"])
     if matches[0]["delta"] == matches[1]["delta"]:
         return [m["order"] for m in matches]
@@ -217,7 +260,6 @@ def _auto_confirm(webhook, order, tier, confidence):
 
 
 def _flag_for_review(webhook, order, tier, confidence, commit=True):
-    # (Existing logic for review remains same)
     frappe.get_doc({
         "doctype": "Payment Reconciliation Log",
         "webhook": webhook["name"],
@@ -228,8 +270,13 @@ def _flag_for_review(webhook, order, tier, confidence, commit=True):
         "amount_received": float(webhook.get("amount") or 0),
         "amount_expected": float(order.get("total_payable") or 0),
     }).insert(ignore_permissions=True)
-    frappe.db.set_value("Moniepoint Webhook Log", webhook["name"], {"processing_status": "Pending Finance Review"})
-    if commit: frappe.db.commit()
+    frappe.db.set_value(
+        "Moniepoint Webhook Log",
+        webhook["name"],
+        {"processing_status": "Pending Finance Review"}
+    )
+    if commit:
+        frappe.db.commit()
     _alert_finance(webhook["name"], order["name"], "PaymentFlagged")
 
 
@@ -241,7 +288,11 @@ def _log_unmatched(webhook):
         "reconciliation_status": "Unmatched",
         "amount_received": float(webhook.get("amount") or 0),
     }).insert(ignore_permissions=True)
-    frappe.db.set_value("Moniepoint Webhook Log", webhook["name"], {"processing_status": "Unmatched"})
+    frappe.db.set_value(
+        "Moniepoint Webhook Log",
+        webhook["name"],
+        {"processing_status": "Unmatched"}
+    )
     frappe.db.commit()
     _alert_finance(webhook["name"], None, "PaymentUnmatched")
 
@@ -249,7 +300,8 @@ def _log_unmatched(webhook):
 def _mark_order_paid(order_name):
     now = now_datetime()
     order_status = frappe.db.get_value("VV Order", order_name, "order_status")
-    if order_status == "Paid": return
+    if order_status == "Paid":
+        return
 
     frappe.db.set_value("VV Order", order_name, {
         "payment_confirmed": 1,
@@ -265,51 +317,75 @@ def _mark_order_paid(order_name):
             from vitalvida.notifications import send_notification
             order = frappe.get_doc("VV Order", order_name)
             send_notification(order, event="PaymentReceivedEarly", recipient_type="Owner")
-        except Exception: pass
+        except Exception:
+            pass
 
 
 def _finalize_paid_order(order_name):
     """
     THE ONLY FUNCTION THAT DEDUCTS STOCK & ALLOCATES PROFIT.
+    Dual-gate: order must be Delivered AND payment_confirmed=1
     """
-    now = now_datetime()
-    order = frappe.db.get_value("VV Order", order_name, 
-        ["order_status", "payment_confirmed"], as_dict=True)
+    order = frappe.db.get_value(
+        "VV Order", order_name,
+        ["order_status", "payment_confirmed", "total_payable", "payment_reference"],
+        as_dict=True
+    )
 
     if not order or order.order_status == "Paid":
-        return 
+        return
     if not order.payment_confirmed:
-        frappe.log_error(f"Finalize called for {order_name} but payment_confirmed=0", "M11 Dual-Gate Error")
+        frappe.log_error(
+            f"Finalize called for {order_name} but payment_confirmed=0",
+            "M11 Dual-Gate Error"
+        )
         return
 
-    # 1. Update status
+    # 1. Update status to Paid
     frappe.db.set_value("VV Order", order_name, {"order_status": "Paid"})
     frappe.db.commit()
 
-    # 2. M13: Deduct stock
+    # 2. M13: Deduct stock (all bundle components)
     try:
         from vitalvida.deduction import deduct_on_payment
         deduct_on_payment(order_name)
     except Exception as e:
-        frappe.log_error(f"Deduction failed for {order_name}: {str(e)}", "M13 Deduction Error")
+        frappe.log_error(
+            f"Deduction failed for {order_name}: {str(e)}",
+            "M13 Deduction Error"
+        )
 
-    # ─── FIX: PROFIT FIRST REVENUE ALLOCATION ──────────────────────────────
-    # Wires the revenue to specific wallets (Owner, Profit, Tax, etc.)
+    # 3. FIX FINDING 2: Profit First allocation — pass all 3 required args
+    # Old code: allocate_revenue(order_name)          ← TypeError, 1 arg
+    # Fixed:    allocate_revenue(order_name, amount, payment_ref) ← correct
     if allocate_revenue:
         try:
-            allocate_revenue(order_name)
+            amount = float(order.total_payable or 0)
+            payment_ref = order.payment_reference or order_name
+            allocate_revenue(order_name, amount, payment_ref)
         except Exception as e:
-            frappe.log_error(f"Profit First allocation failed for {order_name}: {str(e)}", "M11 Profit Error")
-    # ──────────────────────────────────────────────────────────────────────
+            frappe.log_error(
+                f"Profit First allocation failed for {order_name}: {str(e)}",
+                "M11 Profit Error"
+            )
 
-    # 3. Fire notifications
+    # 4. Fire notifications
     try:
         from vitalvida.notifications import send_notification
         order_doc = frappe.get_doc("VV Order", order_name)
-        send_notification(order_doc, event="Paid", recipient_type="Customer", sender_channel="Payment")
-        send_notification(order_doc, event="Paid", recipient_type="Owner", sender_channel="Transactional")
+        send_notification(
+            order_doc, event="Paid",
+            recipient_type="Customer", sender_channel="Payment"
+        )
+        send_notification(
+            order_doc, event="Paid",
+            recipient_type="Owner", sender_channel="Transactional"
+        )
     except Exception as e:
-        frappe.log_error(f"Notification failed for {order_name}: {str(e)}", "M11 Paid Notification Error")
+        frappe.log_error(
+            f"Notification failed for {order_name}: {str(e)}",
+            "M11 Paid Notification Error"
+        )
 
 
 def _alert_finance(webhook_name, order_name, event):
@@ -319,9 +395,17 @@ def _alert_finance(webhook_name, order_name, event):
             order = frappe.get_doc("VV Order", order_name)
         else:
             w = frappe.get_doc("Moniepoint Webhook Log", webhook_name)
-            order = frappe._dict({"name": webhook_name, "customer_name": w.payer_name or "Unknown", "total_payable": w.amount or 0})
-        send_notification(order, event=event, recipient_type="Owner", sender_channel="Transactional")
-    except Exception: pass
+            order = frappe._dict({
+                "name": webhook_name,
+                "customer_name": w.payer_name or "Unknown",
+                "total_payable": w.amount or 0
+            })
+        send_notification(
+            order, event=event,
+            recipient_type="Owner", sender_channel="Transactional"
+        )
+    except Exception:
+        pass
 
 
 def _last10(phone):
@@ -331,6 +415,8 @@ def _last10(phone):
 
 def _extract_phone(text):
     import re
-    if not text: return None
+    if not text:
+        return None
     matches = re.findall(r"\d{7,15}", text)
     return _last10(matches[0]) if matches else None
+
