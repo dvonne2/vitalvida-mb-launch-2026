@@ -649,14 +649,25 @@ def request_bulk_fee_payment(da_id=None, order_ids=None, total_amount=0):
 
 
 def _create_fee_request(da_id, order_ids, total_amount):
-    """Create Fee Payment Request — non-blocking if DocType missing."""
+    """Create Fee Payment Request — non-blocking if DocType missing.
+    FIX FRAUD #3: Guards against duplicate requests for same orders."""
     if not _doctype_exists("Fee Payment Request"):
         return
     try:
+        orders_json = json.dumps(sorted(order_ids) if isinstance(order_ids, list) else order_ids)
+        # Check for existing pending request with same orders
+        existing = frappe.db.exists("Fee Payment Request", {
+            "delivery_agent": da_id,
+            "status": ["in", ["Pending", "Accountant Paid"]],
+            "orders": orders_json,
+        })
+        if existing:
+            return  # Already requested — don't create duplicate
+
         frappe.get_doc({
             "doctype":        "Fee Payment Request",
             "delivery_agent": da_id,
-            "orders":         json.dumps(order_ids),
+            "orders":         orders_json,
             "total_amount":   total_amount,
             "status":         "Pending",
             "requested_at":   now_datetime(),
@@ -672,6 +683,11 @@ def _create_fee_request(da_id, order_ids, total_amount):
 
 @frappe.whitelist()
 def da_confirm_payment_received(order_id, da_id=None):
+    """
+    FIX FRAUD #8: Checks delivered_by (DA who actually delivered) instead of
+    current delivery_agent (which may have been reassigned after delivery).
+    Falls back to delivery_agent if delivered_by field doesn't exist.
+    """
     if not da_id:
         da_id = _get_da_id()
     if not da_id:
@@ -680,8 +696,16 @@ def da_confirm_payment_received(order_id, da_id=None):
     try:
         doc = frappe.get_doc("VV Order", order_id)
 
-        if doc.delivery_agent != da_id:
-            return {"success": False, "error": "Not your order"}
+        # Check against delivered_by first (DA who actually delivered)
+        # Fall back to delivery_agent if delivered_by not set
+        actual_deliverer = None
+        if _field_exists("VV Order", "delivered_by"):
+            actual_deliverer = doc.get("delivered_by")
+        if not actual_deliverer:
+            actual_deliverer = doc.delivery_agent
+
+        if actual_deliverer != da_id:
+            return {"success": False, "error": "Not your order — you did not deliver this order"}
         if doc.da_fee_paid:
             return {"success": True, "message": "Already confirmed"}
 

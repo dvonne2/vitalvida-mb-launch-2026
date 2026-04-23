@@ -28,6 +28,16 @@ def on_vv_order_update(doc, method):
             doc.delivered_at = now_datetime()
             doc.db_set("delivered_at", doc.delivered_at)
 
+        # FIX FRAUD #8: Stamp delivered_by = current delivery_agent at time of delivery
+        # This locks in WHO delivered, even if the order is later reassigned
+        try:
+            meta = frappe.get_meta("VV Order")
+            if any(f.fieldname == "delivered_by" for f in meta.fields):
+                if not doc.get("delivered_by"):
+                    doc.db_set("delivered_by", doc.delivery_agent)
+        except Exception:
+            pass
+
         # Check if payment was already confirmed (PBD scenario)
         if doc.payment_confirmed:
             # Both gates met → finalize to Paid + deduct stock

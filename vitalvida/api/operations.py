@@ -1016,11 +1016,35 @@ def action_reject_payout(payout_id, reason=""):
 
 
 @frappe.whitelist()
-def action_manual_confirm_payment(order_id):
+def action_manual_confirm_payment(order_id, reason=""):
+    """
+    FIX FRAUD #7: Manual payment confirmation now requires:
+    - A reason (why no Moniepoint webhook?)
+    - Daily limit of 5 per user
+    - Auto-alerts Owner on every manual confirm
+    """
     _require_ops_role()
+
+    # Require reason
+    if not (reason or "").strip():
+        return {"success": False, "error": "Reason is required for manual payment confirmation. Why is there no Moniepoint webhook?"}
+
+    # Daily limit: max 5 manual confirms per user per day
+    today = str(date.today())
+    if _table_exists("Payment Reconciliation Log"):
+        manual_count = frappe.db.count("Payment Reconciliation Log", {
+            "match_type": "Manual",
+            "matched_by": frappe.session.user,
+            "matched_at": [">=", today],
+        })
+        if manual_count >= 5:
+            return {
+                "success": False,
+                "error": f"Daily limit reached. You have already manually confirmed {manual_count} payments today. "
+                         f"Maximum 5 per day. Contact Owner for override."
+            }
+
     try:
-        # FIX BUG 1+2: Set payment_confirmed=1 before calling _finalize_paid_order
-        # Old code used db_set("order_status","Paid") directly — no stock deduction fired
         frappe.db.set_value("VV Order", order_id, {
             "payment_confirmed": 1,
             "payment_confirmed_at": now_datetime(),
@@ -1046,10 +1070,25 @@ def action_manual_confirm_payment(order_id):
                     "matched_by": frappe.session.user,
                     "matched_at": now_datetime(),
                     "confidence": 100,
+                    "notes": f"Manual confirm by {frappe.session.user}. Reason: {reason}",
                 }).insert(ignore_permissions=True)
                 frappe.db.commit()
             except Exception:
                 pass
+
+        # Alert Owner on every manual confirm
+        try:
+            from vitalvida.notifications import send_notification
+            order_doc = frappe.get_doc("VV Order", order_id)
+            send_notification(
+                order_doc,
+                event="ManualPaymentConfirm",
+                recipient_type="Owner",
+                sender_channel="Transactional",
+            )
+        except Exception:
+            pass  # Notification failure should never block the action
+
         return {"success": True, "order_id": order_id}
     except frappe.PermissionError:
         raise
