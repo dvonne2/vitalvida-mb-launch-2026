@@ -8,54 +8,6 @@ from datetime import date, timedelta
 from collections import Counter
 
 
-# ── Valid state transitions — FIX FRAUD #1 ──────────────────────────────────
-# Only these transitions are allowed. Any other transition is blocked.
-VALID_TRANSITIONS = {
-    "Pending":          ["Confirmed", "Cancelled", "Rescheduled"],
-    "Confirmed":        ["Assigned", "Cancelled", "Rescheduled"],
-    "Assigned":         ["Out for Delivery", "Cancelled", "Rescheduled"],
-    "Out for Delivery": ["Delivered", "Rescheduled", "Unreachable"],
-    "Delivered":        [],  # Only system can move to Paid via reconciliation
-    "Paid":             [],  # Terminal
-    "Rescheduled":      ["Confirmed", "Cancelled"],
-    "Unreachable":      ["Rescheduled", "Cancelled"],
-    "Cancelled":        [],  # Terminal
-    "Returned":         [],  # Terminal
-    "Hold":             ["Assigned", "Cancelled"],
-}
-
-
-def _resolve_closer(closer=None):
-    """
-    Returns the closer name to use for queries.
-    If closer is provided and non-empty, use it directly.
-    Otherwise look up the Telesales Closer record linked to the
-    current session user and return its name.
-    Raises frappe.ValidationError if no closer can be resolved.
-    """
-    if closer and str(closer).strip():
-        return closer
-
-    user = frappe.session.user
-    if not user or user == 'Guest':
-        frappe.throw('Not authenticated.', frappe.AuthenticationError)
-
-    # Look up Telesales Closer by linked user
-    closer_name = frappe.db.get_value('Telesales Closer', {'user': user}, 'name')
-    if not closer_name:
-        # Fallback: try matching by email directly as the name
-        closer_name = frappe.db.exists('Telesales Closer', user)
-
-    if not closer_name:
-        frappe.throw(
-            f'No Telesales Closer record found for user {user}. '
-            f'Ask your administrator to link your account.',
-            frappe.DoesNotExistError
-        )
-
-    return closer_name
-
-
 @frappe.whitelist()
 def get_my_closer(user=None):
     """
@@ -74,16 +26,11 @@ def get_my_closer(user=None):
 
 
 @frappe.whitelist()
-def get_my_queue(closer=None):
+def get_my_queue(closer):
     """
     API 1: Returns all VV Orders assigned to this closer.
     Covers CALL NOW, CONFIRMED, ON THE WAY, CALL BACK, DONE tabs.
-
-    FIX: Made closer optional. If not provided (or undefined sent from React
-    before state.currentCloser is populated), resolve from the current session
-    user's linked Telesales Closer record. Prevents TypeError on page load.
     """
-    closer = _resolve_closer(closer)
     orders = frappe.get_all(
         'VV Order',
         filters={'telesales_rep': closer},
@@ -119,64 +66,56 @@ def get_my_queue(closer=None):
 
 
 @frappe.whitelist()
-def update_order_status(order, status, note='', reschedule_date='', cancellation_source=None):
+def update_order_status(order, status, note='', reschedule_date='', cancellation_source=''):
     """
     API 2: Updates the status of a VV Order.
-    FIX FRAUD #1: State machine validation — blocks invalid transitions.
-    FIX FRAUD #2: Blocks manual Paid/Delivered — must come through proper channels.
+    Also increments attempt_count on every call.
+
+    FIX: Added cancellation_source param. vv_order.py validates this is
+    mandatory when status=Cancelled — without it doc.save() throws a
+    ValidationError: "Cancellation Source is mandatory when status is Cancelled."
+    Telesales cancellations default to 'Customer' source.
     """
+    # Telesales can set: Confirmed, Rescheduled, Cancelled, Pending
+    # DA delivery flow can set: Out for Delivery, Delivered
+    # Hard blocks remain: Paid (payment is system-only), Returned, Assigned (ops only)
+    ALLOWED_STATUSES = {"Confirmed", "Rescheduled", "Cancelled", "Pending", "Out for Delivery", "Delivered"}
+    if status not in ALLOWED_STATUSES:
+        return {
+            "success": False,
+            "error": f"Status '{status}' cannot be set from the Telesales portal. "
+                     f"Allowed: {', '.join(sorted(ALLOWED_STATUSES))}."
+        }
     try:
         doc = frappe.get_doc('VV Order', order)
-        current_status = doc.order_status or "Pending"
-
-        # Block: nobody can manually set status to Paid
-        if status == "Paid":
-            return {'success': False, 'error': 'Cannot manually set to Paid. Payment must come through Moniepoint reconciliation.'}
-
-        # Block: nobody can manually set status to Delivered via telesales
-        if status == "Delivered":
-            return {'success': False, 'error': 'Cannot set to Delivered from telesales. DA must use delivery flow with proof.'}
-
-        # Validate transition
-        allowed = VALID_TRANSITIONS.get(current_status, [])
-        if status not in allowed:
+        if doc.order_status in ("Paid", "Cancelled", "Returned"):
             return {
-                'success': False,
-                'error': f'Invalid transition: {current_status} → {status}. '
-                         f'Allowed: {", ".join(allowed) if allowed else "none (terminal)"}'
+                "success": False,
+                "error": f"Order is already {doc.order_status} and cannot be updated."
             }
-
         doc.order_status = status
         doc.attempt_count = (doc.attempt_count or 0) + 1
-
         if note:
             doc.reschedule_note = note
         if reschedule_date:
             doc.expected_delivery_date = reschedule_date
-
+        # FIX: Set cancellation_source before save so vv_order validation passes
         if status == 'Cancelled':
-            if not cancellation_source:
-                frappe.throw('cancellation_source is required when cancelling an order.')
-            doc.cancellation_source = cancellation_source
-
+            doc.cancellation_source = cancellation_source or 'Customer'
         doc.save(ignore_permissions=True)
         frappe.db.commit()
-
         return {'success': True, 'order': order, 'status': status}
-
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), 'update_order_status')
         return {'success': False, 'error': str(e)}
 
+
 @frappe.whitelist()
-def get_my_stats(closer=None, period='d'):
+def get_my_stats(closer, period='d'):
     """
     API 3: Returns performance stats for this closer.
     period: 'd' = today, 'w' = this week, 'm' = this month
-
-    FIX: Made closer optional — resolves from session if not provided.
     """
-    closer = _resolve_closer(closer)
     today = date.today()
 
     if period == 'w':
@@ -252,8 +191,8 @@ def get_my_stats(closer=None, period='d'):
 @frappe.whitelist()
 def get_available_das(state=''):
     """
-    API 4: Returns active, NON-FROZEN Delivery Agents.
-    FIX BUG #15: Frozen DAs no longer appear in dropdown.
+    API 4: Returns active Delivery Agents.
+    Optionally filtered by state.
     """
     try:
         meta = frappe.get_meta('Delivery Agent')
@@ -262,9 +201,6 @@ def get_available_das(state=''):
         filters = {}
         if 'is_active' in field_names:
             filters['is_active'] = 1
-        # FIX: Exclude frozen DAs
-        if 'is_double_risk' in field_names:
-            filters['is_double_risk'] = 0
 
         fields = ['name']
         for f in ['agent_name', 'phone', 'state', 'current_stock']:
@@ -282,18 +218,6 @@ def get_available_das(state=''):
         # Filter by state after fetch
         if state and 'state' in field_names:
             das = [d for d in das if (d.get('state') or '') == state]
-
-        # Also exclude DAs with frozen DA Warehouse
-        for da in das[:]:
-            try:
-                frozen_wh = frappe.db.exists("DA Warehouse", {
-                    "delivery_agent": da.name, "is_frozen": 1
-                })
-                if frozen_wh:
-                    das.remove(da)
-                    continue
-            except Exception:
-                pass
 
         # Add DSR score per DA
         for da in das:
@@ -318,27 +242,10 @@ def get_available_das(state=''):
 def assign_da_to_order(order, da):
     """
     API 5: Assigns a Delivery Agent to an order.
-    FIX BUG #3: Checks DA is not frozen before assignment.
+    Sets status to Assigned.
     """
     try:
-        # Check DA is not frozen (both fields)
-        da_doc = frappe.get_doc('Delivery Agent', da)
-        if getattr(da_doc, 'is_double_risk', 0):
-            return {'success': False, 'error': f'Cannot assign to {da} — DA is frozen.'}
-
-        # Also check DA Warehouse frozen status
-        frozen_wh = frappe.db.exists("DA Warehouse", {
-            "delivery_agent": da, "is_frozen": 1
-        })
-        if frozen_wh:
-            return {'success': False, 'error': f'Cannot assign to {da} — DA warehouse is frozen.'}
-
         doc = frappe.get_doc('VV Order', order)
-
-        # Validate transition
-        if doc.order_status not in ['Confirmed', 'Rescheduled']:
-            return {'success': False, 'error': f'Cannot assign — order is {doc.order_status}. Must be Confirmed or Rescheduled.'}
-
         doc.delivery_agent = da
         doc.order_status = 'Assigned'
         doc.save(ignore_permissions=True)
