@@ -64,10 +64,6 @@ def on_vv_order_update(doc, method):
 def _log_status_change(order_name, old_status, new_status, delivery_agent=None):
     """
     FIX FINDING 3: Log every VV Order status change.
-    Creates an Order Status Log entry so there is a full audit trail
-    of who changed status, when, and from what to what.
-    If the Order Status Log doctype doesn't exist yet, logs to Error Log
-    so nothing crashes.
     """
     try:
         if frappe.db.table_exists("tabOrder Status Log"):
@@ -82,7 +78,6 @@ def _log_status_change(order_name, old_status, new_status, delivery_agent=None):
             }).insert(ignore_permissions=True)
             frappe.db.commit()
         else:
-            # Doctype not created yet — log to frappe logger so it's not lost
             frappe.logger().info(
                 f"STATUS CHANGE | order={order_name} | "
                 f"{old_status} → {new_status} | user={frappe.session.user}"
@@ -105,7 +100,7 @@ def run_reconciliation():
     """Scheduler entry point — runs every 5 minutes."""
     pending_webhooks = frappe.get_all(
         "Moniepoint Webhook Log",
-        filters={"processing_status": "Pending"},
+        filters={"processing_status": ["in", ["Pending", "Received"]]},
         fields=["name", "transaction_id", "amount", "narration",
                 "payer_name", "payment_date", "matched_payment_intent",
                 "matched_order"],
@@ -194,11 +189,38 @@ def _tier1_match(webhook):
 
 
 def _tier2_match(webhook):
+    """
+    Tier 2: amount ±500 AND phone match.
+
+    FIX: The old code only extracted phone from narration/payer_name text fields.
+    But the Moniepoint webhook sends the customer phone in a dedicated payer_phone
+    field which was being completely ignored. This caused every payment to land in
+    "Pending Finance Review" instead of auto-confirming, because:
+      - sender_phone was None (nothing in narration to extract)
+      - phone check was skipped
+      - multiple orders with same amount all matched → multi-match → manual review
+
+    Fix: Read payer_phone directly from the webhook log record first.
+    Fall back to extracting from narration/payer_name if payer_phone is empty.
+    This allows Tier 2 to do a proper phone comparison and find the single
+    correct order instead of flagging everything for review.
+    """
     amount = float(webhook.get("amount") or 0)
-    sender_phone = (
-        _extract_phone(webhook.get("narration"))
-        or _extract_phone(webhook.get("payer_name"))
-    )
+    narration  = (webhook.get("narration")   or "").strip()
+    payer_name = (webhook.get("payer_name")  or "").strip()
+
+    # FIX: Read payer_phone directly from the webhook record.
+    # This is the field Moniepoint populates with the customer's phone number.
+    # Previously this field was ignored — only narration/payer_name were parsed.
+    payer_phone_raw = (webhook.get("payer_phone") or "").strip()
+
+    if payer_phone_raw:
+        # Clean dedicated phone field — use directly
+        sender_phone = _last10(payer_phone_raw)
+    else:
+        # No dedicated field — try extracting from free-text fields
+        sender_phone = _extract_phone(narration) or _extract_phone(payer_name)
+
     cutoff_date = add_days(now_datetime(), -ORDER_AGE_DAYS)
 
     candidates = frappe.get_all(
@@ -213,18 +235,24 @@ def _tier2_match(webhook):
     matches = []
     for order in candidates:
         order_amount = float(order.get("total_payable") or 0)
+
+        # Amount tolerance check
         if abs(amount - order_amount) > AMOUNT_TOLERANCE:
             continue
+
+        # Phone match — last 10 digits
         if sender_phone:
             order_phone = _last10(order.get("customer_phone") or "")
             if order_phone and sender_phone != order_phone:
                 continue
+
         matches.append({"order": order, "delta": abs(amount - order_amount)})
 
     if not matches:
         return None
     if len(matches) == 1:
         return matches[0]["order"]
+
     matches.sort(key=lambda x: x["delta"])
     if matches[0]["delta"] == matches[1]["delta"]:
         return [m["order"] for m in matches]
@@ -328,7 +356,7 @@ def _finalize_paid_order(order_name):
     """
     order = frappe.db.get_value(
         "VV Order", order_name,
-        ["order_status", "payment_confirmed", "total_payable", "payment_reference"],
+        ["order_status", "payment_confirmed", "total_payable"],
         as_dict=True
     )
 
@@ -355,13 +383,11 @@ def _finalize_paid_order(order_name):
             "M13 Deduction Error"
         )
 
-    # 3. FIX FINDING 2: Profit First allocation — pass all 3 required args
-    # Old code: allocate_revenue(order_name)          ← TypeError, 1 arg
-    # Fixed:    allocate_revenue(order_name, amount, payment_ref) ← correct
+    # 3. Profit First allocation
     if allocate_revenue:
         try:
             amount = float(order.total_payable or 0)
-            payment_ref = order.payment_reference or order_name
+            payment_ref = order_name
             allocate_revenue(order_name, amount, payment_ref)
         except Exception as e:
             frappe.log_error(
@@ -419,4 +445,3 @@ def _extract_phone(text):
         return None
     matches = re.findall(r"\d{7,15}", text)
     return _last10(matches[0]) if matches else None
-

@@ -24,7 +24,7 @@ def _guard():
     return None
 
 def _tbl(dt):
-    try: return frappe.db.table_exists(f"tab{dt}")
+    try: return frappe.db.table_exists(dt)
     except: return False
 
 def _safe(dt, fields):
@@ -1329,3 +1329,61 @@ def action_confirm_recon(recon_id):
     except Exception as e:
         return {"success": False, "error": str(e)}
 
+
+
+@frappe.whitelist()
+def set_da_fee_amount(order_id, amount):
+    """Finance sets the DA fee amount on a VV Order."""
+    g = _guard()
+    if g: return g
+    try:
+        amount = flt(amount)
+        frappe.db.set_value("VV Order", order_id, "da_fee_amount", amount)
+        # Also update linked Fee Payment Request if exists
+        fpr = frappe.db.get_value("Fee Payment Request",
+            {"order": order_id, "status": "Pending"}, "name")
+        if fpr:
+            frappe.db.set_value("Fee Payment Request", fpr, "amount", amount)
+        frappe.db.commit()
+        return {"success": True, "order_id": order_id, "amount": amount}
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "set_da_fee_amount Error")
+        return {"success": False, "error": str(e)}
+
+
+@frappe.whitelist()
+def set_da_fee_rate(da_id, fee_per_order):
+    """
+    Finance sets a flat fee rate for a DA.
+    Applies to all pending (unpaid) Fee Payment Requests for this DA.
+    """
+    g = _guard()
+    if g: return g
+    try:
+        fee_per_order = flt(fee_per_order)
+
+        # Update Delivery Agent record
+        vv_fields = [f.fieldname for f in frappe.get_meta("Delivery Agent").fields]
+        if "fee_per_order" in vv_fields:
+            frappe.db.set_value("Delivery Agent", da_id, "fee_per_order", fee_per_order)
+
+        # Apply to all pending Fee Payment Requests for this DA
+        pending = frappe.get_all("Fee Payment Request",
+            filters={"delivery_agent": da_id, "status": "Pending"},
+            fields=["name", "order"]
+        )
+        for r in pending:
+            frappe.db.set_value("Fee Payment Request", r.name, "amount", fee_per_order)
+            if r.order:
+                frappe.db.set_value("VV Order", r.order, "da_fee_amount", fee_per_order)
+
+        frappe.db.commit()
+        return {
+            "success": True,
+            "da_id": da_id,
+            "fee_per_order": fee_per_order,
+            "updated_requests": len(pending)
+        }
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "set_da_fee_rate Error")
+        return {"success": False, "error": str(e)}

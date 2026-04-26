@@ -5,12 +5,11 @@
 # ═══════════════════════════════════════════════════════════
 
 import frappe
-import json
-from frappe.utils import now_datetime, get_datetime, cint, flt, add_days
+from frappe.utils import now_datetime, get_datetime, cint, flt
 from datetime import date, timedelta
 
 
-# ── Helpers ──────────────────────────────────────────────────
+# ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _require_ops_role():
     """Only Operations Manager, System Manager, or Administrator can access."""
@@ -24,31 +23,52 @@ def _require_ops_role():
             frappe.PermissionError
         )
 
-def _safe_get(doctype, filters, fields):
-    """get_all with graceful fallback if table/fields missing."""
-    try:
-        return frappe.get_all(doctype, filters=filters, fields=fields)
-    except Exception:
-        return []
 
 def _table_exists(doctype):
     try:
-        return frappe.db.table_exists(f"tab{doctype}")
+        return frappe.db.table_exists(doctype)
     except Exception:
         return False
+
 
 def _fmt(n):
     return f"₦{int(flt(n or 0)):,}"
 
+
 def _pill(status):
     m = {
-        "Paid": "green", "Delivered": "amber",
-        "Assigned": "purple", "Out for Delivery": "amber",
-        "Confirmed": "blue", "Pending": "blue",
-        "Cancelled": "red", "Returned": "red",
+        "Paid": "green",
+        "Delivered": "amber",
+        "Assigned": "purple",
+        "Out for Delivery": "amber",
+        "Confirmed": "blue",
+        "Pending": "blue",
+        "Cancelled": "red",
+        "Returned": "red",
         "Rescheduled": "amber",
     }
     return m.get(status, "blue")
+
+
+def _finalize_order(order_id):
+    """
+    Set payment_confirmed=1, commit, then call _finalize_paid_order.
+    This is the single entry point for all manual payment confirmations.
+    """
+    frappe.db.set_value("VV Order", order_id, {
+        "payment_confirmed": 1,
+        "payment_confirmed_at": now_datetime(),
+        "paid_at": now_datetime(),
+    })
+    frappe.db.commit()
+    try:
+        from vitalvida.reconciliation import _finalize_paid_order
+        _finalize_paid_order(order_id)
+    except Exception as e:
+        frappe.log_error(
+            f"_finalize_paid_order failed for {order_id}: {str(e)}\n{frappe.get_traceback()}",
+            "Ops Finalize Error"
+        )
 
 
 # ═══════════════════════════════════════════════════════════
@@ -84,23 +104,16 @@ def get_command_center(period="d"):
         paid         = next((p["value"] for p in pipeline if p["label"] == "Paid"), 0)
         del_rate     = round(((delivered + paid) / total_orders) * 100) if total_orders > 0 else 0
 
-        exceptions_count = _count_exceptions()
-        approvals_count  = _count_approvals()
-        alerts           = _get_alerts()
-        telesales        = _get_telesales_summary(from_date)
-        da_summary       = _get_da_summary()
-        stock            = _get_stock_summary()
-
         return {
             "pipeline":      pipeline,
             "total_orders":  total_orders,
             "delivery_rate": f"{del_rate}%",
-            "exceptions":    exceptions_count,
-            "approvals":     approvals_count,
-            "alerts":        alerts,
-            "telesales":     telesales,
-            "da_summary":    da_summary,
-            "stock":         stock,
+            "exceptions":    _count_exceptions(),
+            "approvals":     _count_approvals(),
+            "alerts":        _get_alerts(),
+            "telesales":     _get_telesales_summary(from_date),
+            "da_summary":    _get_da_summary(),
+            "stock":         _get_stock_summary(),
         }
     except frappe.PermissionError:
         raise
@@ -154,7 +167,6 @@ def _get_alerts():
     try:
         frozen_das = frappe.get_all("Delivery Agent",
             filters={"is_frozen": 1},
-            pluck="delivery_agent",
             fields=["agent_name", "name"],
             limit=5
         )
@@ -242,12 +254,11 @@ def _get_telesales_summary(from_date):
 
 def _get_da_summary():
     try:
-        # Fixed: use is_active not active
-        total  = frappe.db.count("Delivery Agent", {"is_active": 1})
+        total  = frappe.db.count("Delivery Agent", {"active": 1})
         frozen = frappe.db.count("DA Warehouse", {"is_frozen": 1})
         try:
             dsrs = frappe.get_all("Delivery Agent",
-                filters={"is_active": 1},
+                filters={"active": 1},
                 fields=["dsr_strict"],
                 limit=50
             )
@@ -274,9 +285,8 @@ def _get_stock_summary():
                 result[product] = 0
     else:
         try:
-            # Fixed: use is_active not active
             das = frappe.get_all("Delivery Agent",
-                filters={"is_active": 1},
+                filters={"active": 1},
                 fields=["current_stock"]
             )
             total = sum(cint(d.current_stock) for d in das)
@@ -311,7 +321,6 @@ def get_orders(search="", status="", da_id="", closer_id="", limit=50, offset=0)
             "creation", "assigned_at", "delivered_at",
             "state", "lga", "address",
         ]
-
         try:
             meta_fields = {f.fieldname for f in frappe.get_meta("VV Order").fields}
             meta_fields.add("name")
@@ -374,7 +383,6 @@ def get_orders(search="", status="", da_id="", closer_id="", limit=50, offset=0)
             })
 
         return {"orders": result, "total": len(result)}
-
     except frappe.PermissionError:
         raise
     except Exception as e:
@@ -390,15 +398,13 @@ def get_orders(search="", status="", da_id="", closer_id="", limit=50, offset=0)
 def get_da_management(status_filter="", da_filter=""):
     _require_ops_role()
     try:
-        # Fixed: use is_active not active
-        filters = {"is_active": 1}
+        filters = {"active": 1}
         if da_filter:
             filters["name"] = da_filter
 
         da_fields = [
             "name", "agent_name", "state", "dsr_strict",
-            "strike_count", "strike_status", "current_stock",
-            "is_active",
+            "strike_count", "strike_status", "current_stock", "active",
         ]
         try:
             meta_fields = {f.fieldname for f in frappe.get_meta("Delivery Agent").fields}
@@ -413,7 +419,6 @@ def get_da_management(status_filter="", da_filter=""):
         for da in das:
             dsr     = flt(da.get("dsr_strict") or 0)
             strikes = cint(da.get("strike_count") or 0)
-            # FIX BUG 7: Frozen state lives on DA Warehouse.is_frozen, not Delivery Agent
             frozen  = bool(frappe.db.exists("DA Warehouse", {"delivery_agent": da.name, "is_frozen": 1}))
 
             if frozen:
@@ -439,17 +444,12 @@ def get_da_management(status_filter="", da_filter=""):
                 "highlight": frozen,
             })
 
-        strikes       = _get_recent_strikes()
-        proof_demands = _get_proof_demands()
-        frozen_list   = [d for d in da_list if d["status"] == "Frozen"]
-
         return {
             "das":           da_list,
-            "strikes":       strikes,
-            "proof_demands": proof_demands,
-            "frozen":        frozen_list,
+            "strikes":       _get_recent_strikes(),
+            "proof_demands": _get_proof_demands(),
+            "frozen":        [d for d in da_list if d["status"] == "Frozen"],
         }
-
     except frappe.PermissionError:
         raise
     except Exception as e:
@@ -494,7 +494,7 @@ def _get_proof_demands():
         )
         result = []
         for r in rows:
-            da_name    = frappe.db.get_value("Delivery Agent", r.delivery_agent, "agent_name") or r.delivery_agent
+            da_name     = frappe.db.get_value("Delivery Agent", r.delivery_agent, "agent_name") or r.delivery_agent
             deadline_dt = get_datetime(r.deadline) if r.deadline else None
             hours_left  = None
             if deadline_dt:
@@ -526,7 +526,6 @@ def get_approvals():
         dispatch_approvals = _get_dispatch_approvals()
         payout_approvals   = _get_payout_approvals()
         override_requests  = _get_override_requests()
-
         return {
             "dispatch_count": len(dispatch_approvals),
             "payout_count":   len(payout_approvals),
@@ -643,9 +642,7 @@ def get_exceptions(type_filter="", severity_filter=""):
             "stuck_payments": len([e for e in exceptions if e.get("type") == "Stuck Payment"]),
             "fee_disputes":   len([e for e in exceptions if e.get("type") == "Fee Dispute"]),
         }
-
         return {"exceptions": exceptions, "counts": counts}
-
     except frappe.PermissionError:
         raise
     except Exception as e:
@@ -818,8 +815,10 @@ def get_reconciliation():
         webhook_log    = _get_webhook_log()
 
         try:
-            recon_log  = frappe.get_all("Payment Reconciliation Log", fields=["status"], limit=200)
-            matched    = len([r for r in recon_log if r.status == "Matched"])
+            recon_log  = frappe.get_all("Payment Reconciliation Log",
+                fields=["reconciliation_status"], limit=200)
+            matched    = len([r for r in recon_log if r.reconciliation_status in
+                              ["Auto-Confirmed", "Manually Confirmed"]])
             total_wh   = len(recon_log)
             match_rate = round((matched / total_wh) * 100, 1) if total_wh > 0 else 0
         except Exception:
@@ -836,7 +835,6 @@ def get_reconciliation():
             "low_confidence": low_confidence,
             "webhook_log":    webhook_log,
         }
-
     except frappe.PermissionError:
         raise
     except Exception as e:
@@ -849,33 +847,26 @@ def _get_unmatched_webhooks():
         return []
     try:
         rows = frappe.get_all("Moniepoint Webhook Log",
-            filters={"status": "Unmatched"},
-            fields=["name", "amount", "payer_phone", "reference", "received_at", "closest_order"],
+            filters={"processing_status": "Unmatched"},
+            fields=["name", "amount", "payer_phone", "payer_name", "narration", "received_at", "transaction_id"],
             order_by="received_at desc",
             limit=20
         )
         result = []
         for r in rows:
-            closest_order = r.get("closest_order") or ""
-            closest_body  = ""
-            if closest_order:
-                co = frappe.db.get_value("VV Order", closest_order,
-                    ["customer_name", "total_payable", "customer_phone"], as_dict=True)
-                if co:
-                    closest_body = f"Closest: {closest_order} ({_fmt(co.total_payable)}, phone {co.customer_phone})"
             result.append({
-                "id":            r.name,
-                "reference":     r.reference or r.name,
-                "amount":        _fmt(r.amount),
-                "phone":         r.payer_phone or "",
-                "time":          str(get_datetime(r.received_at).strftime("%d %b %H:%M")) if r.received_at else "",
-                "body":          f"Payer: {r.payer_phone}. Amount: {_fmt(r.amount)}. "
-                                 f"Reference: {r.reference}. {closest_body}",
-                "closest_order": closest_order,
-                "webhook_id":    r.name,
+                "id":         r.name,
+                "reference":  r.get("transaction_id") or r.name,
+                "amount":     _fmt(r.amount),
+                "phone":      r.payer_phone or "",
+                "payer":      r.payer_name or "",
+                "time":       str(get_datetime(r.received_at).strftime("%d %b %H:%M")) if r.received_at else "",
+                "body":       f"Payer: {r.payer_name or r.payer_phone}. Amount: {_fmt(r.amount)}. Narration: {r.narration or 'None'}.",
+                "webhook_id": r.name,
             })
         return result
     except Exception:
+        frappe.log_error(frappe.get_traceback(), "_get_unmatched_webhooks Error")
         return []
 
 
@@ -884,24 +875,39 @@ def _get_low_confidence_matches():
         return []
     try:
         rows = frappe.get_all("Payment Reconciliation Log",
-            filters={"status": "Review", "confidence": ["<", 90]},
-            fields=["name", "webhook_ref", "webhook_amount", "matched_order", "confidence", "match_issue"],
-            order_by="confidence desc",
+            filters={"reconciliation_status": "Pending Finance Review"},
+            fields=["name", "webhook", "amount_received", "amount_expected",
+                    "order", "match_confidence", "match_tier"],
+            order_by="creation desc",
             limit=20
         )
         result = []
         for r in rows:
+            confidence = round(flt(r.match_confidence or 0) * 100)
+            phone = ""
+            if r.webhook:
+                phone = frappe.db.get_value("Moniepoint Webhook Log", r.webhook, "payer_phone") or ""
+            order_info = ""
+            if r.order:
+                o = frappe.db.get_value("VV Order", r.order,
+                    ["customer_name", "customer_phone", "order_status"], as_dict=True)
+                if o:
+                    order_info = f"{o.customer_name} | {o.customer_phone} | {o.order_status}"
             result.append({
                 "id":         r.name,
-                "webhook":    r.webhook_ref or r.name,
-                "w_amount":   _fmt(r.webhook_amount),
-                "order":      r.matched_order or "",
-                "confidence": f"{cint(r.confidence)}%",
-                "issue":      r.match_issue or "",
-                "high":       cint(r.confidence) >= 90,
+                "webhook":    r.webhook or r.name,
+                "w_amount":   _fmt(r.amount_received),
+                "o_amount":   _fmt(r.amount_expected),
+                "order":      r.order or "",
+                "order_info": order_info,
+                "phone":      phone,
+                "confidence": f"{confidence}%",
+                "tier":       r.match_tier or "",
+                "high":       confidence >= 90,
             })
         return result
     except Exception:
+        frappe.log_error(frappe.get_traceback(), "_get_low_confidence_matches Error")
         return []
 
 
@@ -910,24 +916,33 @@ def _get_webhook_log():
         return []
     try:
         rows = frappe.get_all("Moniepoint Webhook Log",
-            fields=["name", "reference", "amount", "payer_phone", "status", "received_at"],
+            fields=["name", "transaction_id", "amount", "payer_phone",
+                    "payer_name", "processing_status", "matched_order", "received_at"],
             order_by="received_at desc",
             limit=20
         )
         result = []
+        pill_map = {
+            "Processed": "green", "Matched": "green",
+            "Unmatched": "red", "Pending Finance Review": "amber",
+            "Processing": "blue", "Received": "blue",
+        }
         for r in rows:
-            status   = r.status or "Unmatched"
-            pill_map = {"Matched": "green", "Unmatched": "red", "Review": "amber"}
+            status = r.processing_status or "Received"
             result.append({
-                "time":   str(get_datetime(r.received_at).strftime("%d %b %H:%M")) if r.received_at else "",
-                "ref":    r.reference or r.name,
-                "amount": _fmt(r.amount),
-                "phone":  (r.payer_phone or "")[:10] + "...",
-                "status": status,
-                "pill":   pill_map.get(status, "blue"),
+                "time":          str(get_datetime(r.received_at).strftime("%d %b %H:%M")) if r.received_at else "",
+                "ref":           r.transaction_id or r.name,
+                "amount":        _fmt(r.amount),
+                "phone":         r.payer_phone or "",
+                "payer":         r.payer_name or "",
+                "status":        status,
+                "matched_order": r.matched_order or "",
+                "pill":          pill_map.get(status, "blue"),
+                "webhook_id":    r.name,
             })
         return result
     except Exception:
+        frappe.log_error(frappe.get_traceback(), "_get_webhook_log Error")
         return []
 
 
@@ -939,15 +954,9 @@ def _get_webhook_log():
 def action_unfreeze_da(da_id):
     _require_ops_role()
     try:
-        # FIX BUG 7: Old code only set Delivery Agent.is_double_risk = 0 which
-        # had no effect because freeze guards read DA Warehouse.is_frozen.
-        # Now calls unfreeze_da_warehouse() from freeze.py for every frozen
-        # product the DA has, which correctly clears is_frozen on DA Warehouse
-        # and creates a proper Freeze Log entry for each.
         try:
             from vitalvida.freeze import unfreeze_da_warehouse
-            frozen_warehouses = frappe.get_all(
-                "DA Warehouse",
+            frozen_warehouses = frappe.get_all("DA Warehouse",
                 filters={"delivery_agent": da_id, "is_frozen": 1},
                 fields=["name", "product"]
             )
@@ -959,16 +968,13 @@ def action_unfreeze_da(da_id):
                     reason=f"Unfrozen by Operations: {frappe.session.user}",
                 )
             if not frozen_warehouses:
-                # DA not frozen in warehouse — nothing to do
                 return {"success": True, "message": f"DA {da_id} was not frozen."}
         except ImportError:
-            # freeze.py not deployed — fallback: directly clear DA Warehouse records
             frappe.db.sql(
                 "UPDATE `tabDA Warehouse` SET is_frozen=0, freeze_reason='' "
                 "WHERE delivery_agent=%s AND is_frozen=1",
                 da_id
             )
-            frappe.db.commit()
         frappe.db.commit()
         return {"success": True, "message": f"DA {da_id} unfrozen successfully"}
     except frappe.PermissionError:
@@ -1017,77 +1023,48 @@ def action_reject_payout(payout_id, reason=""):
 
 @frappe.whitelist()
 def action_manual_confirm_payment(order_id, reason=""):
-    """
-    FIX FRAUD #7: Manual payment confirmation now requires:
-    - A reason (why no Moniepoint webhook?)
-    - Daily limit of 5 per user
-    - Auto-alerts Owner on every manual confirm
-    """
+    """Manual payment confirmation for stuck orders (no webhook received)."""
     _require_ops_role()
 
-    # Require reason
     if not (reason or "").strip():
-        return {"success": False, "error": "Reason is required for manual payment confirmation. Why is there no Moniepoint webhook?"}
+        return {"success": False, "error": "Reason is required for manual payment confirmation."}
 
     # Daily limit: max 5 manual confirms per user per day
     today = str(date.today())
     if _table_exists("Payment Reconciliation Log"):
         manual_count = frappe.db.count("Payment Reconciliation Log", {
-            "match_type": "Manual",
+            "match_tier": "Tier 1 \u2014 Exact",
             "matched_by": frappe.session.user,
             "matched_at": [">=", today],
         })
         if manual_count >= 5:
-            return {
-                "success": False,
-                "error": f"Daily limit reached. You have already manually confirmed {manual_count} payments today. "
-                         f"Maximum 5 per day. Contact Owner for override."
-            }
+            return {"success": False, "error": "Daily limit reached. Max 5 manual confirmations per day."}
 
     try:
-        frappe.db.set_value("VV Order", order_id, {
-            "payment_confirmed": 1,
-            "payment_confirmed_at": now_datetime(),
-            "paid_at": now_datetime(),
-        })
-        frappe.db.commit()
-        try:
-            from vitalvida.reconciliation import _finalize_paid_order
-            _finalize_paid_order(order_id)
-        except Exception as fin_err:
-            frappe.log_error(
-                f"operations.action_manual_confirm_payment: _finalize_paid_order "
-                f"failed for {order_id}: {str(fin_err)}",
-                "Manual Confirm Finalization Error"
-            )
+        # Finalize the order
+        _finalize_order(order_id)
+
+        # Log the manual confirmation
         if _table_exists("Payment Reconciliation Log"):
             try:
                 frappe.get_doc({
                     "doctype": "Payment Reconciliation Log",
-                    "matched_order": order_id,
-                    "status": "Matched",
-                    "match_type": "Manual",
-                    "matched_by": frappe.session.user,
-                    "matched_at": now_datetime(),
-                    "confidence": 100,
-                    "notes": f"Manual confirm by {frappe.session.user}. Reason: {reason}",
-                }).insert(ignore_permissions=True)
+                    "order": order_id,
+                    "match_tier": "Tier 1 \u2014 Exact",
+                    "reconciliation_status": "Manually Confirmed",
+                    "amount_expected": frappe.db.get_value("VV Order", order_id, "total_payable") or 0,
+                }).insert(ignore_permissions=True, ignore_mandatory=True)
                 frappe.db.commit()
             except Exception:
                 pass
 
-        # Alert Owner on every manual confirm
+        # Alert Owner
         try:
             from vitalvida.notifications import send_notification
             order_doc = frappe.get_doc("VV Order", order_id)
-            send_notification(
-                order_doc,
-                event="ManualPaymentConfirm",
-                recipient_type="Owner",
-                sender_channel="Transactional",
-            )
+            send_notification(order_doc, event="ManualPaymentConfirm", recipient_type="Owner")
         except Exception:
-            pass  # Notification failure should never block the action
+            pass
 
         return {"success": True, "order_id": order_id}
     except frappe.PermissionError:
@@ -1099,43 +1076,33 @@ def action_manual_confirm_payment(order_id, reason=""):
 
 @frappe.whitelist()
 def action_match_webhook(webhook_id, order_id):
+    """
+    Ops manually confirms a Pending Finance Review webhook match.
+    Marks webhook as Matched, finalizes the order as Paid.
+    """
     _require_ops_role()
     try:
-        # FIX BUG 1+2+7: Use processing_status, set payment_confirmed, call _finalize_paid_order
+        # 1. Update webhook log
         frappe.db.set_value("Moniepoint Webhook Log", webhook_id, {
             "processing_status": "Matched",
             "matched_order": order_id,
         })
-        frappe.db.set_value("VV Order", order_id, {
-            "payment_confirmed": 1,
-            "payment_confirmed_at": now_datetime(),
-            "paid_at": now_datetime(),
-        })
+
+        # 2. Update existing reconciliation log record to Manually Confirmed
+        existing_recon = frappe.db.get_value(
+            "Payment Reconciliation Log",
+            {"webhook": webhook_id},
+            "name"
+        )
+        if existing_recon:
+            frappe.db.set_value("Payment Reconciliation Log", existing_recon,
+                "reconciliation_status", "Manually Confirmed")
+
         frappe.db.commit()
-        try:
-            from vitalvida.reconciliation import _finalize_paid_order
-            _finalize_paid_order(order_id)
-        except Exception as fin_err:
-            frappe.log_error(
-                f"operations.action_match_webhook: _finalize_paid_order failed "
-                f"for {order_id}: {str(fin_err)}",
-                "Ops Match Finalization Error"
-            )
-        if _table_exists("Payment Reconciliation Log"):
-            try:
-                frappe.get_doc({
-                    "doctype": "Payment Reconciliation Log",
-                    "webhook_ref": webhook_id,
-                    "matched_order": order_id,
-                    "match_type": "Manual",
-                    "status": "Matched",
-                    "matched_by": frappe.session.user,
-                    "matched_at": now_datetime(),
-                    "confidence": 100,
-                }).insert(ignore_permissions=True)
-                frappe.db.commit()
-            except Exception:
-                pass
+
+        # 3. Finalize order (sets payment_confirmed=1, commits, calls _finalize_paid_order)
+        _finalize_order(order_id)
+
         return {"success": True}
     except frappe.PermissionError:
         raise
@@ -1146,14 +1113,34 @@ def action_match_webhook(webhook_id, order_id):
 
 @frappe.whitelist()
 def action_confirm_recon_match(recon_id):
+    """
+    Confirm a low-confidence match — fetches webhook+order from recon log
+    and calls action_match_webhook to finalize properly.
+    """
     _require_ops_role()
     try:
-        frappe.db.set_value("Payment Reconciliation Log", recon_id, {
-            "status": "Matched",
-            "confirmed_by": frappe.session.user,
-            "confirmed_at": now_datetime(),
-        })
+        recon = frappe.db.get_value("Payment Reconciliation Log", recon_id,
+            ["webhook", "order"], as_dict=True)
+        if not recon:
+            return {"success": False, "error": "Reconciliation log not found"}
+        if not recon.order:
+            return {"success": False, "error": "No order linked to this reconciliation log"}
+
+        # Update webhook and finalize
+        if recon.webhook:
+            frappe.db.set_value("Moniepoint Webhook Log", recon.webhook, {
+                "processing_status": "Matched",
+                "matched_order": recon.order,
+            })
+
+        frappe.db.set_value("Payment Reconciliation Log", recon_id,
+            "reconciliation_status", "Manually Confirmed")
+
         frappe.db.commit()
+
+        # Finalize order
+        _finalize_order(recon.order)
+
         return {"success": True}
     except frappe.PermissionError:
         raise
@@ -1166,10 +1153,8 @@ def action_confirm_recon_match(recon_id):
 def action_reject_recon_match(recon_id):
     _require_ops_role()
     try:
-        frappe.db.set_value("Payment Reconciliation Log", recon_id, {
-            "status": "Unmatched",
-            "rejected_by": frappe.session.user,
-        })
+        frappe.db.set_value("Payment Reconciliation Log", recon_id,
+            "reconciliation_status", "Rejected")
         frappe.db.commit()
         return {"success": True}
     except frappe.PermissionError:
@@ -1263,13 +1248,12 @@ def action_deny_override(override_id):
 def get_filter_options():
     _require_ops_role()
     try:
-        # Fixed: use is_active not active
         das = frappe.get_all("Delivery Agent",
-            filters={"is_active": 1},
+            filters={"active": 1},
             fields=["name", "agent_name"]
         )
         closers = frappe.get_all("Telesales Closer",
-            filters={"is_active": 1},
+            filters={"active": 1},
             fields=["name", "closer_name"]
         )
         return {
@@ -1280,3 +1264,4 @@ def get_filter_options():
         raise
     except Exception as e:
         return {"das": [], "closers": [], "error": str(e)}
+

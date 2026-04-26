@@ -1,0 +1,161 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:FPR-{delivery_agent}-{YYYY}-{#####}",
+ "creation": "2026-04-25 14:32:42.014992",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "delivery_agent",
+  "orders",
+  "total_amount",
+  "status",
+  "requested_at",
+  "approved_by",
+  "approved_at",
+  "paid_at",
+  "payment_reference",
+  "rejection_reason",
+  "days_waiting",
+  "order",
+  "amount",
+  "paid_by",
+  "transfer_reference",
+  "proof_url"
+ ],
+ "fields": [
+  {
+   "fieldname": "delivery_agent",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Delivery Agent",
+   "options": "Delivery Agent",
+   "reqd": 1
+  },
+  {
+   "fieldname": "orders",
+   "fieldtype": "Long Text",
+   "label": "Order IDs (JSON)"
+  },
+  {
+   "fieldname": "total_amount",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Total Amount"
+  },
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Pending\nApproved\nPaid\nRejected\nDisputed"
+  },
+  {
+   "fieldname": "requested_at",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Requested At"
+  },
+  {
+   "fieldname": "approved_by",
+   "fieldtype": "Link",
+   "label": "Approved By",
+   "options": "User"
+  },
+  {
+   "fieldname": "approved_at",
+   "fieldtype": "Datetime",
+   "label": "Approved At"
+  },
+  {
+   "fieldname": "paid_at",
+   "fieldtype": "Datetime",
+   "label": "Paid At"
+  },
+  {
+   "fieldname": "payment_reference",
+   "fieldtype": "Data",
+   "label": "Payment Reference"
+  },
+  {
+   "fieldname": "rejection_reason",
+   "fieldtype": "Text",
+   "label": "Rejection Reason"
+  },
+  {
+   "fieldname": "days_waiting",
+   "fieldtype": "Int",
+   "label": "Days Waiting"
+  },
+  {
+   "fieldname": "order",
+   "fieldtype": "Link",
+   "label": "Order",
+   "options": "VV Order"
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "label": "Amount"
+  },
+  {
+   "fieldname": "paid_by",
+   "fieldtype": "Link",
+   "label": "Paid By",
+   "options": "User"
+  },
+  {
+   "fieldname": "transfer_reference",
+   "fieldtype": "Data",
+   "label": "Transfer Reference"
+  },
+  {
+   "fieldname": "proof_url",
+   "fieldtype": "Data",
+   "label": "Proof URL"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-04-26 13:34:06.809624",
+ "modified_by": "Administrator",
+ "module": "Vitalvida",
+ "name": "Fee Payment Request",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Administrator",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

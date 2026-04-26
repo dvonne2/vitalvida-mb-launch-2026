@@ -217,7 +217,7 @@ def _order_fields():
         "name", "customer_name", "customer_phone",
         "address", "landmark", "state", "lga",
         "order_status", "package_name", "package_contents",
-        "total_payable", "delivery_fee",
+        "total_payable", "delivery_fee", "da_fee_amount",
         "creation", "assigned_at", "delivered_at", "paid_at",
         "da_fee_paid", "fee_requested", "fee_accountant_paid",
         "fee_accountant_paid_date", "da_fee_pay_date",
@@ -244,7 +244,7 @@ def _map_order(raw):
         )
 
         items = _parse_items(getattr(raw, "package_contents", "") or "")
-        delivery_fee_num = flt(getattr(raw, "delivery_fee", 0)) or 0
+        delivery_fee_num = flt(getattr(raw, "da_fee_amount", 0)) or flt(getattr(raw, "delivery_fee", 0)) or 0
         total = flt(getattr(raw, "total_payable", 0)) or 0
 
         delivered_date = None
@@ -728,7 +728,7 @@ def request_fee_payment(order_id, da_id=None):
 
         doc.db_set("fee_requested", 1)
         frappe.db.commit()
-        _create_fee_request(da_id, [order_id], flt(doc.delivery_fee))
+        _create_fee_request(da_id, [order_id], flt(doc.da_fee_amount or doc.delivery_fee or 0))
 
         return {"success": True, "order_id": order_id}
 
@@ -782,7 +782,7 @@ def request_bulk_fee_payment(da_id=None, order_ids=None, total_amount=0):
 
     if validated:
         total = sum(
-            flt(frappe.db.get_value("VV Order", oid, "delivery_fee") or 0)
+            flt(frappe.db.get_value("VV Order", oid, "da_fee_amount") or frappe.db.get_value("VV Order", oid, "delivery_fee") or 0)
             for oid in validated
         )
         _create_fee_request(da_id, validated, total)
@@ -796,21 +796,26 @@ def request_bulk_fee_payment(da_id=None, order_ids=None, total_amount=0):
 
 
 def _create_fee_request(da_id, order_ids, total_amount):
-    """Create Fee Payment Request — non-blocking if DocType missing."""
+    """Create one Fee Payment Request per order — non-blocking if DocType missing."""
     if not _doctype_exists("Fee Payment Request"):
         return
-    try:
-        frappe.get_doc({
-            "doctype":        "Fee Payment Request",
-            "delivery_agent": da_id,
-            "orders":         json.dumps(order_ids),
-            "total_amount":   total_amount,
-            "status":         "Pending",
-            "requested_at":   now_datetime(),
-        }).insert(ignore_permissions=True)
-        frappe.db.commit()
-    except Exception:
-        frappe.log_error(frappe.get_traceback(), "Fee Payment Request Creation Error")
+    for order_id in order_ids:
+        try:
+            # Skip if already requested for this order
+            if frappe.db.exists("Fee Payment Request", {"order": order_id, "delivery_agent": da_id}):
+                continue
+            fee = flt(frappe.db.get_value("VV Order", order_id, "da_fee_amount") or 0)
+            frappe.get_doc({
+                "doctype":        "Fee Payment Request",
+                "delivery_agent": da_id,
+                "order":          order_id,
+                "amount":         fee,
+                "status":         "Pending",
+                "requested_at":   now_datetime(),
+            }).insert(ignore_permissions=True)
+        except Exception:
+            frappe.log_error(frappe.get_traceback(), "Fee Payment Request Creation Error")
+    frappe.db.commit()
 
 
 # ═══════════════════════════════════════════════════════════

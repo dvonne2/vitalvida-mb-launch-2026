@@ -17,6 +17,27 @@ from frappe.utils import now_datetime
 
 
 class DAStockEntry(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		balance_after: DF.Float
+		balance_before: DF.Float
+		delivery_agent: DF.Link
+		direction: DF.Literal["In", "Out"]
+		entry_date: DF.Datetime
+		entry_type: DF.Literal["Dispatch", "Deduction", "Return", "Adjustment"]
+		notes: DF.Text | None
+		posted_by: DF.Link | None
+		product: DF.Link
+		quantity: DF.Float
+		reference_dispatch: DF.Link | None
+		reference_order: DF.Link | None
+	# end: auto-generated types
 
 	def before_insert(self):
 		"""Stamp metadata and run duplicate deduction guard."""

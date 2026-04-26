@@ -98,6 +98,13 @@
    "read_only": 1
   },
   {
+   "fieldname": "payer_phone",
+   "fieldtype": "Data",
+   "label": "Payer Phone",
+   "in_list_view": 0,
+   "search_index": 1
+  },
+  {
    "fieldname": "narration",
    "fieldtype": "Data",
    "label": "Narration",

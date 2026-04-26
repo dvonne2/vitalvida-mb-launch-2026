@@ -193,3 +193,55 @@ def _deduct_da_stock(delivery_agent, product, quantity, order):
             f"product={product}: {str(e)}",
             "M13 Balance Update Error"
         )
+
+
+def _update_warehouse_stock(entry):
+    """
+    M12: Called from DAStockEntry.after_insert to update DA Warehouse current_stock.
+    Increments for In (Dispatch/Return/Adjustment+), decrements for Out (Deduction).
+    Also stamps balance_before and balance_after on the entry for the ledger trail.
+    """
+    from frappe.utils import cint, flt
+
+    da = entry.delivery_agent
+    product = entry.product
+    qty = flt(entry.quantity)
+    direction = entry.direction  # "In" or "Out"
+
+    # ── 1. Find the DA Warehouse row ─────────────────────────────────────────
+    wh_name = frappe.db.get_value(
+        "DA Warehouse",
+        {"delivery_agent": da, "product": product},
+        "name"
+    )
+
+    if not wh_name:
+        # Auto-create the warehouse row so future entries don't fail
+        wh_doc = frappe.get_doc({
+            "doctype": "DA Warehouse",
+            "delivery_agent": da,
+            "product": product,
+            "current_stock": 0,
+        })
+        wh_doc.insert(ignore_permissions=True)
+        wh_name = wh_doc.name
+        current = 0
+    else:
+        current = flt(frappe.db.get_value("DA Warehouse", wh_name, "current_stock"))
+
+    # ── 2. Calculate new balance ──────────────────────────────────────────────
+    if direction == "In":
+        new_stock = current + qty
+    else:  # "Out"
+        new_stock = max(0, current - qty)
+
+    # ── 3. Write warehouse balance ────────────────────────────────────────────
+    frappe.db.set_value("DA Warehouse", wh_name, "current_stock", new_stock)
+
+    # ── 4. Stamp ledger trail on the entry (ignore immutability — this is system) ──
+    frappe.db.set_value("DA Stock Entry", entry.name, {
+        "balance_before": current,
+        "balance_after": new_stock,
+    }, update_modified=False)
+
+    frappe.db.commit()

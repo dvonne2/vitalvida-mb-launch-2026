@@ -40,7 +40,8 @@ def webhook():
 	transaction_id = payload.get("transaction_id") or payload.get("transactionId") or ""
 	amount = payload.get("amount") or 0
 	narration = payload.get("narration") or ""
-	payer_name = payload.get("payer_name") or payload.get("payerName") or ""
+	payer_name  = payload.get("payer_name")  or payload.get("payerName")  or ""
+	payer_phone = payload.get("payer_phone")  or payload.get("payerPhone")  or ""
 	payment_date = payload.get("payment_date") or payload.get("paymentDate") or now_datetime()
 
 	# ── 6. Duplicate check ───────────────────────────────────────────
@@ -50,8 +51,6 @@ def webhook():
 		return {"status": "duplicate"}
 
 	# ── 7. Log to Moniepoint Webhook Log ─────────────────────────────
-	# FIX: Use "Pending" so run_reconciliation() scheduler can pick it up.
-	# Previously "Received" was used, which the scheduler never queries.
 	log_id = str(uuid.uuid4())
 	log = frappe.get_doc({
 		"doctype": "Moniepoint Webhook Log",
@@ -61,23 +60,21 @@ def webhook():
 		"amount": amount,
 		"narration": narration,
 		"payer_name": payer_name,
+		"payer_phone": payer_phone,
 		"payment_date": payment_date,
 		"raw_payload": raw_body,
 		"hmac_valid": 1,
-		"processing_status": "Pending",  # FIX: was "Received" — scheduler queries "Pending"
+		"processing_status": "Received",
 	})
 	log.insert(ignore_permissions=True)
 	frappe.db.commit()
 
 	# ── 8. Enqueue matching job (M11) ─────────────────────────────────
-	# FIX: Call _match_payment which now runs full reconciliation logic
-	# immediately via background job rather than waiting up to 5 minutes
-	# for the scheduler sweep.
 	frappe.enqueue(
 		"vitalvida.moniepoint._match_payment",
 		queue="short",
 		timeout=120,
-		log_name=log.name,
+		log_id=log_id,
 	)
 
 	# ── 9. Return 200 immediately ────────────────────────────────────
@@ -158,45 +155,33 @@ def _validate_hmac(raw_body: str) -> bool:
 		return False
 
 
-def _match_payment(log_name: str):
-	"""
-	FIX: Replaces the old placeholder that only set status to "Processing"
-	and never triggered real reconciliation.
+def _match_payment(log_id: str):
+    """
+    M11: Fetch the webhook log and run the full matching cascade.
+    """
+    try:
+        webhook = frappe.db.get_value(
+            "Moniepoint Webhook Log",
+            {"log_id": log_id},
+            ["name", "transaction_id", "amount", "narration",
+             "payer_name", "payer_phone", "payment_date",
+             "matched_payment_intent", "matched_order"],
+            as_dict=True
+        )
+        if not webhook:
+            frappe.log_error(f"M11: No webhook log found for log_id={log_id}", "M11 Match Error")
+            return
 
-	Now calls the full M11 reconciliation pipeline directly for this specific
-	webhook log row. This gives near-instant matching (within seconds of the
-	webhook arriving) rather than waiting up to 5 minutes for the scheduler sweep.
+        frappe.db.set_value(
+            "Moniepoint Webhook Log",
+            webhook["name"],
+            "processing_status",
+            "Processing"
+        )
+        frappe.db.commit()
 
-	The scheduler (run_reconciliation) still runs every 5 minutes as a safety net
-	for any rows that slipped through (e.g. if this background job failed).
-	"""
-	try:
-		webhook_doc = frappe.db.get_value(
-			"Moniepoint Webhook Log",
-			log_name,
-			["name", "transaction_id", "amount", "narration",
-			 "payer_name", "payment_date", "matched_payment_intent",
-			 "matched_order", "processing_status"],
-			as_dict=True
-		)
+        from vitalvida.reconciliation import _process_webhook
+        _process_webhook(webhook)
 
-		if not webhook_doc:
-			frappe.log_error(
-				f"_match_payment: webhook log '{log_name}' not found.",
-				"M11 Match Payment Error"
-			)
-			return
-
-		# Guard: only process if still Pending (idempotent)
-		if webhook_doc.get("processing_status") not in ("Pending", None):
-			return
-
-		from vitalvida.reconciliation import _process_webhook
-		_process_webhook(webhook_doc)
-
-	except Exception as e:
-		frappe.log_error(
-			f"M11 _match_payment failed for log '{log_name}': {str(e)}",
-			"M11 Match Payment Error"
-		)
-
+    except Exception as e:
+        frappe.log_error(str(e), "M11 Match Payment Error")
