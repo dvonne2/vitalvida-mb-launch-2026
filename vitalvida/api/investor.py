@@ -25,7 +25,7 @@ def _guard():
     return None
 
 def _tbl(dt):
-    try: return frappe.db.table_exists(f"tab{dt}")
+    try: return frappe.db.table_exists(dt)
     except: return False
 
 def _safe(dt, fields):

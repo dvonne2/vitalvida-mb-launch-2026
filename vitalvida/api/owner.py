@@ -24,7 +24,7 @@ def _require_owner():
 
 def _tbl(dt):
     try:
-        return frappe.db.table_exists(f"tab{dt}")
+        return frappe.db.table_exists(dt)
     except Exception:
         return False
 
@@ -571,7 +571,7 @@ def _da_leaderboard(from_date):
 def _telesales_leaderboard(from_date):
     try:
         closers = frappe.get_all("Telesales Closer",
-            filters={"is_active": 1},
+            filters={"active": 1},
             fields=_safe("Telesales Closer", ["name","closer_name"]))
         result = []
         for c in closers:

@@ -29,7 +29,8 @@
   "max_active_buyers",
   "zero_weeks_suspend_threshold",
   "max_storekeeper_fee",
-  "max_da_pickup_transport"
+  "max_da_pickup_transport",
+  "delivery_fee_table"
  ],
  "fields": [
   {
@@ -189,13 +190,19 @@
    "fieldname": "max_da_pickup_transport",
    "fieldtype": "Currency",
    "label": "Max DA Pickup Transport"
+  },
+  {
+   "fieldname": "delivery_fee_table",
+   "fieldtype": "Table",
+   "label": "Delivery Fee by State",
+   "options": "Delivery Fee Table"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-04-11 13:55:05.379454",
+ "modified": "2026-04-27 09:26:52.367346",
  "modified_by": "Administrator",
  "module": "Vitalvida",
  "name": "Vitalvida Settings",

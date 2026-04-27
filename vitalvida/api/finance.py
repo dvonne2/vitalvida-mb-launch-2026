@@ -1089,7 +1089,7 @@ def get_audit_trail(action_filter="", user_filter="", date_filter="", limit=30, 
 
         # Override stats
         month_start = str(date.today().replace(day=1))
-        manual_overrides = frappe.db.count("Payment Reconciliation Log", {"match_type": "Manual", "matched_at": [">=", month_start]}) if _tbl("Payment Reconciliation Log") else 0
+        manual_overrides = frappe.db.count("Payment Reconciliation Log", {"match_tier": "Tier 1 — Exact", "matched_at": [">=", month_start]}) if _tbl("Payment Reconciliation Log") else 0
         auto_actions     = frappe.db.count("Payment Reconciliation Log", {"match_type": "Auto", "matched_at": [">=", month_start]}) if _tbl("Payment Reconciliation Log") else 0
 
         return {
@@ -1301,8 +1301,8 @@ def action_match_webhook(webhook_id, order_id):
                     "doctype": "Payment Reconciliation Log",
                     "webhook_ref": webhook_id,
                     "matched_order": order_id,
-                    "match_type": "Manual",
-                    "status": "Matched",
+                    "match_tier": "Tier 1 — Exact",
+                    "reconciliation_status": "Manually Confirmed",
                     "matched_by": frappe.session.user,
                     "matched_at": now_datetime(),
                     "confidence": 100,
@@ -1322,7 +1322,7 @@ def action_confirm_recon(recon_id):
     if g: return g
     try:
         frappe.db.set_value("Payment Reconciliation Log", recon_id, {
-            "status": "Matched", "confirmed_by": frappe.session.user, "confirmed_at": now_datetime(),
+            "reconciliation_status": "Manually Confirmed", "confirmed_by": frappe.session.user, "confirmed_at": now_datetime(),
         })
         frappe.db.commit()
         return {"success": True}

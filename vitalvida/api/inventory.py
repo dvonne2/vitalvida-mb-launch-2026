@@ -25,7 +25,7 @@ def _guard():
 
 def _tbl(dt):
     try:
-        return frappe.db.table_exists(f"tab{dt}")
+        return frappe.db.table_exists(dt)
     except Exception:
         return False
 
@@ -301,7 +301,7 @@ def get_bundles():
         bundles = []
         if _tbl("VV Package"):
             rows = frappe.get_all("VV Package",
-                filters={"is_active": 1},
+                filters={"active": 1},
                 fields=["name", "package_name", "price", "contents", "brand"])
 
             # Get current stock for capacity calc
@@ -1025,7 +1025,7 @@ def create_bundle(name, price, desc, shampoo=0, pomade=0, conditioner=0):
             "package_name": name,
             "price":        flt(price),
             "contents":     desc or contents,
-            "is_active":    1,
+            "active": 1,
         })
         doc.insert(ignore_permissions=True)
         frappe.db.commit()

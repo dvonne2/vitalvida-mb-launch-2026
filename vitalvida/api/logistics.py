@@ -26,7 +26,7 @@ def _require_logistics():
 
 def _table_exists(doctype):
     try:
-        return frappe.db.table_exists(f"tab{doctype}")
+        return frappe.db.table_exists(doctype)
     except Exception:
         return False
 
@@ -639,12 +639,21 @@ def create_dispatch(da_id, driver_phone, motor_park, eta_date, items,
             "da_pickup_transport":  pickup_fee,
             "driver_transport":     driver_fee,
             "total_cost":           total_cost,
-            "items_json":           json.dumps(items),
             "notes":                notes or "",
-            "needs_approval":       1 if needs_approval else 0,
+            "approval_required":    1 if needs_approval else 0,
             "status":               "Pending Approval" if needs_approval else "Pending",
-            "created_by":           frappe.session.user,
         })
+        # Add items as child table rows (Stock Dispatch Item)
+        for item in items:
+            qty = cint(item.get("qty") or item.get("quantity") or 0)
+            product = item.get("name") or item.get("product") or ""
+            if qty > 0 and product:
+                dispatch_doc.append("items", {
+                    "product":             product,
+                    "quantity_dispatched": qty,
+                    "quantity_returned":   0,
+                    "quantity_net":        qty,
+                })
         dispatch_doc.insert(ignore_permissions=True)
         frappe.db.commit()
 
@@ -952,4 +961,5 @@ def get_dashboard_badges():
 
     except Exception as e:
         return {"dispatch_badge": 0, "consign_badge": 0, "returns_badge": 0, "error": str(e)}
+
 

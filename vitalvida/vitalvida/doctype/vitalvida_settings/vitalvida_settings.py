@@ -13,9 +13,11 @@ class VitalvidaSettings(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+		from vitalvida.vitalvida.doctype.delivery_fee_table.delivery_fee_table import DeliveryFeeTable
 
 		commitment_fee_amount: DF.Currency
 		commitment_refund_orders: DF.Int
+		delivery_fee_table: DF.Table[DeliveryFeeTable]
 		inventory_report_email: DF.Data | None
 		max_active_buyers: DF.Int
 		max_da_pickup_transport: DF.Currency

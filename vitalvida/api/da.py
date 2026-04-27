@@ -59,7 +59,7 @@ def _doctype_exists(doctype):
     """Check if a DocType table exists in the database."""
     try:
         frappe.get_meta(doctype)
-        return frappe.db.table_exists(f"tab{doctype}")
+        return frappe.db.table_exists(doctype)
     except Exception:
         return False
 
@@ -612,7 +612,7 @@ def _log_status_change_da(order_name, old_status, new_status, da_id=None):
     Same helper pattern as reconciliation.py _log_status_change.
     """
     try:
-        if frappe.db.table_exists("tabOrder Status Log"):
+        if frappe.db.table_exists("Order Status Log"):
             frappe.get_doc({
                 "doctype":        "Order Status Log",
                 "order":          order_name,
@@ -983,33 +983,58 @@ def get_da_dispatch_history(da_id=None):
     if not da_id:
         return []
 
-    # Try Consignment first (exists in your DocType list)
-    if _doctype_exists("Consignment"):
-        try:
-            fields = _safe_fields("Consignment",
-                ["name", "dispatch_date", "date", "items_json", "confirmed_at", "status"])
-            batches = frappe.get_all("Consignment",
-                filters={"delivery_agent": da_id},
-                fields=fields,
-                order_by="creation desc",
-                limit=20,
-            )
-            return [_map_dispatch(b) for b in batches]
-        except Exception:
-            pass
-
-    # Fall back to Stock Dispatch
+    # Primary: Stock Dispatch with child table items
     if _doctype_exists("Stock Dispatch"):
         try:
-            fields = _safe_fields("Stock Dispatch",
-                ["name", "dispatch_date", "date", "items_json", "confirmed_at", "status"])
             batches = frappe.get_all("Stock Dispatch",
                 filters={"delivery_agent": da_id},
-                fields=fields,
+                fields=["name", "dispatch_date", "status"],
                 order_by="creation desc",
                 limit=20,
             )
-            return [_map_dispatch(b) for b in batches]
+            result = []
+            for b in batches:
+                items = frappe.get_all("Stock Dispatch Item",
+                    filters={"parent": b.name},
+                    fields=["product", "quantity_dispatched"]
+                )
+                confirmed_at = str(b.dispatch_date) if b.status in ["Confirmed", "Partially Returned"] else None
+                result.append({
+                    "id": b.name,
+                    "date": str(b.dispatch_date or ""),
+                    "items": [{"name": i.product, "qty": int(i.quantity_dispatched or 0)} for i in items],
+                    "confirmedAt": confirmed_at,
+                })
+            return result
+        except Exception as e:
+            import traceback
+            print("ERROR:", traceback.format_exc())
+
+    # Fallback: DA Stock Entry (Dispatch type)
+    if _doctype_exists("DA Stock Entry"):
+        try:
+            entries = frappe.get_all("DA Stock Entry",
+                filters={"delivery_agent": da_id, "entry_type": "Dispatch", "direction": "In"},
+                fields=["name", "product", "quantity", "entry_date", "reference_dispatch"],
+                order_by="entry_date desc",
+                limit=50,
+            )
+            if entries:
+                groups = {}
+                for e in entries:
+                    key = e.get("reference_dispatch") or str(e.get("entry_date", ""))[:10]
+                    if key not in groups:
+                        groups[key] = {
+                            "id": e.get("reference_dispatch") or key,
+                            "date": str(e.get("entry_date", ""))[:10],
+                            "items": [],
+                            "confirmedAt": str(e.get("entry_date", ""))[:10],
+                        }
+                    groups[key]["items"].append({
+                        "name": e.product,
+                        "qty": int(e.quantity or 0),
+                    })
+                return list(groups.values())
         except Exception:
             pass
 
@@ -1084,3 +1109,70 @@ def get_da_returns(da_id=None):
         frappe.log_error(frappe.get_traceback(), "get_da_returns Error")
         return []
 
+
+
+@frappe.whitelist()
+def confirm_dispatch_receipt(dispatch_id=None, da_id=None):
+    """
+    DA confirms they physically received a Stock Dispatch.
+    Creates DA Stock Entry (Dispatch In) for each item.
+    Updates DA Warehouse balance.
+    """
+    if not da_id:
+        da_id = _get_da_id()
+    if not da_id:
+        return {"success": False, "error": "Not authenticated"}
+
+    if not dispatch_id:
+        return {"success": False, "error": "dispatch_id is required"}
+
+    try:
+        # Verify dispatch belongs to this DA
+        dispatch = frappe.get_doc("Stock Dispatch", dispatch_id)
+        if dispatch.delivery_agent != da_id:
+            return {"success": False, "error": "This dispatch is not assigned to you"}
+
+        if dispatch.status == "Confirmed":
+            return {"success": False, "error": "Already confirmed"}
+
+        # Get items from child table
+        items = frappe.get_all("Stock Dispatch Item",
+            filters={"parent": dispatch_id},
+            fields=["product", "quantity_dispatched"]
+        )
+
+        if not items:
+            # Fall back to DA Stock Entry if items table is empty
+            return {"success": False, "error": "No items found in this dispatch. Contact logistics."}
+
+        now = frappe.utils.now_datetime()
+
+        # Create DA Stock Entry for each item
+        for item in items:
+            try:
+                entry = frappe.get_doc({
+                    "doctype": "DA Stock Entry",
+                    "delivery_agent": da_id,
+                    "product": item.product,
+                    "entry_type": "Dispatch",
+                    "direction": "In",
+                    "quantity": item.quantity_dispatched,
+                    "reference_dispatch": dispatch_id,
+                    "notes": f"Confirmed receipt of {dispatch_id}",
+                })
+                entry.insert(ignore_permissions=True)
+            except Exception as e:
+                frappe.log_error(
+                    f"confirm_dispatch_receipt: Failed to create entry for {item.product}: {str(e)}",
+                    "Dispatch Confirm Error"
+                )
+
+        # Update Stock Dispatch status
+        frappe.db.set_value("Stock Dispatch", dispatch_id, "status", "Confirmed")
+
+        frappe.db.commit()
+        return {"success": True, "dispatch_id": dispatch_id}
+
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "confirm_dispatch_receipt Error")
+        return {"success": False, "error": str(e)}
