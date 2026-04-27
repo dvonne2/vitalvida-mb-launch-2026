@@ -1,21 +1,19 @@
 import frappe
 from frappe.utils import cint, now_datetime
 
-
 def deduct_on_payment(order_name):
-    """
-    FIX SHOWSTOPPER 1+2: Complete rewrite.
+    """FIX SHOWSTOPPER 1+2: Complete rewrite.
     - Parses bundle contents to deduct ALL component products (not just 1)
     - Creates DA Stock Entry + updates DA Warehouse balance directly
     - Guards against double-deduction (idempotent)
     - Guards against negative stock
     """
     try:
-        # 0. Guard against double-deduction
         already_deducted = frappe.db.exists("DA Stock Entry", {
             "order": order_name,
             "entry_type": "Deduction",
         })
+        
         if already_deducted:
             return  # Stock already deducted for this order — idempotent
 
@@ -58,6 +56,7 @@ def deduct_on_payment(order_name):
                         break
                 except Exception:
                     continue
+            
             if product:
                 contents = f"1 {product}"
             else:
@@ -94,7 +93,6 @@ def deduct_on_payment(order_name):
             "M13 Deduction Error"
         )
 
-
 def _parse_contents(contents):
     """
     Parse "1 Shampoo · 1 Pomade · 1 Conditioner" → [("Shampoo", 1), ("Pomade", 1), ("Conditioner", 1)]
@@ -103,10 +101,12 @@ def _parse_contents(contents):
     items = []
     if not contents:
         return items
+    
     for part in contents.split("·"):
         part = part.strip()
         if not part:
             continue
+        
         tokens = part.split()
         if tokens and tokens[0].isdigit():
             qty = int(tokens[0])
@@ -114,10 +114,10 @@ def _parse_contents(contents):
         else:
             qty = 1
             product = part
+        
         if product:
             items.append((product.strip(), qty))
     return items
-
 
 def _deduct_da_stock(delivery_agent, product, quantity, order):
     """
@@ -157,11 +157,12 @@ def _deduct_da_stock(delivery_agent, product, quantity, order):
                 ["name", "balance"],
                 as_dict=True
             )
+            
             if bal:
                 new_balance = max(0, cint(bal.balance) - quantity)
                 frappe.db.set_value("DA Stock Balance", bal.name, "balance", new_balance)
             else:
-                # No balance record exists — create one at 0 (will go negative if we don't guard)
+                # No balance record exists — create one at 0
                 frappe.log_error(
                     f"M13: No DA Stock Balance found for DA={delivery_agent}, "
                     f"product={product}. Deduction recorded but balance not decremented.",
@@ -175,6 +176,7 @@ def _deduct_da_stock(delivery_agent, product, quantity, order):
                 ["name", "current_stock"],
                 as_dict=True
             )
+            
             if wh:
                 new_stock = max(0, cint(wh.current_stock) - quantity)
                 frappe.db.set_value("DA Warehouse", wh.name, "current_stock", new_stock)
@@ -194,12 +196,34 @@ def _deduct_da_stock(delivery_agent, product, quantity, order):
             "M13 Balance Update Error"
         )
 
+def validate_stock_available(delivery_agent, product, quantity=1):
+    wh = frappe.db.get_value(
+        "DA Warehouse",
+        {
+            "delivery_agent": delivery_agent,
+            "product": product
+        },
+        "current_stock"
+    )
+
+    current = int(wh or 0)
+
+    if current < quantity:
+        da_name = frappe.db.get_value(
+            "Delivery Agent",
+            delivery_agent,
+            "agent_name"
+        ) or delivery_agent
+
+        frappe.throw(
+            f"DA {da_name} has insufficient {product}. "
+            f"Available: {current}, Required: {quantity}."
+        )
+
 
 def _update_warehouse_stock(entry):
     """
     M12: Called from DAStockEntry.after_insert to update DA Warehouse current_stock.
-    Increments for In (Dispatch/Return/Adjustment+), decrements for Out (Deduction).
-    Also stamps balance_before and balance_after on the entry for the ledger trail.
     """
     from frappe.utils import cint, flt
 
@@ -208,7 +232,7 @@ def _update_warehouse_stock(entry):
     qty = flt(entry.quantity)
     direction = entry.direction  # "In" or "Out"
 
-    # ── 1. Find the DA Warehouse row ─────────────────────────────────────────
+    # 1. Find the DA Warehouse row
     wh_name = frappe.db.get_value(
         "DA Warehouse",
         {"delivery_agent": da, "product": product},
@@ -229,19 +253,21 @@ def _update_warehouse_stock(entry):
     else:
         current = flt(frappe.db.get_value("DA Warehouse", wh_name, "current_stock"))
 
-    # ── 2. Calculate new balance ──────────────────────────────────────────────
+    # 2. Calculate new balance
     if direction == "In":
         new_stock = current + qty
     else:  # "Out"
         new_stock = max(0, current - qty)
 
-    # ── 3. Write warehouse balance ────────────────────────────────────────────
+    # 3. Write warehouse balance
     frappe.db.set_value("DA Warehouse", wh_name, "current_stock", new_stock)
 
-    # ── 4. Stamp ledger trail on the entry (ignore immutability — this is system) ──
+    # 4. Stamp ledger trail on the entry
     frappe.db.set_value("DA Stock Entry", entry.name, {
         "balance_before": current,
         "balance_after": new_stock,
     }, update_modified=False)
 
     frappe.db.commit()
+
+
