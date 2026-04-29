@@ -153,7 +153,7 @@ def get_dashboard(period="w"):
         da_fees      = _sql1(f"SELECT COALESCE(SUM(delivery_fee),0) FROM `tabVV Order` WHERE da_fee_paid=1 AND creation>='{from_date}'")
         driver_cost  = _sql1(f"SELECT COALESCE(SUM(driver_transport),0) FROM `tabStock Dispatch` WHERE dispatch_date>='{from_date}' AND status IN ('Confirmed','Delivered')" if _tbl("Stock Dispatch") else "SELECT 0")
         store_pickup = _sql1(f"SELECT COALESCE(SUM(storekeeper_fee+da_pickup_transport),0) FROM `tabStock Dispatch` WHERE dispatch_date>='{from_date}'" if _tbl("Stock Dispatch") else "SELECT 0")
-        affiliate    = _sql1(f"SELECT COALESCE(SUM(total_commission),0) FROM `tabAffiliate Payout Batch` WHERE status='Paid' AND paid_on>='{from_date}'" if _tbl("Affiliate Payout Batch") else "SELECT 0")
+        affiliate    = _sql1(f"SELECT COALESCE(SUM(total_commission),0) FROM `tabAffiliate Payout Batch` WHERE status='Paid' AND paid_at>='{from_date}'" if _tbl("Affiliate Payout Batch") else "SELECT 0")
         telesales_pay= 0  # from payroll — static for now
         stock_losses = _sql1(f"SELECT COALESCE(SUM(JSON_LENGTH(items_json)*{COGS_PER}),0) FROM `tabDA Stock Return` WHERE status='Written Off' AND return_date>='{from_date}'" if _tbl("DA Stock Return") else "SELECT 0")
         total_opex   = da_fees + driver_cost + store_pickup + affiliate + telesales_pay + stock_losses
@@ -513,8 +513,8 @@ def get_payouts():
             rows = frappe.get_all("Affiliate Payout Batch",
                 filters={"status": ["in", ["Pending","Pending Approval","Approved"]]},
                 fields=_safe("Affiliate Payout Batch", [
-                    "name","media_buyer","period_label","paid_orders",
-                    "total_commission","status","fraud_flags","ops_approved"
+                    "name","media_buyer","period_start","period_end",
+                    "total_orders","total_commission","status","approved_by"
                 ]),
                 order_by="creation desc")
 
@@ -528,15 +528,32 @@ def get_payouts():
                         "account":  mb.get("bank_account_number") or "",
                         "acct_name":mb.get("bank_account_name") or "",
                     }
-                flags   = cint(r.get("fraud_flags") or 0)
-                approved= bool(r.get("ops_approved"))
-                total   = flt(r.total_commission)
+                # fraud_flags and ops_approved don't exist on doctype — check via related table
+                flags    = 0
+                approved = bool(r.get("approved_by"))
+                if _tbl("Affiliate Fraud Flag"):
+                    flags = frappe.db.count("Affiliate Fraud Flag", {
+                        "media_buyer": r.media_buyer,
+                        "status": "Open",
+                    }) if r.media_buyer else 0
+                total = flt(r.total_commission)
                 pending_total += total
+                # Build period label
+                period_label = ""
+                try:
+                    if r.get("period_start") and r.get("period_end"):
+                        ps = get_datetime(r.period_start).strftime("%d %b")
+                        pe = get_datetime(r.period_end).strftime("%d %b %Y")
+                        period_label = f"{ps} – {pe}"
+                    elif r.get("period_start"):
+                        period_label = str(r.period_start)
+                except Exception:
+                    period_label = r.name
                 pending.append({
                     "id":        r.name,
                     "mb":        bank["name"],
-                    "period":    r.get("period_label") or r.name,
-                    "orders":    cint(r.paid_orders),
+                    "period":    period_label or r.name,
+                    "orders":    cint(r.get("total_orders") or 0),
                     "amount":    _fmt(total),
                     "status":    r.status or "Pending",
                     "blocked":   bool(flags),
@@ -549,20 +566,31 @@ def get_payouts():
             # Paid history
             paid_rows = frappe.get_all("Affiliate Payout Batch",
                 filters={"status": "Paid"},
-                fields=_safe("Affiliate Payout Batch", ["name","media_buyer","period_label","paid_orders","total_commission","paid_on","transfer_reference"]),
-                order_by="paid_on desc", limit=10)
+                fields=_safe("Affiliate Payout Batch", ["name","media_buyer","period_start","period_end","total_orders","total_commission","paid_at","payment_reference"]),
+                order_by="paid_at desc", limit=10)
             for r in paid_rows:
                 mb_name = frappe.db.get_value("VV Media Buyer", r.media_buyer, "buyer_name") if r.media_buyer else r.media_buyer
                 total   = flt(r.total_commission)
                 paid_total += total
+                # Build a readable period label from period_start / period_end
+                period_label = ""
+                try:
+                    if r.get("period_start") and r.get("period_end"):
+                        ps = get_datetime(r.period_start).strftime("%d %b")
+                        pe = get_datetime(r.period_end).strftime("%d %b %Y")
+                        period_label = f"{ps} – {pe}"
+                    elif r.get("period_start"):
+                        period_label = str(r.period_start)
+                except Exception:
+                    period_label = r.name
                 paid_list.append({
                     "id":     r.name,
                     "mb":     mb_name or r.media_buyer,
-                    "period": r.get("period_label") or r.name,
-                    "orders": cint(r.paid_orders),
+                    "period": period_label or r.name,
+                    "orders": cint(r.get("total_orders") or 0),
                     "amount": _fmt(total),
-                    "paid_on":str(r.paid_on or ""),
-                    "ref":    r.get("transfer_reference") or "",
+                    "paid_on": str(get_datetime(r.paid_at).strftime("%d %b %Y")) if r.paid_at else "",
+                    "ref":    r.get("payment_reference") or "",
                 })
 
         return {
@@ -587,80 +615,118 @@ def get_payouts():
 
 @frappe.whitelist()
 def get_recon():
-    g = _guard(); 
+    g = _guard()
     if g: return g
     try:
-        auto_matched = unmatched_count = low_conf_count = 0
-        unmatched_list = low_conf_list = []
+        auto_matched    = 0
+        unmatched_count = 0
+        low_conf_count  = 0
+        unmatched_list  = []
+        low_conf_list   = []
 
+        # FIX: Count matched from Payment Reconciliation Log — same source as
+        # Operations portal. Moniepoint Webhook Log under-reports because some
+        # reconciled webhooks land on processing_status="Processed" not "Matched".
+        # Operations counts reconciliation_status IN ["Auto-Confirmed","Manually Confirmed"]
+        # against total Recon Log rows as denominator — we mirror that exactly.
+        if _tbl("Payment Reconciliation Log"):
+            recon_rows   = frappe.get_all("Payment Reconciliation Log",
+                               fields=["reconciliation_status"], limit=500)
+            auto_matched = len([r for r in recon_rows if r.reconciliation_status in
+                                ("Auto-Confirmed", "Manually Confirmed")])
+            total_recon  = len(recon_rows)
+            match_rate   = round(auto_matched / total_recon * 100, 1) if total_recon else 0
+        else:
+            match_rate = 0
+
+        # Unmatched webhooks
         if _tbl("Moniepoint Webhook Log"):
-            auto_matched    = frappe.db.count("Moniepoint Webhook Log", {"processing_status": "Matched"})
-            unmatched_count = frappe.db.count("Moniepoint Webhook Log", {"processing_status": "Unmatched"})
-            total_wh        = frappe.db.count("Moniepoint Webhook Log")
-            match_rate      = round(auto_matched / total_wh * 100, 1) if total_wh else 0
-
+            unmatched_count = frappe.db.count("Moniepoint Webhook Log",
+                                              {"processing_status": "Unmatched"})
             rows = frappe.get_all("Moniepoint Webhook Log",
                 filters={"processing_status": "Unmatched"},
-                fields=_safe("Moniepoint Webhook Log", ["name","amount","payer_phone","reference","received_at","closest_order"]),
+                fields=_safe("Moniepoint Webhook Log", [
+                    "name", "amount", "payer_phone", "payer_name",
+                    "narration", "received_at", "transaction_id", "closest_order"
+                ]),
                 order_by="received_at desc", limit=20)
             for r in rows:
-                closest = r.get("closest_order") or ""
+                closest      = r.get("closest_order") or ""
                 closest_body = ""
                 if closest:
-                    co = frappe.db.get_value("VV Order", closest, ["customer_name","total_payable","customer_phone"], as_dict=True)
-                    if co: closest_body = f"Closest: {closest} (phone {co.customer_phone}, {_fmt(co.total_payable)})"
+                    co = frappe.db.get_value("VV Order", closest,
+                        ["customer_name", "total_payable", "customer_phone"], as_dict=True)
+                    if co:
+                        closest_body = (
+                            f"Closest: {closest} "
+                            f"(phone {co.customer_phone}, {_fmt(co.total_payable)})"
+                        )
                 dt_str = ""
                 if r.received_at:
-                    try: dt_str = get_datetime(r.received_at).strftime("%d %b %H:%M")
+                    try:    dt_str = get_datetime(r.received_at).strftime("%d %b %H:%M")
                     except: dt_str = str(r.received_at)
                 unmatched_list.append({
                     "id":            r.name,
-                    "reference":     r.reference or r.name,
+                    "reference":     r.get("transaction_id") or r.name,
                     "amount":        _fmt(r.amount),
                     "payer_phone":   r.payer_phone or "",
+                    "payer":         r.get("payer_name") or "",
                     "time":          dt_str,
                     "closest_order": closest,
                     "closest_body":  closest_body,
                 })
-        else:
-            match_rate = 0
 
+        # Low confidence / pending finance review
         if _tbl("Payment Reconciliation Log"):
-            low_conf_count = frappe.db.count("Payment Reconciliation Log", {"status": "Review", "confidence": ["<", 90]})
+            low_conf_count = frappe.db.count("Payment Reconciliation Log",
+                                             {"reconciliation_status": "Pending Finance Review"})
             rows = frappe.get_all("Payment Reconciliation Log",
-                filters={"status": "Review"},
-                fields=_safe("Payment Reconciliation Log", ["name","webhook_ref","webhook_amount","matched_order","confidence","match_issue"]),
-                order_by="confidence desc", limit=20)
+                filters={"reconciliation_status": "Pending Finance Review"},
+                fields=_safe("Payment Reconciliation Log", [
+                    "name", "webhook", "amount_received", "amount_expected",
+                    "order", "match_confidence", "match_tier"
+                ]),
+                order_by="creation desc", limit=20)
             for r in rows:
+                confidence = round(flt(r.get("match_confidence") or 0) * 100)
+                phone      = ""
+                if r.get("webhook"):
+                    phone = frappe.db.get_value(
+                        "Moniepoint Webhook Log", r.webhook, "payer_phone") or ""
+                order_info = ""
+                if r.get("order"):
+                    o = frappe.db.get_value("VV Order", r.order,
+                        ["customer_name", "customer_phone", "order_status"], as_dict=True)
+                    if o:
+                        order_info = (
+                            f"{o.customer_name} | {o.customer_phone} | {o.order_status}"
+                        )
                 low_conf_list.append({
                     "id":         r.name,
-                    "webhook":    r.get("webhook_ref") or r.name,
-                    "amount":     _fmt(r.get("webhook_amount")),
-                    "order":      r.get("matched_order") or "",
-                    "confidence": f"{cint(r.confidence)}%",
-                    "issue":      r.get("match_issue") or "",
-                    "high":       cint(r.confidence) >= 90,
+                    "webhook":    r.get("webhook") or r.name,
+                    "amount":     _fmt(r.get("amount_received")),
+                    "order":      r.get("order") or "",
+                    "order_info": order_info,
+                    "phone":      phone,
+                    "confidence": f"{confidence}%",
+                    "tier":       r.get("match_tier") or "",
+                    "high":       confidence >= 90,
                 })
 
         return {
             "stats": {
-                "auto_matched":  auto_matched,
-                "unmatched":     unmatched_count,
-                "low_confidence":low_conf_count,
-                "match_rate":    f"{match_rate}%",
+                "auto_matched":   auto_matched,
+                "unmatched":      unmatched_count,
+                "low_confidence": low_conf_count,
+                "match_rate":     f"{match_rate}%",
             },
-            "unmatched":     unmatched_list,
-            "low_confidence":low_conf_list,
+            "unmatched":      unmatched_list,
+            "low_confidence": low_conf_list,
         }
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "finance.get_recon")
         return {"stats": {}, "unmatched": [], "low_confidence": [], "error": str(e)}
 
-
-# ═══════════════════════════════════════════════════════════
-# API 6 — get_profitability
-# P&L, bundle margin, campaign ROI, per-order drill-down
-# ═══════════════════════════════════════════════════════════
 
 @frappe.whitelist()
 def get_profitability(period="w"):
@@ -821,15 +887,23 @@ def get_profit_first(period="w"):
             balance = allocated
             if _tbl("Profit First Allocation Log"):
                 try:
-                    spent = _sql1(f"SELECT COALESCE(SUM(amount_spent),0) FROM `tabProfit First Allocation Log` WHERE bucket_name='{name}' AND creation>='{from_date}'")
+                    # FIX 1: Use parameterised query — bucket names contain emoji +
+                    # apostrophes (e.g. "Owner's Pay") which break f-string SQL.
+                    spent = _sql1p(
+                        "SELECT COALESCE(SUM(amount_spent),0) "
+                        "FROM `tabProfit First Allocation Log` "
+                        "WHERE bucket_name=%s AND creation>=%s",
+                        (name, from_date)
+                    )
                     balance = allocated - spent
-                except: pass
+                except Exception:
+                    pass
             wallets.append({
-                "name":      name,
-                "pct":       pct,
-                "color":     color,
-                "allocated": _fmt(allocated),
-                "balance":   _fmt(balance),
+                "name":          name,
+                "pct":           pct,
+                "color":         color,
+                "allocated":     _fmt(allocated),
+                "balance":       _fmt(balance),
                 "allocated_raw": allocated,
                 "balance_raw":   balance,
             })
@@ -840,16 +914,30 @@ def get_profit_first(period="w"):
         for label, sql in [
             ("DA Delivery Fees", f"SELECT COALESCE(SUM(delivery_fee),0) FROM `tabVV Order` WHERE da_fee_paid=1 AND creation>='{from_date2}'"),
             ("Driver Transport",  f"SELECT COALESCE(SUM(driver_transport),0) FROM `tabStock Dispatch` WHERE dispatch_date>='{from_date2}'" if _tbl("Stock Dispatch") else "SELECT 0"),
-            ("Affiliate Commissions", f"SELECT COALESCE(SUM(total_commission),0) FROM `tabAffiliate Payout Batch` WHERE status='Paid' AND paid_on>='{from_date2}'" if _tbl("Affiliate Payout Batch") else "SELECT 0"),
+            ("Affiliate Commissions", f"SELECT COALESCE(SUM(total_commission),0) FROM `tabAffiliate Payout Batch` WHERE status='Paid' AND paid_at>='{from_date2}'" if _tbl("Affiliate Payout Batch") else "SELECT 0"),
         ]:
             amt = _sql1(sql)
             if amt: opex_detail.append({"label": label, "amount": _fmt(amt)})
 
+        # FIX 2: If revenue is 0 for the selected period, check if there is
+        # ANY paid revenue at all so the UI can show a helpful message vs
+        # genuinely empty vs wrong period. Also expose period_label.
+        period_labels = {"w": "This Week", "m": "This Month", "y": "YTD", "d": "Today"}
+        all_time_rev = 0
+        if rev == 0:
+            all_time_rev = _sql1(
+                "SELECT COALESCE(SUM(total_payable),0) FROM `tabVV Order` "
+                "WHERE order_status='Paid'"
+            )
+
         return {
-            "revenue":     _fmt(rev),
-            "revenue_raw": rev,
-            "wallets":     wallets,
-            "opex_detail": opex_detail,
+            "revenue":       _fmt(rev),
+            "revenue_raw":   rev,
+            "period_label":  period_labels.get(period, period),
+            "from_date":     from_date,
+            "has_any_revenue": all_time_rev > 0,
+            "wallets":       wallets,
+            "opex_detail":   opex_detail,
         }
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "finance.get_profit_first")
@@ -873,7 +961,7 @@ def get_expenses(period="w"):
             ("DA Delivery Fees",    f"SELECT COALESCE(SUM(delivery_fee),0),COUNT(*) FROM `tabVV Order` WHERE da_fee_paid=1 AND creation>='{from_date}'"),
             ("Driver Transport",     f"SELECT COALESCE(SUM(driver_transport),0),COUNT(*) FROM `tabStock Dispatch` WHERE dispatch_date>='{from_date}'" if _tbl("Stock Dispatch") else None),
             ("Storekeeper + Pickup", f"SELECT COALESCE(SUM(storekeeper_fee+da_pickup_transport),0),COUNT(*) FROM `tabStock Dispatch` WHERE dispatch_date>='{from_date}'" if _tbl("Stock Dispatch") else None),
-            ("Affiliate Commissions",f"SELECT COALESCE(SUM(total_commission),0),COUNT(*) FROM `tabAffiliate Payout Batch` WHERE status='Paid' AND paid_on>='{from_date}'" if _tbl("Affiliate Payout Batch") else None),
+            ("Affiliate Commissions",f"SELECT COALESCE(SUM(total_commission),0),COUNT(*) FROM `tabAffiliate Payout Batch` WHERE status='Paid' AND paid_at>='{from_date}'" if _tbl("Affiliate Payout Batch") else None),
             ("Stock Losses",         f"SELECT COALESCE(COUNT(*)*{COGS_PER},0),COUNT(*) FROM `tabDA Stock Return` WHERE status='Written Off' AND return_date>='{from_date}'" if _tbl("DA Stock Return") else None),
         ]:
             if not sql: continue
@@ -982,7 +1070,7 @@ def get_reports(period="w"):
         # Operating cash flow
         cash_in  = _sql1(f"SELECT COALESCE(SUM(total_payable),0) FROM `tabVV Order` WHERE order_status='Paid' AND creation>='{from_date}'")
         fees_out = _sql1(f"SELECT COALESCE(SUM(amount),0) FROM `tabFee Payment Request` WHERE status='Accountant Paid' AND paid_at>='{from_date}'" if _tbl("Fee Payment Request") else "SELECT 0")
-        aff_out  = _sql1(f"SELECT COALESCE(SUM(total_commission),0) FROM `tabAffiliate Payout Batch` WHERE status='Paid' AND paid_on>='{from_date}'" if _tbl("Affiliate Payout Batch") else "SELECT 0")
+        aff_out  = _sql1(f"SELECT COALESCE(SUM(total_commission),0) FROM `tabAffiliate Payout Batch` WHERE status='Paid' AND paid_at>='{from_date}'" if _tbl("Affiliate Payout Batch") else "SELECT 0")
         trans_out= _sql1(f"SELECT COALESCE(SUM(total_cost),0) FROM `tabStock Dispatch` WHERE dispatch_date>='{from_date}'" if _tbl("Stock Dispatch") else "SELECT 0")
         net_ops  = cash_in - fees_out - aff_out - trans_out
 
@@ -1068,15 +1156,15 @@ def get_audit_trail(action_filter="", user_filter="", date_filter="", limit=30, 
         if _tbl("Affiliate Payout Batch"):
             pout_rows = frappe.get_all("Affiliate Payout Batch",
                 filters={"status": "Paid"},
-                fields=_safe("Affiliate Payout Batch", ["name","media_buyer","total_commission","paid_on","paid_by","transfer_reference"]),
-                order_by="paid_on desc", limit=10)
+                fields=_safe("Affiliate Payout Batch", ["name","media_buyer","total_commission","paid_at","paid_by","payment_reference"]),
+                order_by="paid_at desc", limit=10)
             for r in pout_rows:
                 mb_name = frappe.db.get_value("VV Media Buyer", r.media_buyer, "buyer_name") if r.media_buyer else r.media_buyer
                 rows.append({
-                    "time":   str(get_datetime(r.paid_on).strftime("%d %b\n%H:%M")) if r.paid_on else "",
+                    "time":   str(get_datetime(r.paid_at).strftime("%d %b\n%H:%M")) if r.paid_at else "",
                     "action": "Payout Approved",
                     "pill":   "blue",
-                    "detail": f"{mb_name} · {r.name} · {_fmt(r.total_commission)}\nRef: {r.get('transfer_reference') or '—'}",
+                    "detail": f"{mb_name} · {r.name} · {_fmt(r.total_commission)}\nRef: {r.get('payment_reference') or '—'}",
                     "user":   frappe.db.get_value("User", r.get("paid_by"), "full_name") if r.get("paid_by") else "Finance",
                     "user_bold": True,
                     "change": "batch: Approved → Paid",
@@ -1089,7 +1177,7 @@ def get_audit_trail(action_filter="", user_filter="", date_filter="", limit=30, 
 
         # Override stats
         month_start = str(date.today().replace(day=1))
-        manual_overrides = frappe.db.count("Payment Reconciliation Log", {"match_tier": "Tier 1 — Exact", "matched_at": [">=", month_start]}) if _tbl("Payment Reconciliation Log") else 0
+        manual_overrides = frappe.db.count("Payment Reconciliation Log", {"match_type": "Manual", "matched_at": [">=", month_start]}) if _tbl("Payment Reconciliation Log") else 0
         auto_actions     = frappe.db.count("Payment Reconciliation Log", {"match_type": "Auto", "matched_at": [">=", month_start]}) if _tbl("Payment Reconciliation Log") else 0
 
         return {
@@ -1256,7 +1344,7 @@ def action_mark_payout_paid(batch_id, transfer_reference=""):
                 }
         frappe.db.set_value("Affiliate Payout Batch", batch_id, {
             "status": "Paid",
-            "paid_on": now_datetime(),
+            "paid_at": now_datetime(),
             "paid_by": frappe.session.user,
             "payment_reference": transfer_reference,
         })
@@ -1301,8 +1389,8 @@ def action_match_webhook(webhook_id, order_id):
                     "doctype": "Payment Reconciliation Log",
                     "webhook_ref": webhook_id,
                     "matched_order": order_id,
-                    "match_tier": "Tier 1 — Exact",
-                    "reconciliation_status": "Manually Confirmed",
+                    "match_type": "Manual",
+                    "status": "Matched",
                     "matched_by": frappe.session.user,
                     "matched_at": now_datetime(),
                     "confidence": 100,
@@ -1318,15 +1406,107 @@ def action_match_webhook(webhook_id, order_id):
 
 @frappe.whitelist()
 def action_confirm_recon(recon_id):
-    g = _guard(); 
+    g = _guard()
     if g: return g
     try:
+        # 1. Mark the reconciliation log as confirmed
+        recon_doc = frappe.db.get_value(
+            "Payment Reconciliation Log", recon_id,
+            ["matched_order", "webhook_ref"], as_dict=True
+        )
+        if not recon_doc:
+            return {"success": False, "error": f"Reconciliation log {recon_id} not found"}
+
         frappe.db.set_value("Payment Reconciliation Log", recon_id, {
-            "reconciliation_status": "Manually Confirmed", "confirmed_by": frappe.session.user, "confirmed_at": now_datetime(),
+            "status":       "Matched",
+            "confirmed_by": frappe.session.user,
+            "confirmed_at": now_datetime(),
+        })
+
+        order_id   = recon_doc.get("matched_order")
+        webhook_id = recon_doc.get("webhook_ref")
+
+        # 2. Mark the webhook log as Matched
+        if webhook_id and _tbl("Moniepoint Webhook Log"):
+            frappe.db.set_value("Moniepoint Webhook Log", webhook_id, {
+                "processing_status": "Matched",
+                "matched_order":     order_id,
+            })
+
+        # 3. Set payment fields on the order
+        if order_id:
+            frappe.db.set_value("VV Order", order_id, {
+                "payment_confirmed":    1,
+                "payment_confirmed_at": now_datetime(),
+                "paid_at":             now_datetime(),
+                "payment_reference":   webhook_id or recon_id,
+            })
+
+        frappe.db.commit()
+
+        # 4. Run full finalization: stock deduction + DA fee eligibility
+        if order_id:
+            try:
+                from vitalvida.reconciliation import _finalize_paid_order
+                _finalize_paid_order(order_id)
+            except Exception as fin_err:
+                frappe.log_error(
+                    f"action_confirm_recon: _finalize_paid_order failed "
+                    f"for order {order_id}: {str(fin_err)}",
+                    "Confirm Recon Finalization Error"
+                )
+
+        return {"success": True}
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "finance.action_confirm_recon Error")
+        return {"success": False, "error": str(e)}
+
+
+@frappe.whitelist()
+def action_reject_recon(recon_id):
+    """Finance rejects a low-confidence match — marks log as Rejected, leaves order unpaid."""
+    g = _guard()
+    if g: return g
+    try:
+        if not frappe.db.exists("Payment Reconciliation Log", recon_id):
+            return {"success": False, "error": f"Reconciliation log {recon_id} not found"}
+
+        frappe.db.set_value("Payment Reconciliation Log", recon_id, {
+            "status":       "Rejected",
+            "confirmed_by": frappe.session.user,
+            "confirmed_at": now_datetime(),
+        })
+
+        # Also push the webhook back to Unmatched so it shows up for re-review
+        webhook_id = frappe.db.get_value("Payment Reconciliation Log", recon_id, "webhook_ref")
+        if webhook_id and _tbl("Moniepoint Webhook Log"):
+            frappe.db.set_value("Moniepoint Webhook Log", webhook_id, {
+                "processing_status": "Unmatched",
+                "matched_order":     None,
+            })
+
+        frappe.db.commit()
+        return {"success": True}
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "finance.action_reject_recon Error")
+        return {"success": False, "error": str(e)}
+
+
+@frappe.whitelist()
+def action_ignore_webhook(webhook_id):
+    """Finance permanently ignores an unmatched webhook — removes it from the review queue."""
+    g = _guard()
+    if g: return g
+    try:
+        if not frappe.db.exists("Moniepoint Webhook Log", webhook_id):
+            return {"success": False, "error": f"Webhook {webhook_id} not found"}
+        frappe.db.set_value("Moniepoint Webhook Log", webhook_id, {
+            "processing_status": "Ignored",
         })
         frappe.db.commit()
         return {"success": True}
     except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "finance.action_ignore_webhook Error")
         return {"success": False, "error": str(e)}
 
 

@@ -272,19 +272,22 @@ def _get_da_summary():
 
 def _get_stock_summary():
     products = ["Shampoo", "Pomade", "Conditioner"]
-    result = {}
-    if _table_exists("DA Stock Balance"):
-        for product in products:
-            try:
-                rows = frappe.get_all("DA Stock Balance",
+    result = {p: 0 for p in products}
+    try:
+        # Read from DA Warehouse — one row per DA per product.
+        # Same source the DA portal uses in get_da_stock().
+        if _table_exists("DA Warehouse"):
+            for product in products:
+                rows = frappe.get_all("DA Warehouse",
                     filters={"product": product},
-                    fields=["balance"]
+                    fields=["current_stock"]
                 )
-                result[product] = sum(cint(r.balance) for r in rows)
-            except Exception:
-                result[product] = 0
-    else:
-        try:
+                result[product] = sum(
+                    cint(r.current_stock) for r in rows
+                    if r.current_stock is not None
+                )
+        else:
+            # Fallback — sum current_stock on Delivery Agent record
             das = frappe.get_all("Delivery Agent",
                 filters={"active": 1},
                 fields=["current_stock"]
@@ -292,9 +295,8 @@ def _get_stock_summary():
             total = sum(cint(d.current_stock) for d in das)
             for product in products:
                 result[product] = total
-        except Exception:
-            for product in products:
-                result[product] = 0
+    except Exception:
+        frappe.log_error(frappe.get_traceback(), "_get_stock_summary Error")
     return result
 
 

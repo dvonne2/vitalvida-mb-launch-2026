@@ -106,6 +106,7 @@ class VVOrder(Document):
                 self._create_payment_intent()
                 if self.order_status == "Partial":
                         self._create_cart_recovery()
+                self._send_order_received_email()
 
         def before_save(self):
                 """Run all auto-computations before saving."""
@@ -223,6 +224,7 @@ class VVOrder(Document):
                 """On → Paid: stamp paid_at. M17: alert if non-Finance set Paid."""
                 frappe.db.set_value("VV Order", self.name, "paid_at", now_datetime())
                 self._check_unauthorized_paid()
+                self._send_payment_confirmed_email()
 
         def _check_unauthorized_paid(self):
                 """M17: Alert Owner if Paid is set by a non-Finance role."""
@@ -391,14 +393,22 @@ class VVOrder(Document):
         def _compute_delivery_fee(self):
             if not self.state:
                 return
+
             try:
-                fee = frappe.db.get_value("Delivery Fee Table",
-                  {"parent": "Vitalvida Settings", "state": self.state},
-                  "fee_amount")
-                if fee:
+                fee = frappe.db.get_value(
+                  "Delivery Fee Table",
+                  {
+                  "parent": "Vitalvida Settings",
+                  "state": self.state
+                  },
+                "fee_amount"
+                )
+
+                if fee is not None:
                     self.delivery_fee = float(fee)
+
             except Exception:
-                pass
+                frappe.log_error(frappe.get_traceback(), "Delivery Fee Computation Failed")
 
         def _compute_total_payable(self):
                 """Auto-compute total_payable = product_amount + delivery_fee."""
@@ -525,3 +535,66 @@ class VVOrder(Document):
                                 frappe.db.commit()
                 except Exception:
                         pass
+
+        # ─── Customer Emails ───────────────────────────────────────────────
+
+        def _send_customer_email(self, subject, message):
+                """Send a transactional email to the customer. Silently skips if no valid email."""
+                email = getattr(self, "customer_email", None) or ""
+                if not email or "@" not in email:
+                        return
+                try:
+                        frappe.sendmail(
+                                recipients=[email],
+                                subject=subject,
+                                message=message,
+                                now=True,
+                        )
+                except Exception as e:
+                        frappe.log_error(str(e), "VV Order Customer Email Error")
+
+        def _send_order_received_email(self):
+                """Email sent immediately after order is created."""
+                self._send_customer_email(
+                        subject="Your VitalVida Order {} Has Been Received".format(self.name),
+                        message=(
+                                "<p>Dear {},</p>"
+                                "<p>Thank you for your order! Our team will contact you shortly to confirm.</p>"
+                                "<table style='border-collapse:collapse;width:100%;max-width:500px;font-family:sans-serif;'>"
+                                "<tr style='background:#f4f4f4;'><td style='padding:10px;font-weight:bold;'>Order ID</td><td style='padding:10px;'>{}</td></tr>"
+                                "<tr><td style='padding:10px;font-weight:bold;'>Package</td><td style='padding:10px;'>{}</td></tr>"
+                                "<tr style='background:#f4f4f4;'><td style='padding:10px;font-weight:bold;'>Amount Due</td><td style='padding:10px;'>&#8358;{:,}</td></tr>"
+                                "<tr><td style='padding:10px;font-weight:bold;'>Delivery Address</td><td style='padding:10px;'>{}</td></tr>"
+                                "</table>"
+                                "<p style='margin-top:16px;'>We will notify you once your order is on its way.</p>"
+                                "<p>Thank you for choosing VitalVida! \U0001f49a</p>"
+                        ).format(
+                                self.customer_name or "Customer",
+                                self.name,
+                                self.package_name or "",
+                                int(self.total_payable or 0),
+                                (self.address or "") + (", " + self.state if self.state else ""),
+                        )
+                )
+
+        def _send_payment_confirmed_email(self):
+                """Email sent when payment is confirmed (order transitions to Paid)."""
+                self._send_customer_email(
+                        subject="Payment Confirmed \u2014 VitalVida Order {}".format(self.name),
+                        message=(
+                                "<p>Dear {},</p>"
+                                "<p>Great news! We have confirmed your payment for the order below.</p>"
+                                "<table style='border-collapse:collapse;width:100%;max-width:500px;font-family:sans-serif;'>"
+                                "<tr style='background:#f4f4f4;'><td style='padding:10px;font-weight:bold;'>Order ID</td><td style='padding:10px;'>{}</td></tr>"
+                                "<tr><td style='padding:10px;font-weight:bold;'>Package</td><td style='padding:10px;'>{}</td></tr>"
+                                "<tr style='background:#f4f4f4;'><td style='padding:10px;font-weight:bold;'>Amount Paid</td><td style='padding:10px;'>&#8358;{:,}</td></tr>"
+                                "</table>"
+                                "<p style='margin-top:16px;'>Thank you for your purchase. We hope you enjoy your VitalVida products!</p>"
+                                "<p>For any questions please contact our support team.</p>"
+                        ).format(
+                                self.customer_name or "Customer",
+                                self.name,
+                                self.package_name or "",
+                                int(self.total_payable or 0),
+                        )
+                )

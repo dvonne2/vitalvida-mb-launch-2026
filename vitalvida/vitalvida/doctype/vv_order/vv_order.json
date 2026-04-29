@@ -21,6 +21,7 @@
   "state",
   "lga",
   "landmark",
+  "customer_email",
   "column_break_2",
   "customer_tier",
   "telesales_rep",
@@ -118,7 +119,7 @@
    "reqd": 1
   },
   {
-   "description": "Normalised 234XXXXXXXXXX format — no + prefix, no spaces",
+   "description": "Normalised 234XXXXXXXXXX format \u2014 no + prefix, no spaces",
    "fieldname": "customer_phone",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -347,7 +348,7 @@
   },
   {
    "default": "0",
-   "description": "Set by Moniepoint webhook or Finance manual confirm. Does NOT mean order is Paid — delivery must also be confirmed.",
+   "description": "Set by Moniepoint webhook or Finance manual confirm. Does NOT mean order is Paid \u2014 delivery must also be confirmed.",
    "fieldname": "payment_confirmed",
    "fieldtype": "Check",
    "in_standard_filter": 1,
@@ -475,12 +476,17 @@
    "fieldname": "landmark",
    "fieldtype": "Data",
    "label": "landmark"
+  },
+  {
+   "fieldname": "customer_email",
+   "fieldtype": "Data",
+   "label": "Customer Email"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-10 23:30:00",
- "modified_by": "Administrator",
+ "modified": "2026-04-29 07:23:28.049626",
+ "modified_by": "admin@vitalvida.ng",
  "module": "Vitalvida",
  "name": "VV Order",
  "naming_rule": "Expression",
