@@ -174,10 +174,10 @@ def get_overview(period="d"):
         # ── Revenue ────────────────────────────────────────
         revenue = 0
         try:
+            base_q = "SELECT COALESCE(SUM(total_payable),0) FROM `tabVV Order` WHERE order_status='Paid'"
             rows = frappe.db.sql(
-                f"SELECT COALESCE(SUM(total_payable),0) FROM `tabVV Order` WHERE order_status='Paid'"
-                + (f" AND creation >= '{from_date}'" if from_date else ""),
-                as_dict=False)
+                base_q + (" AND creation>=%s" if from_date else ""),
+                (from_date,) if from_date else (), as_dict=False)
             revenue = flt(rows[0][0]) if rows else 0
         except Exception:
             pass
@@ -247,7 +247,8 @@ def _sum_expenses(from_date):
     try:
         r = frappe.db.sql(
             "SELECT COALESCE(SUM(delivery_fee),0) FROM `tabVV Order` WHERE da_fee_paid=1"
-            + (f" AND creation>='{from_date}'" if from_date else ""), as_dict=False)
+            + (" AND creation>=%s" if from_date else ""),
+            (from_date,) if from_date else (), as_dict=False)
         total += flt(r[0][0]) if r else 0
     except Exception:
         pass
@@ -255,7 +256,8 @@ def _sum_expenses(from_date):
     try:
         r = frappe.db.sql(
             "SELECT COALESCE(SUM(total_cost),0) FROM `tabStock Dispatch`"
-            + (f" WHERE dispatch_date>='{from_date}'" if from_date else ""), as_dict=False)
+            + (" WHERE dispatch_date>=%s" if from_date else ""),
+            (from_date,) if from_date else (), as_dict=False)
         total += flt(r[0][0]) if r else 0
     except Exception:
         pass
@@ -264,7 +266,8 @@ def _sum_expenses(from_date):
         if _tbl("Affiliate Payout Batch"):
             r = frappe.db.sql(
                 "SELECT COALESCE(SUM(total_commission),0) FROM `tabAffiliate Payout Batch` WHERE status='Paid'"
-                + (f" AND paid_on>='{from_date}'" if from_date else ""), as_dict=False)
+                + (" AND paid_at>=%s" if from_date else ""),
+            (from_date,) if from_date else (), as_dict=False)
             total += flt(r[0][0]) if r else 0
     except Exception:
         pass
@@ -274,7 +277,7 @@ def _sum_expenses(from_date):
 def _bundle_performance(from_date):
     try:
         sql = ("SELECT package_name, COUNT(*) as cnt FROM `tabVV Order` WHERE order_status='Paid'"
-               + (f" AND creation>='{from_date}'" if from_date else "")
+               + (" AND creation>=%s" if from_date else "")
                + " GROUP BY package_name ORDER BY cnt DESC LIMIT 10")
         rows = frappe.db.sql(sql, as_dict=True)
         result = []
@@ -294,12 +297,14 @@ def _get_alerts():
     alerts = []
     # Frozen DAs
     try:
-        frozen = frappe.get_all("Delivery Agent",
-            filters={"is_double_risk": 1, "active": 1},
-            fields=["agent_name", "name"], limit=3)
-        for da in frozen:
+        # BUG7 FIX: use DA Warehouse.is_frozen as source of truth
+        _fids = [r[0] for r in frappe.db.sql(
+            "SELECT DISTINCT delivery_agent FROM `tabDA Warehouse` WHERE is_frozen=1 LIMIT 3",
+            as_dict=False)]
+        for _fda_id in _fids:
+            _fda_name = frappe.db.get_value("Delivery Agent", _fda_id, "agent_name") or _fda_id
             alerts.append({"type": "red", "icon": "🔒",
-                "msg": f"{da.agent_name} — FROZEN. Warehouse blocked.",
+                "msg": f"{_fda_name} — FROZEN. Warehouse blocked.",
                 "action": "view_escalations"})
     except Exception:
         pass
@@ -350,9 +355,9 @@ def _period_change(metric, period, current_val):
             return None
 
         r = frappe.db.sql(
-            f"SELECT COALESCE(SUM(total_payable),0) FROM `tabVV Order` "
-            f"WHERE order_status='Paid' AND creation>='{prev_start}' AND creation<'{prev_end}'",
-            as_dict=False)
+            "SELECT COALESCE(SUM(total_payable),0) FROM `tabVV Order` "
+            "WHERE order_status='Paid' AND creation>=%s AND creation<%s",
+            (prev_start, prev_end), as_dict=False)
         prev_val = flt(r[0][0]) if r else 0
 
         if prev_val == 0:
@@ -381,7 +386,8 @@ def get_profit_first(period="w"):
         try:
             r = frappe.db.sql(
                 "SELECT COALESCE(SUM(total_payable),0) FROM `tabVV Order` WHERE order_status='Paid'"
-                + (f" AND creation>='{from_date}'" if from_date else ""), as_dict=False)
+                + (" AND creation>=%s" if from_date else ""),
+            (from_date,) if from_date else (), as_dict=False)
             revenue = flt(r[0][0]) if r else 0
         except Exception:
             pass
@@ -397,11 +403,13 @@ def get_profit_first(period="w"):
                     pct = flt(b.percentage)
                     allocated = revenue * pct / 100
                     # Get current balance from allocation log
-                    bal_row = frappe.db.sql(
-                        f"SELECT COALESCE(SUM(amount),0) FROM `tabProfit First Allocation Log` "
-                        f"WHERE bucket='{b.name}'"
-                        + (f" AND creation>='{from_date}'" if from_date else ""),
-                        as_dict=False)
+                    base_q = ("SELECT COALESCE(SUM(amount),0) FROM `tabProfit First Allocation Log` "
+                               "WHERE bucket=%s")
+                    params = [b.name]
+                    if from_date:
+                        base_q += " AND creation>=%s"
+                        params.append(from_date)
+                    bal_row = frappe.db.sql(base_q, params, as_dict=False)
                     balance = flt(bal_row[0][0]) if bal_row else allocated
                     wallets.append({
                         "name":      b.bucket_name or b.name,
@@ -462,7 +470,8 @@ def _expenses_detail(from_date):
     try:
         r = frappe.db.sql(
             "SELECT COALESCE(SUM(delivery_fee),0), COUNT(*) FROM `tabVV Order` WHERE da_fee_paid=1"
-            + (f" AND creation>='{from_date}'" if from_date else ""), as_dict=False)
+            + (" AND creation>=%s" if from_date else ""),
+            (from_date,) if from_date else (), as_dict=False)
         if r and flt(r[0][0]) > 0:
             rows.append({"name": "DA Delivery Fees", "amount": _fmt(r[0][0]),
                          "meta": f"{cint(r[0][1])} orders"})
@@ -472,7 +481,8 @@ def _expenses_detail(from_date):
     try:
         r = frappe.db.sql(
             "SELECT COALESCE(SUM(driver_transport),0), COUNT(*) FROM `tabStock Dispatch`"
-            + (f" WHERE dispatch_date>='{from_date}'" if from_date else ""), as_dict=False)
+            + (" WHERE dispatch_date>=%s" if from_date else ""),
+            (from_date,) if from_date else (), as_dict=False)
         if r and flt(r[0][0]) > 0:
             rows.append({"name": "Transport (Driver)", "amount": _fmt(r[0][0]),
                          "meta": f"{cint(r[0][1])} dispatches"})
@@ -483,7 +493,8 @@ def _expenses_detail(from_date):
         if _tbl("Affiliate Payout Batch"):
             r = frappe.db.sql(
                 "SELECT COALESCE(SUM(total_commission),0) FROM `tabAffiliate Payout Batch` WHERE status='Paid'"
-                + (f" AND paid_on>='{from_date}'" if from_date else ""), as_dict=False)
+                + (" AND paid_at>=%s" if from_date else ""),
+            (from_date,) if from_date else (), as_dict=False)
             if r and flt(r[0][0]) > 0:
                 rows.append({"name": "Affiliate Commissions", "amount": _fmt(r[0][0]), "meta": "Media buyers"})
     except Exception:
@@ -529,10 +540,13 @@ def _da_leaderboard(from_date):
             revenue = 0
             orders  = 0
             try:
-                r = frappe.db.sql(
-                    f"SELECT COALESCE(SUM(total_payable),0), COUNT(*) FROM `tabVV Order` "
-                    f"WHERE delivery_agent='{da.name}' AND order_status='Paid'"
-                    + (f" AND creation>='{from_date}'" if from_date else ""), as_dict=False)
+                base_q = ("SELECT COALESCE(SUM(total_payable),0), COUNT(*) FROM `tabVV Order` "
+                          "WHERE delivery_agent=%s AND order_status='Paid'")
+                params = [da.name]
+                if from_date:
+                    base_q += " AND creation>=%s"
+                    params.append(from_date)
+                r = frappe.db.sql(base_q, params, as_dict=False)
                 revenue = flt(r[0][0]) if r else 0
                 orders  = cint(r[0][1]) if r else 0
             except Exception:
@@ -540,16 +554,20 @@ def _da_leaderboard(from_date):
 
             fees_earned = 0
             try:
-                r = frappe.db.sql(
-                    f"SELECT COALESCE(SUM(delivery_fee),0) FROM `tabVV Order` "
-                    f"WHERE delivery_agent='{da.name}' AND order_status='Paid'"
-                    + (f" AND creation>='{from_date}'" if from_date else ""), as_dict=False)
+                base_q = ("SELECT COALESCE(SUM(delivery_fee),0) FROM `tabVV Order` "
+                          "WHERE delivery_agent=%s AND order_status='Paid'")
+                params = [da.name]
+                if from_date:
+                    base_q += " AND creation>=%s"
+                    params.append(from_date)
+                r = frappe.db.sql(base_q, params, as_dict=False)
                 fees_earned = flt(r[0][0]) if r else 0
             except Exception:
                 pass
 
             dsr    = flt(da.get("dsr_strict") or 0)
-            frozen = bool(da.get("is_double_risk"))
+            # FIX 6B: is_double_risk is not freeze status; use DA Warehouse.is_frozen
+            frozen = bool(frappe.db.exists("DA Warehouse", {"delivery_agent": da.name, "is_frozen": 1}))
             result.append({
                 "id":       da.name,
                 "name":     da.get("agent_name") or da.name,
@@ -575,15 +593,20 @@ def _telesales_leaderboard(from_date):
             fields=_safe("Telesales Closer", ["name","closer_name"]))
         result = []
         for c in closers:
-            f_base  = f"telesales_rep='{c.name}'"
-            f_date  = f" AND creation>='{from_date}'" if from_date else ""
             assigned = closed = revenue = 0
             try:
-                r = frappe.db.sql(
-                    f"SELECT COUNT(*), "
-                    f"SUM(CASE WHEN order_status NOT IN ('Cancelled','Returned') THEN 1 ELSE 0 END), "
-                    f"SUM(CASE WHEN order_status='Paid' THEN total_payable ELSE 0 END) "
-                    f"FROM `tabVV Order` WHERE {f_base}{f_date}", as_dict=False)
+                # FIX 4: parameterised — no f-string interpolation of user-influenced values
+                base_q = (
+                    "SELECT COUNT(*), "
+                    "SUM(CASE WHEN order_status NOT IN ('Cancelled','Returned') THEN 1 ELSE 0 END), "
+                    "SUM(CASE WHEN order_status='Paid' THEN total_payable ELSE 0 END) "
+                    "FROM `tabVV Order` WHERE telesales_rep=%s"
+                )
+                params = [c.name]
+                if from_date:
+                    base_q += " AND creation>=%s"
+                    params.append(from_date)
+                r = frappe.db.sql(base_q, params, as_dict=False)
                 if r:
                     assigned = cint(r[0][0])
                     closed   = cint(r[0][1])
@@ -618,10 +641,13 @@ def _media_buyer_leaderboard(from_date):
             aff_id = b.get("affiliate_id") or b.name
             orders = revenue = commission = 0
             try:
-                r = frappe.db.sql(
-                    f"SELECT COUNT(*), SUM(CASE WHEN order_status='Paid' THEN total_payable ELSE 0 END) "
-                    f"FROM `tabVV Order` WHERE affiliate_id='{aff_id}'"
-                    + (f" AND creation>='{from_date}'" if from_date else ""), as_dict=False)
+                base_q = ("SELECT COUNT(*), SUM(CASE WHEN order_status='Paid' THEN total_payable ELSE 0 END) "
+                          "FROM `tabVV Order` WHERE affiliate_id=%s")
+                params = [aff_id]
+                if from_date:
+                    base_q += " AND creation>=%s"
+                    params.append(from_date)
+                r = frappe.db.sql(base_q, params, as_dict=False)
                 if r:
                     orders  = cint(r[0][0])
                     revenue = flt(r[0][1])
@@ -630,10 +656,13 @@ def _media_buyer_leaderboard(from_date):
 
             if _tbl("Affiliate Payout Batch"):
                 try:
-                    r = frappe.db.sql(
-                        f"SELECT COALESCE(SUM(total_commission),0) FROM `tabAffiliate Payout Batch` "
-                        f"WHERE media_buyer='{b.name}'"
-                        + (f" AND creation>='{from_date}'" if from_date else ""), as_dict=False)
+                    base_q = ("SELECT COALESCE(SUM(total_commission),0) FROM `tabAffiliate Payout Batch` "
+                               "WHERE media_buyer=%s")
+                    params = [b.name]
+                    if from_date:
+                        base_q += " AND creation>=%s"
+                        params.append(from_date)
+                    r = frappe.db.sql(base_q, params, as_dict=False)
                     commission = flt(r[0][0]) if r else 0
                 except Exception:
                     pass
@@ -677,34 +706,32 @@ def get_stock():
         for da in das:
             products = {}
             total    = 0
-            if _tbl("DA Stock Balance"):
-                for p in PRODUCTS:
-                    try:
-                        bal = frappe.db.get_value("DA Stock Balance",
-                            {"delivery_agent": da.name, "product": p}, "balance") or 0
-                        products[p] = cint(bal)
-                    except Exception:
-                        products[p] = 0
-            else:
-                cs = cint(da.get("current_stock") or 0)
-                for p in PRODUCTS:
-                    products[p] = cs // 3
+            for p in PRODUCTS:
+                try:
+                    wh = frappe.db.get_value("DA Warehouse",
+                        {"delivery_agent": da.name, "product": p}, "current_stock") or 0
+                    products[p] = cint(wh)
+                except Exception:
+                    products[p] = 0
 
             total = sum(products.values())
             for p in PRODUCTS:
                 national[p] += products[p]
 
-            frozen = bool(da.get("is_double_risk"))
+            frozen = bool(frappe.db.exists("DA Warehouse", {"delivery_agent": da.name, "is_frozen": 1}))
             status = "Frozen" if frozen else ("Low" if total < 100 else "OK")
 
-            # Check for incoming dispatch
+            # Check for incoming dispatch (count items from child table)
             incoming = 0
             try:
                 inc = frappe.db.count("Stock Dispatch", {"delivery_agent": da.name, "status": "In Transit"})
                 if inc:
+                    # FIX 4+10: use parameterised query and child table, not JSON_LENGTH(items_json)
                     incoming = cint(frappe.db.sql(
-                        f"SELECT COALESCE(SUM(JSON_LENGTH(items_json)),0) FROM `tabStock Dispatch` "
-                        f"WHERE delivery_agent='{da.name}' AND status='In Transit'", as_dict=False)[0][0])
+                        "SELECT COALESCE(SUM(sri.quantity),0) FROM `tabStock Dispatch` sd"
+                        " JOIN `tabStock Dispatch Item` sri ON sri.parent = sd.name"
+                        " WHERE sd.delivery_agent=%s AND sd.status='In Transit'",
+                        (da.name,), as_dict=False)[0][0])
             except Exception:
                 pass
 
@@ -764,23 +791,23 @@ def _stock_movement():
     dispatched = sold = returned = 0
     try:
         r = frappe.db.sql(
-            f"SELECT COALESCE(SUM(total_cost),0) FROM `tabStock Dispatch` WHERE dispatch_date>='{week_start}'",
-            as_dict=False)
+            "SELECT COALESCE(SUM(total_cost),0) FROM `tabStock Dispatch` WHERE dispatch_date>=%s",
+            (week_start,), as_dict=False)
         dispatched = cint(r[0][0]) if r else 0
     except Exception:
         pass
     try:
         r = frappe.db.sql(
-            f"SELECT COUNT(*) FROM `tabVV Order` WHERE order_status='Paid' AND creation>='{week_start}'",
-            as_dict=False)
+            "SELECT COUNT(*) FROM `tabVV Order` WHERE order_status='Paid' AND creation>=%s",
+            (week_start,), as_dict=False)
         sold = cint(r[0][0]) if r else 0
     except Exception:
         pass
     try:
         if _tbl("DA Stock Return"):
             r = frappe.db.sql(
-                f"SELECT COUNT(*) FROM `tabDA Stock Return` WHERE status='Processed' AND return_date>='{week_start}'",
-                as_dict=False)
+                "SELECT COUNT(*) FROM `tabDA Stock Return` WHERE status='Processed' AND processed_at>=%s",
+                (week_start,), as_dict=False)
             returned = cint(r[0][0]) if r else 0
     except Exception:
         pass
@@ -824,8 +851,12 @@ def get_escalations():
                 })
 
         # Frozen DAs
+        # BUG7 FIX: use DA Warehouse.is_frozen
+        _frozen_ids2 = [r[0] for r in frappe.db.sql(
+            "SELECT DISTINCT delivery_agent FROM `tabDA Warehouse` WHERE is_frozen=1", as_dict=False
+        )]
         frozen_das = frappe.get_all("Delivery Agent",
-            filters={"is_double_risk": 1, "active": 1},
+            filters={"name": ["in", _frozen_ids2] if _frozen_ids2 else ["in", ["__none__"]]},
             fields=_safe("Delivery Agent", ["name","agent_name","state","current_stock"]))
         for da in frozen_das:
             freeze_since = ""
@@ -875,7 +906,8 @@ def get_escalations():
         try:
             overdue = frappe.get_all("Stock Dispatch",
                 filters={"status": "In Transit", "eta_date": ["<", str(date.today())]},
-                fields=_safe("Stock Dispatch", ["name","delivery_agent","eta_date","driver_phone","total_cost","items_json"]),
+                # FIX 2C: removed items_json — Stock Dispatch has no items_json field (uses child table)
+                fields=_safe("Stock Dispatch", ["name","delivery_agent","eta_date","driver_phone","total_cost"]),
                 limit=5)
             for d in overdue:
                 da_name   = frappe.db.get_value("Delivery Agent", d.delivery_agent, "agent_name") if d.delivery_agent else "—"
@@ -919,7 +951,8 @@ def get_expenses(period="w"):
         try:
             r = frappe.db.sql(
                 "SELECT COALESCE(SUM(total_payable),0) FROM `tabVV Order` WHERE order_status='Paid'"
-                + (f" AND creation>='{from_date}'" if from_date else ""), as_dict=False)
+                + (" AND creation>=%s" if from_date else ""),
+                (from_date,) if from_date else (), as_dict=False)
             rev = flt(r[0][0]) if r else 0
         except Exception:
             pass
@@ -932,7 +965,8 @@ def get_expenses(period="w"):
         try:
             r = frappe.db.sql(
                 "SELECT COALESCE(SUM(delivery_fee),0), COUNT(*) FROM `tabVV Order` WHERE da_fee_paid=1"
-                + (f" AND creation>='{from_date}'" if from_date else ""), as_dict=False)
+                + (" AND creation>=%s" if from_date else ""),
+                (from_date,) if from_date else (), as_dict=False)
             da_fees      = flt(r[0][0]) if r else 0
             orders_count = cint(r[0][1]) if r else 0
         except Exception:
@@ -947,7 +981,8 @@ def get_expenses(period="w"):
         try:
             r = frappe.db.sql(
                 "SELECT COALESCE(SUM(driver_transport),0), COUNT(*) FROM `tabStock Dispatch`"
-                + (f" WHERE dispatch_date>='{from_date}'" if from_date else ""), as_dict=False)
+                + (" WHERE dispatch_date>=%s" if from_date else ""),
+                (from_date,) if from_date else (), as_dict=False)
             driver_cost    = flt(r[0][0]) if r else 0
             dispatch_count = cint(r[0][1]) if r else 0
         except Exception:
@@ -962,7 +997,8 @@ def get_expenses(period="w"):
             if _tbl("Affiliate Payout Batch"):
                 r = frappe.db.sql(
                     "SELECT COALESCE(SUM(total_commission),0) FROM `tabAffiliate Payout Batch` WHERE status='Paid'"
-                    + (f" AND paid_on>='{from_date}'" if from_date else ""), as_dict=False)
+                    + (" AND paid_at>=%s" if from_date else ""),
+                (from_date,) if from_date else (), as_dict=False)
                 aff_comm = flt(r[0][0]) if r else 0
         except Exception:
             pass
@@ -974,7 +1010,8 @@ def get_expenses(period="w"):
         try:
             r = frappe.db.sql(
                 "SELECT COALESCE(SUM(storekeeper_fee),0) FROM `tabStock Dispatch`"
-                + (f" WHERE dispatch_date>='{from_date}'" if from_date else ""), as_dict=False)
+                + (" WHERE dispatch_date>=%s" if from_date else ""),
+                (from_date,) if from_date else (), as_dict=False)
             store_fees = flt(r[0][0]) if r else 0
         except Exception:
             pass
@@ -987,7 +1024,8 @@ def get_expenses(period="w"):
         try:
             r = frappe.db.sql(
                 "SELECT COALESCE(SUM(da_pickup_transport),0) FROM `tabStock Dispatch`"
-                + (f" WHERE dispatch_date>='{from_date}'" if from_date else ""), as_dict=False)
+                + (" WHERE dispatch_date>=%s" if from_date else ""),
+                (from_date,) if from_date else (), as_dict=False)
             pickup_cost = flt(r[0][0]) if r else 0
         except Exception:
             pass
@@ -1002,7 +1040,8 @@ def get_expenses(period="w"):
         try:
             r = frappe.db.sql(
                 "SELECT COUNT(*), COALESCE(SUM(total_payable),0) FROM `tabVV Order` WHERE order_status='Paid'"
-                + (f" AND creation>='{from_date}'" if from_date else ""), as_dict=False)
+                + (" AND creation>=%s" if from_date else ""),
+                (from_date,) if from_date else (), as_dict=False)
             paid_count = cint(r[0][0]) if r else 0
         except Exception:
             pass
@@ -1096,11 +1135,22 @@ def action_approve_dispatch(dispatch_id):
     guard = _require_owner()
     if guard: return guard
     try:
-        frappe.db.set_value("Stock Dispatch", dispatch_id, {
-            "status": "Pending",
-            "approved_by": frappe.session.user,
-            "approved_at": now_datetime(),
-        })
+        # FIX A3: approved_by / approved_at do not currently exist on Stock Dispatch schema.
+        # Write status unconditionally; write audit fields only if schema has them.
+        update = {"status": "Pending"}
+        sd_fields = {f.fieldname for f in frappe.get_meta("Stock Dispatch").fields}
+        if "approved_by" in sd_fields:
+            update["approved_by"] = frappe.session.user
+        if "approved_at" in sd_fields:
+            update["approved_at"] = now_datetime()
+        if "approved_by" not in sd_fields:
+            frappe.log_error(
+                f"Stock Dispatch {dispatch_id} approved by {frappe.session.user} — "
+                "approved_by/approved_at fields missing from Stock Dispatch schema. "
+                "Add Link:User 'approved_by' and Datetime 'approved_at' to capture audit trail.",
+                "Stock Dispatch Schema Gap"
+            )
+        frappe.db.set_value("Stock Dispatch", dispatch_id, update)
         frappe.db.commit()
         return {"success": True}
     except Exception as e:
@@ -1112,11 +1162,19 @@ def action_reject_dispatch(dispatch_id, reason=""):
     guard = _require_owner()
     if guard: return guard
     try:
-        frappe.db.set_value("Stock Dispatch", dispatch_id, {
-            "status": "Rejected",
-            "rejection_reason": reason,
-            "rejected_by": frappe.session.user,
-        })
+        # FIX A3: rejected_by does not currently exist on Stock Dispatch schema.
+        update = {"status": "Rejected", "rejection_reason": reason}
+        sd_fields = {f.fieldname for f in frappe.get_meta("Stock Dispatch").fields}
+        if "rejected_by" in sd_fields:
+            update["rejected_by"] = frappe.session.user
+        else:
+            frappe.log_error(
+                f"Stock Dispatch {dispatch_id} rejected by {frappe.session.user} — "
+                "rejected_by field missing from Stock Dispatch schema. "
+                "Add Link:User 'rejected_by' to capture audit trail.",
+                "Stock Dispatch Schema Gap"
+            )
+        frappe.db.set_value("Stock Dispatch", dispatch_id, update)
         frappe.db.commit()
         return {"success": True}
     except Exception as e:

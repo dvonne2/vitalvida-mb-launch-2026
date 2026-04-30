@@ -64,6 +64,31 @@ def _doctype_exists(doctype):
         return False
 
 
+def _resolve_da_id(da_id=None, allow_admin_override=False):
+    """
+    FIX 5 (IDOR): Securely resolve the acting DA ID.
+    DAs always get their own session ID. Only Ops/SysManager/Admin may pass
+    an explicit da_id for another DA. All others have it silently overridden.
+    Returns (resolved_da_id, error_dict_or_None).
+    """
+    session_da_id = _get_da_id()
+    ADMIN_ROLES = {"Operations Manager", "System Manager", "Administrator"}
+    is_admin = bool(ADMIN_ROLES.intersection(set(frappe.get_roles(frappe.session.user))))
+
+    if da_id and da_id != session_da_id:
+        if allow_admin_override and is_admin:
+            return da_id, None
+        da_id = session_da_id  # silently force own ID for non-admins
+
+    if not da_id:
+        da_id = session_da_id
+
+    if not da_id:
+        return None, {"error": "DA not found for this user", "code": 401}
+
+    return da_id, None
+
+
 # ═══════════════════════════════════════════════════════════
 # API 1 — get_da_profile
 # ═══════════════════════════════════════════════════════════
@@ -71,11 +96,9 @@ def _doctype_exists(doctype):
 @frappe.whitelist()
 def get_da_profile(da_id=None):
     try:
-        if not da_id:
-            da_id = _get_da_id()
-        if not da_id:
-            return {"error": "No Delivery Agent linked to your account"}
-
+        # FIX 5 (IDOR): admins may query any DA; all others are forced to their own
+        da_id, err = _resolve_da_id(da_id, allow_admin_override=True)
+        if err: return err
         da = frappe.get_doc("Delivery Agent", da_id)
 
         # Delivery rate from VV Order history
@@ -161,9 +184,9 @@ def get_bonus_config():
 @frappe.whitelist()
 def get_da_orders(da_id=None):
     try:
-        if not da_id:
-            da_id = _get_da_id()
-        if not da_id:
+        # FIX C1 (IDOR): admins may query any DA; all others forced to their own session DA
+        da_id, err = _resolve_da_id(da_id, allow_admin_override=True)
+        if err:
             return []
 
         thirty_days_ago = str(date.today() - timedelta(days=30))
@@ -321,10 +344,9 @@ def _parse_items(contents: str):
 @frappe.whitelist()
 def get_da_stock(da_id=None):
     try:
-        if not da_id:
-            da_id = _get_da_id()
-        if not da_id:
-            return {"Shampoo": 0, "Pomade": 0, "Conditioner": 0}
+        # FIX 5 (IDOR): admins may query any DA; all others forced to own
+        da_id, err = _resolve_da_id(da_id, allow_admin_override=True)
+        if err: return {"Shampoo": 0, "Pomade": 0, "Conditioner": 0}
 
         products = ["Shampoo", "Pomade", "Conditioner"]
         result = {p: 0 for p in products}
@@ -364,10 +386,9 @@ def get_da_stock(da_id=None):
 @frappe.whitelist()
 def get_da_stats(da_id=None, period="d"):
     try:
-        if not da_id:
-            da_id = _get_da_id()
-        if not da_id:
-            return {"done": 0, "base": 0, "speed": 0, "rateB": 0, "rate": 0, "assigned": 0}
+        # FIX 5 (IDOR): force own da_id; admins may query others
+        da_id, err = _resolve_da_id(da_id, allow_admin_override=True)
+        if err: return {"done": 0, "base": 0, "speed": 0, "rateB": 0, "rate": 0, "assigned": 0}
 
         bonus_config     = get_bonus_config()
         speed_bonus_amt  = flt(bonus_config.get("speed_bonus_per_order")) or 200
@@ -431,9 +452,9 @@ def get_da_stats(da_id=None, period="d"):
 
 @frappe.whitelist()
 def submit_post_delivery_stock(order_id, da_id=None, shampoo=0, pomade=0, conditioner=0, declared_at=None):
-    if not da_id:
-        da_id = _get_da_id()
-    if not da_id:
+    # FIX 5 (IDOR): always force da_id to the session's own DA — no admin override here
+    da_id, err = _resolve_da_id(da_id, allow_admin_override=False)
+    if err:
         return {"success": False, "error": "Not authenticated"}
 
     try:
@@ -513,9 +534,9 @@ def mark_delivered(order_id, da_id=None, photo_base64=None, delivery_note=""):
       - Delivery photo uploaded to File if provided
       - Status change logged to Order Status Log
     """
-    if not da_id:
-        da_id = _get_da_id()
-    if not da_id:
+    # FIX C2 (IDOR): delivery confirmation must always be the session DA — no admin override
+    da_id, err = _resolve_da_id(da_id, allow_admin_override=False)
+    if err:
         return {"success": False, "error": "Not authenticated"}
 
     try:
@@ -638,9 +659,9 @@ def _log_status_change_da(order_name, old_status, new_status, da_id=None):
 
 @frappe.whitelist()
 def submit_stock_audit(da_id=None, product=None, count=0, expected=0, photo_base64=None, submitted_at=None):
-    if not da_id:
-        da_id = _get_da_id()
-    if not da_id:
+    # FIX C3 (IDOR): always force da_id to session DA — no admin override for stock audits
+    da_id, err = _resolve_da_id(da_id, allow_admin_override=False)
+    if err:
         return {"success": False, "error": "Not authenticated"}
     if not product:
         return {"success": False, "error": "product is required"}
@@ -707,9 +728,9 @@ def submit_stock_audit(da_id=None, product=None, count=0, expected=0, photo_base
 
 @frappe.whitelist()
 def request_fee_payment(order_id, da_id=None):
-    if not da_id:
-        da_id = _get_da_id()
-    if not da_id:
+    # FIX C4 (IDOR): force session DA — no admin override for fee requests
+    da_id, err = _resolve_da_id(da_id, allow_admin_override=False)
+    if err:
         return {"success": False, "error": "Not authenticated"}
 
     try:
@@ -745,9 +766,9 @@ def request_fee_payment(order_id, da_id=None):
 
 @frappe.whitelist()
 def request_bulk_fee_payment(da_id=None, order_ids=None, total_amount=0):
-    if not da_id:
-        da_id = _get_da_id()
-    if not da_id:
+    # FIX 5 (IDOR): force own da_id — a DA cannot initiate fee requests on behalf of another
+    da_id, err = _resolve_da_id(da_id, allow_admin_override=False)
+    if err:
         return {"success": False, "error": "Not authenticated"}
 
     if isinstance(order_ids, str):
@@ -776,6 +797,9 @@ def request_bulk_fee_payment(da_id=None, order_ids=None, total_amount=0):
         except frappe.DoesNotExistError:
             skipped.append({"id": order_id, "reason": "Order not found"})
         except Exception as e:
+            # FIX 14: rollback any uncommitted db_set calls so we don't leave
+            # orders in a half-flagged state if an exception aborts the loop.
+            frappe.db.rollback()
             skipped.append({"id": order_id, "reason": str(e)})
 
     frappe.db.commit()
@@ -824,9 +848,9 @@ def _create_fee_request(da_id, order_ids, total_amount):
 
 @frappe.whitelist()
 def da_confirm_payment_received(order_id, da_id=None):
-    if not da_id:
-        da_id = _get_da_id()
-    if not da_id:
+    # FIX C4 (IDOR): force session DA — no admin override
+    da_id, err = _resolve_da_id(da_id, allow_admin_override=False)
+    if err:
         return {"success": False, "error": "Not authenticated"}
 
     try:
@@ -858,9 +882,9 @@ def da_confirm_payment_received(order_id, da_id=None):
 
 @frappe.whitelist()
 def raise_fee_dispute(order_id, da_id=None, note="", resolve_by=None):
-    if not da_id:
-        da_id = _get_da_id()
-    if not da_id:
+    # FIX C4 (IDOR): force session DA — no admin override
+    da_id, err = _resolve_da_id(da_id, allow_admin_override=False)
+    if err:
         return {"success": False, "error": "Not authenticated"}
 
     try:
@@ -1043,10 +1067,11 @@ def get_da_dispatch_history(da_id=None):
 
 def _map_dispatch(b):
     items = []
-    items_json = getattr(b, "items_json", None)
-    if items_json:
+    items = frappe.get_all("Stock Dispatch Item",
+        filters={"parent": b.name}, fields=["product", "quantity_dispatched"])
+    if items:
         try:
-            items = json.loads(items_json)
+            items = items  # already a list of dicts
         except Exception:
             pass
     dispatch_date = getattr(b, "dispatch_date", None) or getattr(b, "date", None)
@@ -1054,7 +1079,7 @@ def _map_dispatch(b):
     return {
         "id":          b.name,
         "date":        str(dispatch_date) if dispatch_date else "",
-        "items":       items,
+        "items":       [{"name": i.product, "qty": int(i.quantity_dispatched or 0)} for i in items],
         "confirmedAt": str(confirmed_at) if confirmed_at else None,
         "status":      getattr(b, "status", "Confirmed") or "Confirmed",
     }
@@ -1077,7 +1102,7 @@ def get_da_returns(da_id=None):
 
     try:
         fields = _safe_fields("DA Stock Return",
-            ["name", "return_date", "date", "items_json", "received_at", "reason"])
+            ["name", "initiated_at", "processed_at", "notes", "status"])
         returns = frappe.get_all("DA Stock Return",
             filters={"delivery_agent": da_id},
             fields=fields,
@@ -1088,13 +1113,14 @@ def get_da_returns(da_id=None):
         result = []
         for r in returns:
             items = []
-            items_json = getattr(r, "items_json", None)
-            if items_json:
+            items = frappe.get_all("DA Stock Return Item",
+                filters={"parent": r.name}, fields=["product", "quantity"])
+            if items:
                 try:
-                    items = json.loads(items_json)
+                    items = items  # already a list of dicts
                 except Exception:
                     pass
-            return_date = getattr(r, "return_date", None) or getattr(r, "date", None)
+            return_date = getattr(r, "processed_at", None) or getattr(r, "initiated_at", None)
             received_at = getattr(r, "received_at", None)
             result.append({
                 "id":         r.name,

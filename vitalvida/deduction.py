@@ -122,7 +122,7 @@ def _parse_contents(contents):
 def _deduct_da_stock(delivery_agent, product, quantity, order):
     """
     Create a DA Stock Entry (Deduction) and decrement DA Warehouse balance.
-    Uses DA Stock Balance if available, falls back to DA Warehouse.
+    Writes to DA Warehouse (single source of truth for stock).
     """
     now = now_datetime()
 
@@ -147,44 +147,23 @@ def _deduct_da_stock(delivery_agent, product, quantity, order):
         )
         return
 
-    # Update DA Warehouse balance
+    # Update DA Warehouse balance — DA Warehouse is the single source of truth
     try:
-        # Try DA Stock Balance first (per-product balances)
-        if frappe.db.table_exists("tabDA Stock Balance"):
-            bal = frappe.db.get_value(
-                "DA Stock Balance",
-                {"delivery_agent": delivery_agent, "product": product},
-                ["name", "balance"],
-                as_dict=True
-            )
-            if bal:
-                new_balance = max(0, cint(bal.balance) - quantity)
-                frappe.db.set_value("DA Stock Balance", bal.name, "balance", new_balance)
-            else:
-                # No balance record exists — create one at 0 (will go negative if we don't guard)
-                frappe.log_error(
-                    f"M13: No DA Stock Balance found for DA={delivery_agent}, "
-                    f"product={product}. Deduction recorded but balance not decremented.",
-                    "M13 Missing Balance"
-                )
+        wh = frappe.db.get_value(
+            "DA Warehouse",
+            {"delivery_agent": delivery_agent, "product": product},
+            ["name", "current_stock"],
+            as_dict=True
+        )
+        if wh:
+            new_stock = max(0, cint(wh.current_stock) - quantity)
+            frappe.db.set_value("DA Warehouse", wh.name, "current_stock", new_stock)
         else:
-            # Fall back to DA Warehouse
-            wh = frappe.db.get_value(
-                "DA Warehouse",
-                {"delivery_agent": delivery_agent, "product": product},
-                ["name", "current_stock"],
-                as_dict=True
+            frappe.log_error(
+                f"M13: No DA Warehouse found for DA={delivery_agent}, "
+                f"product={product}. Deduction recorded but stock not decremented.",
+                "M13 Missing Warehouse"
             )
-            if wh:
-                new_stock = max(0, cint(wh.current_stock) - quantity)
-                frappe.db.set_value("DA Warehouse", wh.name, "current_stock", new_stock)
-            else:
-                frappe.log_error(
-                    f"M13: No DA Warehouse found for DA={delivery_agent}, "
-                    f"product={product}. Deduction recorded but stock not decremented.",
-                    "M13 Missing Warehouse"
-                )
-
         frappe.db.commit()
 
     except Exception as e:

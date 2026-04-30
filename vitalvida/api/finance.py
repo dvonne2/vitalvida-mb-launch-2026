@@ -128,7 +128,7 @@ def get_dashboard(period="w"):
         from_date = _pf(period)
 
         # Revenue
-        rev = _sql1(f"SELECT COALESCE(SUM(total_payable),0) FROM `tabVV Order` WHERE order_status='Paid' AND creation>='{from_date}'")
+        rev = _sql1("SELECT COALESCE(SUM(total_payable),0) FROM `tabVV Order` WHERE order_status='Paid' AND creation>=%s", (from_date,))
 
         # Order counts
         total_orders  = frappe.db.count("VV Order", {"creation": [">=", from_date]}) if from_date else 0
@@ -136,6 +136,8 @@ def get_dashboard(period="w"):
         paid_orders   = frappe.db.count("VV Order", {"order_status": "Paid", "creation": [">=", from_date]})
 
         # COGS — estimate from packages sold
+        # FIX 4: COGS_PER*N are safe compile-time integer constants, but from_date
+        # must be parameterised. Build the query with hardcoded COGS values, %s for date.
         cogs = _sql1(f"""
             SELECT COALESCE(SUM(
                 CASE 
@@ -144,18 +146,32 @@ def get_dashboard(period="w"):
                     WHEN package_name LIKE '%B2GOF%' THEN {COGS_PER*6}
                     ELSE {COGS_PER*3}
                 END
-            ),0) FROM `tabVV Order` WHERE order_status='Paid' AND creation>='{from_date}'""")
+            ),0) FROM `tabVV Order` WHERE order_status='Paid' AND creation>=%s""",
+            (from_date,)
+        )
 
         gross_profit = rev - cogs
         gross_margin = round((gross_profit / rev) * 100, 1) if rev > 0 else 0
 
         # Operating expenses
-        da_fees      = _sql1(f"SELECT COALESCE(SUM(delivery_fee),0) FROM `tabVV Order` WHERE da_fee_paid=1 AND creation>='{from_date}'")
-        driver_cost  = _sql1(f"SELECT COALESCE(SUM(driver_transport),0) FROM `tabStock Dispatch` WHERE dispatch_date>='{from_date}' AND status IN ('Confirmed','Delivered')" if _tbl("Stock Dispatch") else "SELECT 0")
-        store_pickup = _sql1(f"SELECT COALESCE(SUM(storekeeper_fee+da_pickup_transport),0) FROM `tabStock Dispatch` WHERE dispatch_date>='{from_date}'" if _tbl("Stock Dispatch") else "SELECT 0")
-        affiliate    = _sql1(f"SELECT COALESCE(SUM(total_commission),0) FROM `tabAffiliate Payout Batch` WHERE status='Paid' AND paid_at>='{from_date}'" if _tbl("Affiliate Payout Batch") else "SELECT 0")
+        da_fees      = _sql1("SELECT COALESCE(SUM(delivery_fee),0) FROM `tabVV Order` WHERE da_fee_paid=1 AND creation>=%s", (from_date,))
+        # FIX 4: parameterised query — no f-string interpolation
+        driver_cost  = _sql1("SELECT COALESCE(SUM(driver_transport),0) FROM `tabStock Dispatch` WHERE dispatch_date>=%s AND status IN ('Confirmed','Delivered')" if _tbl("Stock Dispatch") else "SELECT 0", (from_date,))
+        store_pickup = _sql1("SELECT COALESCE(SUM(storekeeper_fee+da_pickup_transport),0) FROM `tabStock Dispatch` WHERE dispatch_date>=%s" if _tbl("Stock Dispatch") else "SELECT 0", (from_date,))
+        affiliate    = _sql1("SELECT COALESCE(SUM(total_commission),0) FROM `tabAffiliate Payout Batch` WHERE status='Paid' AND paid_at>=%s" if _tbl("Affiliate Payout Batch") else "SELECT 0", (from_date,))
         telesales_pay= 0  # from payroll — static for now
-        stock_losses = _sql1(f"SELECT COALESCE(SUM(JSON_LENGTH(items_json)*{COGS_PER}),0) FROM `tabDA Stock Return` WHERE status='Written Off' AND return_date>='{from_date}'" if _tbl("DA Stock Return") else "SELECT 0")
+        # FIX B1: Rewritten with correct parameterized call using child table join.
+        # The original had a malformed f-string/tuple that made _sql1 always return 0.
+        stock_losses = (
+            _sql1p(
+                "SELECT COALESCE(SUM(sri.quantity * %s), 0)"
+                " FROM `tabDA Stock Return` sr"
+                " JOIN `tabDA Stock Return Item` sri ON sri.parent = sr.name"
+                " WHERE sr.status='Written Off' AND sr.processed_at>=%s",
+                (COGS_PER, from_date)
+            )
+            if _tbl("DA Stock Return") else 0
+        )
         total_opex   = da_fees + driver_cost + store_pickup + affiliate + telesales_pay + stock_losses
         net_profit   = gross_profit - total_opex
         net_margin   = round((net_profit / rev) * 100, 1) if rev > 0 else 0
@@ -193,12 +209,17 @@ def get_dashboard(period="w"):
         if unmatched_count:
             alerts.append({"type": "amber", "icon": "💳", "msg": f"<strong>{unmatched_count} unmatched Moniepoint payment(s)</strong> — {_fmt(unmatched_amt)}. Manual review needed."})
 
-        # Frozen DA exposure
+        # FIX 6B: is_double_risk is a risk flag, not the freeze status.
+        # Source of truth for frozen DAs is DA Warehouse.is_frozen = 1.
         try:
-            frozen_das = frappe.get_all("Delivery Agent", filters={"is_double_risk": 1}, fields=["agent_name", "current_stock"])
-            for da in frozen_das:
-                stuck = cint(da.current_stock or 0) * COGS_PER
-                alerts.append({"type": "amber", "icon": "📦", "msg": f"<strong>{da.agent_name} exposure {_fmt(stuck)}</strong> — Frozen. Stock stuck. No remittance possible."})
+            frozen_wh = frappe.get_all("DA Warehouse", filters={"is_frozen": 1},
+                fields=["delivery_agent"], limit=10)
+            frozen_da_ids = list({r.delivery_agent for r in frozen_wh if r.delivery_agent})
+            for da_id in frozen_da_ids:
+                da_name  = frappe.db.get_value("Delivery Agent", da_id, "agent_name") or da_id
+                cur_stock = frappe.db.get_value("Delivery Agent", da_id, "current_stock") or 0
+                stuck = cint(cur_stock) * COGS_PER
+                alerts.append({"type": "amber", "icon": "📦", "msg": f"<strong>{da_name} exposure {_fmt(stuck)}</strong> — Frozen. Stock stuck. No remittance possible."})
         except: pass
 
         return {
@@ -294,7 +315,9 @@ def get_da_fees():
 
                 # Verify order is confirmed
                 order_status = frappe.db.get_value("VV Order", r.order, "order_status") if r.order else ""
-                confirmed    = order_status == "Paid"
+                # FIX G3: Allow fee payment for Delivered orders (not just Paid).
+                # Blocking until Paid creates indefinite holds when reconciliation is slow.
+                confirmed    = order_status in ["Delivered", "Paid"]
                 customer     = frappe.db.get_value("VV Order", r.order, "customer_name") if r.order else ""
 
                 da_groups[da]["orders"].append({
@@ -325,7 +348,7 @@ def get_da_fees():
         week_start = str(date.today() - timedelta(days=date.today().weekday()))
         if _tbl("Fee Payment Request"):
             paid_week     = frappe.db.count("Fee Payment Request", {"status": "Accountant Paid", "paid_at": [">=", week_start]})
-            paid_amt_week = _sql1(f"SELECT COALESCE(SUM(amount),0) FROM `tabFee Payment Request` WHERE status='Accountant Paid' AND paid_at>='{week_start}'")
+            paid_amt_week = _sql1("SELECT COALESCE(SUM(amount),0) FROM `tabFee Payment Request` WHERE status='Accountant Paid' AND paid_at>=%s", (week_start,))
 
         # Awaiting DA confirmation
         confirming = []
@@ -399,7 +422,9 @@ def get_da_exposure():
 
         result, total_exposure = [], 0
         for da in das:
-            frozen  = bool(da.get("is_double_risk"))
+            # FIX A7: is_double_risk is a risk rating, NOT the freeze status.
+            # Authoritative freeze source is DA Warehouse.is_frozen = 1.
+            frozen  = bool(frappe.db.exists("DA Warehouse", {"delivery_agent": da.name, "is_frozen": 1}))
             dsr     = flt(da.get("dsr_strict") or 0)
             strikes = cint(da.get("strike_count") or 0)
 
@@ -407,13 +432,12 @@ def get_da_exposure():
             stock_val = 0
             products  = {}
             PRODUCTS  = ["Shampoo", "Pomade", "Conditioner"]
-            if _tbl("DA Stock Balance"):
-                for p in PRODUCTS:
-                    try:
-                        bal = frappe.db.get_value("DA Stock Balance", {"delivery_agent": da.name, "product": p}, "balance") or 0
-                        products[p] = cint(bal)
-                        stock_val  += cint(bal) * COGS_PER
-                    except: products[p] = 0
+            for p in PRODUCTS:
+                try:
+                    bal = frappe.db.get_value("DA Warehouse", {"delivery_agent": da.name, "product": p}, "current_stock") or 0
+                    products[p] = cint(bal)
+                    stock_val  += cint(bal) * COGS_PER
+                except: products[p] = 0
             else:
                 cs = cint(da.get("current_stock") or 0)
                 for p in PRODUCTS: products[p] = cs // 3
@@ -427,7 +451,7 @@ def get_da_exposure():
 
             # Fees paid this month
             month_start = str(date.today().replace(day=1))
-            fees_paid = _sql1(f"SELECT COALESCE(SUM(amount),0) FROM `tabFee Payment Request` WHERE delivery_agent='{da.name}' AND status='Accountant Paid' AND paid_at>='{month_start}'" if _tbl("Fee Payment Request") else "SELECT 0")
+            fees_paid = _sql1("SELECT COALESCE(SUM(amount),0) FROM `tabFee Payment Request` WHERE delivery_agent=%s AND status='Accountant Paid' AND paid_at>=%s" if _tbl("Fee Payment Request") else "SELECT 0", (da.name, month_start))
 
             # Open disputes
             disputes = frappe.db.count("Fee Dispute", {"delivery_agent": da.name, "status": "Open"}) if _tbl("Fee Dispute") else 0
@@ -514,7 +538,10 @@ def get_payouts():
                 filters={"status": ["in", ["Pending","Pending Approval","Approved"]]},
                 fields=_safe("Affiliate Payout Batch", [
                     "name","media_buyer","period_start","period_end",
-                    "total_orders","total_commission","status","approved_by"
+                    "total_orders","total_commission","status",
+                    # FIX A4: approved_by may not exist on Affiliate Payout Batch schema.
+                    # _safe() will silently drop it if missing; we check below.
+                    "approved_by",
                 ]),
                 order_by="creation desc")
 
@@ -528,9 +555,10 @@ def get_payouts():
                         "account":  mb.get("bank_account_number") or "",
                         "acct_name":mb.get("bank_account_name") or "",
                     }
-                # fraud_flags and ops_approved don't exist on doctype — check via related table
+                # FIX A4: approved_by may be absent from the schema, causing r.get("approved_by")
+                # to always be None even for approved batches. Fall back to status=='Approved'.
                 flags    = 0
-                approved = bool(r.get("approved_by"))
+                approved = bool(r.get("approved_by")) or (r.get("status") == "Approved")
                 if _tbl("Affiliate Fraud Flag"):
                     flags = frappe.db.count("Affiliate Fraud Flag", {
                         "media_buyer": r.media_buyer,
@@ -742,13 +770,15 @@ def get_profitability(period="w"):
         # Bundle performance
         bundles = []
         try:
-            rows = frappe.db.sql(f"""
+            # FIX D1: Replaced f-string date interpolation with %s parameterization
+            rows = frappe.db.sql("""
                 SELECT package_name, COUNT(*) cnt,
                     COALESCE(SUM(total_payable),0) revenue,
                     COALESCE(SUM(delivery_fee),0) da_fees
                 FROM `tabVV Order`
-                WHERE order_status='Paid' AND creation>='{from_date}'
-                GROUP BY package_name ORDER BY cnt DESC LIMIT 10""", as_dict=True)
+                WHERE order_status='Paid' AND creation>=%s
+                GROUP BY package_name ORDER BY cnt DESC LIMIT 10""",
+                (from_date,), as_dict=True)
             for r in rows:
                 pkg  = r.package_name or "Unknown"
                 rev  = flt(r.revenue)
@@ -779,14 +809,16 @@ def get_profitability(period="w"):
         # Per-DA profit
         da_profit = []
         try:
-            rows = frappe.db.sql(f"""
+            # FIX D1: Replaced f-string date interpolation with %s parameterization
+            rows = frappe.db.sql("""
                 SELECT delivery_agent,
                     COUNT(*) orders,
                     COALESCE(SUM(total_payable),0) revenue,
                     COALESCE(SUM(delivery_fee),0) fees
                 FROM `tabVV Order`
-                WHERE order_status='Paid' AND creation>='{from_date}'
-                GROUP BY delivery_agent ORDER BY revenue DESC LIMIT 10""", as_dict=True)
+                WHERE order_status='Paid' AND creation>=%s
+                GROUP BY delivery_agent ORDER BY revenue DESC LIMIT 10""",
+                (from_date,), as_dict=True)
             for r in rows:
                 da_name = _da_name(r.delivery_agent)
                 rev     = flt(r.revenue)
@@ -871,7 +903,7 @@ def get_profit_first(period="w"):
     if g: return g
     try:
         from_date = _pf(period)
-        rev = _sql1(f"SELECT COALESCE(SUM(total_payable),0) FROM `tabVV Order` WHERE order_status='Paid' AND creation>='{from_date}'")
+        rev = _sql1("SELECT COALESCE(SUM(total_payable),0) FROM `tabVV Order` WHERE order_status='Paid' AND creation>=%s", (from_date,))
 
         defaults = [
             ("💰 Owner's Pay",       50, "hsl(var(--vv-green))",  "green"),
@@ -890,7 +922,7 @@ def get_profit_first(period="w"):
                     # FIX 1: Use parameterised query — bucket names contain emoji +
                     # apostrophes (e.g. "Owner's Pay") which break f-string SQL.
                     spent = _sql1p(
-                        "SELECT COALESCE(SUM(amount_spent),0) "
+                        "SELECT COALESCE(SUM(allocated_amount),0) "
                         "FROM `tabProfit First Allocation Log` "
                         "WHERE bucket_name=%s AND creation>=%s",
                         (name, from_date)
@@ -911,12 +943,19 @@ def get_profit_first(period="w"):
         # OpEx detail
         from_date2 = _pf(period)
         opex_detail = []
-        for label, sql in [
-            ("DA Delivery Fees", f"SELECT COALESCE(SUM(delivery_fee),0) FROM `tabVV Order` WHERE da_fee_paid=1 AND creation>='{from_date2}'"),
-            ("Driver Transport",  f"SELECT COALESCE(SUM(driver_transport),0) FROM `tabStock Dispatch` WHERE dispatch_date>='{from_date2}'" if _tbl("Stock Dispatch") else "SELECT 0"),
-            ("Affiliate Commissions", f"SELECT COALESCE(SUM(total_commission),0) FROM `tabAffiliate Payout Batch` WHERE status='Paid' AND paid_at>='{from_date2}'" if _tbl("Affiliate Payout Batch") else "SELECT 0"),
+        # FIX D2: Replaced f-string date interpolation with %s parameterization
+        for label, sql, params in [
+            ("DA Delivery Fees",
+             "SELECT COALESCE(SUM(delivery_fee),0) FROM `tabVV Order` WHERE da_fee_paid=1 AND creation>=%s",
+             (from_date2,)),
+            ("Driver Transport",
+             "SELECT COALESCE(SUM(driver_transport),0) FROM `tabStock Dispatch` WHERE dispatch_date>=%s" if _tbl("Stock Dispatch") else "SELECT 0",
+             (from_date2,)),
+            ("Affiliate Commissions",
+             "SELECT COALESCE(SUM(total_commission),0) FROM `tabAffiliate Payout Batch` WHERE status='Paid' AND paid_at>=%s" if _tbl("Affiliate Payout Batch") else "SELECT 0",
+             (from_date2,)),
         ]:
-            amt = _sql1(sql)
+            amt = _sql1(sql, params)
             if amt: opex_detail.append({"label": label, "amount": _fmt(amt)})
 
         # FIX 2: If revenue is 0 for the selected period, check if there is
@@ -954,19 +993,33 @@ def get_expenses(period="w"):
     if g: return g
     try:
         from_date = _pf(period)
-        rev = _sql1(f"SELECT COALESCE(SUM(total_payable),0) FROM `tabVV Order` WHERE order_status='Paid' AND creation>='{from_date}'")
+        rev = _sql1("SELECT COALESCE(SUM(total_payable),0) FROM `tabVV Order` WHERE order_status='Paid' AND creation>=%s", (from_date,))
 
         lines = []
-        for label, sql in [
-            ("DA Delivery Fees",    f"SELECT COALESCE(SUM(delivery_fee),0),COUNT(*) FROM `tabVV Order` WHERE da_fee_paid=1 AND creation>='{from_date}'"),
-            ("Driver Transport",     f"SELECT COALESCE(SUM(driver_transport),0),COUNT(*) FROM `tabStock Dispatch` WHERE dispatch_date>='{from_date}'" if _tbl("Stock Dispatch") else None),
-            ("Storekeeper + Pickup", f"SELECT COALESCE(SUM(storekeeper_fee+da_pickup_transport),0),COUNT(*) FROM `tabStock Dispatch` WHERE dispatch_date>='{from_date}'" if _tbl("Stock Dispatch") else None),
-            ("Affiliate Commissions",f"SELECT COALESCE(SUM(total_commission),0),COUNT(*) FROM `tabAffiliate Payout Batch` WHERE status='Paid' AND paid_at>='{from_date}'" if _tbl("Affiliate Payout Batch") else None),
-            ("Stock Losses",         f"SELECT COALESCE(COUNT(*)*{COGS_PER},0),COUNT(*) FROM `tabDA Stock Return` WHERE status='Written Off' AND return_date>='{from_date}'" if _tbl("DA Stock Return") else None),
-        ]:
+        # FIX B2: Refactored to 3-tuple (label, sql, params) so Stock Losses can pass
+        # params for its parameterized query without breaking the loop unpacking.
+        # FIX D2: All f-string date interpolations replaced with %s parameterization.
+        expense_queries = [
+            ("DA Delivery Fees",
+             "SELECT COALESCE(SUM(delivery_fee),0),COUNT(*) FROM `tabVV Order` WHERE da_fee_paid=1 AND creation>=%s",
+             (from_date,)),
+            ("Driver Transport",
+             "SELECT COALESCE(SUM(driver_transport),0),COUNT(*) FROM `tabStock Dispatch` WHERE dispatch_date>=%s" if _tbl("Stock Dispatch") else None,
+             (from_date,)),
+            ("Storekeeper + Pickup",
+             "SELECT COALESCE(SUM(storekeeper_fee+da_pickup_transport),0),COUNT(*) FROM `tabStock Dispatch` WHERE dispatch_date>=%s" if _tbl("Stock Dispatch") else None,
+             (from_date,)),
+            ("Affiliate Commissions",
+             "SELECT COALESCE(SUM(total_commission),0),COUNT(*) FROM `tabAffiliate Payout Batch` WHERE status='Paid' AND paid_at>=%s" if _tbl("Affiliate Payout Batch") else None,
+             (from_date,)),
+            ("Stock Losses",
+             "SELECT COALESCE(SUM(sri.quantity*8500),0),COUNT(DISTINCT sr.name) FROM `tabDA Stock Return` sr JOIN `tabDA Stock Return Item` sri ON sri.parent=sr.name WHERE sr.status='Written Off' AND sr.processed_at>=%s" if _tbl("DA Stock Return") else None,
+             (from_date,)),
+        ]
+        for label, sql, params in expense_queries:
             if not sql: continue
             try:
-                r   = frappe.db.sql(sql, as_dict=False)
+                r   = frappe.db.sql(sql, params or (), as_dict=False)
                 amt = flt(r[0][0]) if r else 0
                 cnt = cint(r[0][1]) if r else 0
                 if amt > 0:
@@ -1006,15 +1059,24 @@ def get_liabilities():
         aff = _sql1(f"SELECT COALESCE(SUM(total_commission),0) FROM `tabAffiliate Payout Batch` WHERE status IN ('Pending','Pending Approval')" if _tbl("Affiliate Payout Batch") else "SELECT 0")
         if aff: rows.append({"name":"Affiliate Payouts","to":"Media Buyers","amount":_fmt(aff),"due":"This week","pill":"amber"})
 
-        rows.append({"name":"Payroll","to":"Staff","amount":"₦1,200,000","due":f"30 {date.today().strftime('%b')}","pill":"blue"})
+        # FIX 13: ₦1.2M payroll was hardcoded. Read from Vitalvida Settings instead.
+        payroll_liability = 1_200_000  # fallback default
+        try:
+            s = frappe.get_single("Vitalvida Settings")
+            configured = flt(s.get("other_liabilities") or s.get("payroll_amount") or 0)
+            if configured > 0:
+                payroll_liability = configured
+        except Exception:
+            pass
+        rows.append({"name":"Payroll","to":"Staff","amount":_fmt(payroll_liability),"due":f"30 {date.today().strftime('%b')}","pill":"blue"})
 
         # Tax — 5% of YTD revenue
         ytd_start = str(date.today().replace(month=1, day=1))
-        ytd_rev   = _sql1(f"SELECT COALESCE(SUM(total_payable),0) FROM `tabVV Order` WHERE order_status='Paid' AND creation>='{ytd_start}'")
+        ytd_rev   = _sql1("SELECT COALESCE(SUM(total_payable),0) FROM `tabVV Order` WHERE order_status='Paid' AND creation>=%s", (ytd_start,))
         tax_reserve = ytd_rev * 0.05
         rows.append({"name":"Tax Reserve (FIRS)","to":"FIRS","amount":_fmt(tax_reserve),"due":"30 Jun","pill":"blue"})
 
-        total = sum(sum((da_fees, aff, 1_200_000, tax_reserve)), 0) if False else da_fees + aff + 1_200_000 + tax_reserve
+        total = da_fees + aff + payroll_liability + tax_reserve
 
         cash_at_bank = 0
         try:
@@ -1052,8 +1114,8 @@ def get_reports(period="w"):
         # Inventory valuation
         inv_total = 0
         for p in ["Shampoo","Pomade","Conditioner"]:
-            rows = frappe.get_all("DA Stock Balance", filters={"product": p}, fields=["balance"]) if _tbl("DA Stock Balance") else []
-            inv_total += sum(cint(r.balance) for r in rows) * COGS_PER
+            rows = frappe.get_all("DA Warehouse", filters={"product": p}, fields=["current_stock"]) if _tbl("DA Warehouse") else []
+            inv_total += sum(cint(r.current_stock) for r in rows) * COGS_PER
 
         cash_at_bank = 0
         try:
@@ -1064,14 +1126,21 @@ def get_reports(period="w"):
         da_receivables = _sql1("SELECT COALESCE(SUM(total_payable),0) FROM `tabVV Order` WHERE order_status='Delivered'")
 
         total_assets     = cash_at_bank + inv_total + da_receivables
-        total_liabilities= _sql1(f"SELECT COALESCE(SUM(amount),0) FROM `tabFee Payment Request` WHERE status='Pending'" if _tbl("Fee Payment Request") else "SELECT 0") + 1_200_000
+        # FIX 13: Read payroll liability from settings instead of hardcoding ₦1.2M
+        payroll_liab = 1_200_000
+        try:
+            _s = frappe.get_single("Vitalvida Settings")
+            _v = flt(_s.get("other_liabilities") or _s.get("payroll_amount") or 0)
+            if _v > 0: payroll_liab = _v
+        except Exception: pass
+        total_liabilities= _sql1(f"SELECT COALESCE(SUM(amount),0) FROM `tabFee Payment Request` WHERE status='Pending'" if _tbl("Fee Payment Request") else "SELECT 0") + payroll_liab
         equity           = total_assets - total_liabilities
 
         # Operating cash flow
-        cash_in  = _sql1(f"SELECT COALESCE(SUM(total_payable),0) FROM `tabVV Order` WHERE order_status='Paid' AND creation>='{from_date}'")
-        fees_out = _sql1(f"SELECT COALESCE(SUM(amount),0) FROM `tabFee Payment Request` WHERE status='Accountant Paid' AND paid_at>='{from_date}'" if _tbl("Fee Payment Request") else "SELECT 0")
-        aff_out  = _sql1(f"SELECT COALESCE(SUM(total_commission),0) FROM `tabAffiliate Payout Batch` WHERE status='Paid' AND paid_at>='{from_date}'" if _tbl("Affiliate Payout Batch") else "SELECT 0")
-        trans_out= _sql1(f"SELECT COALESCE(SUM(total_cost),0) FROM `tabStock Dispatch` WHERE dispatch_date>='{from_date}'" if _tbl("Stock Dispatch") else "SELECT 0")
+        cash_in  = _sql1("SELECT COALESCE(SUM(total_payable),0) FROM `tabVV Order` WHERE order_status='Paid' AND creation>=%s", (from_date,))
+        fees_out = _sql1("SELECT COALESCE(SUM(amount),0) FROM `tabFee Payment Request` WHERE status='Accountant Paid' AND paid_at>=%s" if _tbl("Fee Payment Request") else "SELECT 0", (from_date,))
+        aff_out  = _sql1("SELECT COALESCE(SUM(total_commission),0) FROM `tabAffiliate Payout Batch` WHERE status='Paid' AND paid_at>=%s" if _tbl("Affiliate Payout Batch") else "SELECT 0", (from_date,))
+        trans_out= _sql1("SELECT COALESCE(SUM(total_cost),0) FROM `tabStock Dispatch` WHERE dispatch_date>=%s" if _tbl("Stock Dispatch") else "SELECT 0", (from_date,))
         net_ops  = cash_in - fees_out - aff_out - trans_out
 
         label = {"w":"This Week","m":"This Month","y":"YTD","d":"Today"}.get(period, period)
@@ -1133,21 +1202,21 @@ def get_audit_trail(action_filter="", user_filter="", date_filter="", limit=30, 
                     "bg":     "",
                 })
 
-        # Reconciliation actions
+        # Reconciliation actions — FIX 2A: use correct field names from schema
         if _tbl("Payment Reconciliation Log"):
             recon_rows = frappe.get_all("Payment Reconciliation Log",
-                filters={"processing_status": ["in", ["Matched"]]},
-                fields=_safe("Payment Reconciliation Log", ["name","webhook_ref","matched_order","match_type","confidence","matched_by","matched_at"]),
-                order_by="matched_at desc", limit=10)
+                filters={"reconciliation_status": ["in", ["Manually Confirmed", "Auto-Confirmed"]]},
+                fields=_safe("Payment Reconciliation Log", ["name", "webhook", "order", "match_tier", "match_confidence", "reconciled_by", "reconciled_at"]),
+                order_by="reconciled_at desc", limit=10)
             for r in recon_rows:
-                action = "Manual Match" if r.get("match_type") == "Manual" else "Auto Match"
+                action = "Manual Match" if r.get("match_tier") == "Manual" else "Auto Match"
                 rows.append({
-                    "time":   str(get_datetime(r.matched_at).strftime("%d %b\n%H:%M")) if r.matched_at else "",
+                    "time":   str(get_datetime(r.reconciled_at).strftime("%d %b\n%H:%M")) if r.reconciled_at else "",
                     "action": action,
                     "pill":   "amber" if action == "Manual Match" else "green",
-                    "detail": f"{r.get('webhook_ref')} → {r.get('matched_order')}\nConf: {r.get('confidence') or '—'}%",
-                    "user":   frappe.db.get_value("User", r.matched_by, "full_name") if r.matched_by else "System",
-                    "user_bold": bool(r.matched_by),
+                    "detail": f"{r.get('webhook')} → {r.get('order')}\nConf: {round(flt(r.get('match_confidence') or 0)*100)}%",
+                    "user":   frappe.db.get_value("User", r.reconciled_by, "full_name") if r.reconciled_by else "System",
+                    "user_bold": bool(r.reconciled_by),
                     "change": "payment: Unmatched → Confirmed",
                     "bg":     "",
                 })
@@ -1175,10 +1244,16 @@ def get_audit_trail(action_filter="", user_filter="", date_filter="", limit=30, 
         rows.sort(key=lambda x: x["time"], reverse=True)
         rows = rows[cint(offset): cint(offset) + cint(limit)]
 
-        # Override stats
+        # Override stats — FIX 2A: match_type doesn't exist; use match_tier='Manual' for manual count
         month_start = str(date.today().replace(day=1))
-        manual_overrides = frappe.db.count("Payment Reconciliation Log", {"match_type": "Manual", "matched_at": [">=", month_start]}) if _tbl("Payment Reconciliation Log") else 0
-        auto_actions     = frappe.db.count("Payment Reconciliation Log", {"match_type": "Auto", "matched_at": [">=", month_start]}) if _tbl("Payment Reconciliation Log") else 0
+        manual_overrides = frappe.db.count("Payment Reconciliation Log", {
+            "reconciliation_status": "Manually Confirmed",
+            "reconciled_at": [">=", month_start]
+        }) if _tbl("Payment Reconciliation Log") else 0
+        auto_actions = frappe.db.count("Payment Reconciliation Log", {
+            "reconciliation_status": "Auto-Confirmed",
+            "reconciled_at": [">=", month_start]
+        }) if _tbl("Payment Reconciliation Log") else 0
 
         return {
             "rows": rows,
@@ -1195,51 +1270,108 @@ def get_audit_trail(action_filter="", user_filter="", date_filter="", limit=30, 
 # ═══════════════════════════════════════════════════════════
 # API 12 — get_payroll
 # ═══════════════════════════════════════════════════════════
+# Builds the staff list from real Frappe User + Has Role tables.
+# This covers everyone: Telesales, Logistics, DA, Finance, Ops —
+# any enabled (non-Guest, non-Administrator) user in the system.
+# If VV Employee records exist they are used for salary/bank data;
+# otherwise salary shows ₦0 and can be filled in the Frappe desk.
+# ═══════════════════════════════════════════════════════════
+
+# Roles considered "internal staff" — exclude pure system accounts
+STAFF_ROLES = {
+    "Telesales Closer", "Telesales Manager",
+    "Logistics Officer", "Logistics Manager",
+    "DA Manager", "Delivery Agent",
+    "Finance Controller", "Accountant",
+    "Operations Manager", "Inventory Manager",
+    "VV Owner", "VV Finance", "VV Staff",
+}
+
+# Friendly display label for each role
+ROLE_LABELS = {
+    "Telesales Closer":   "Telesales",
+    "Telesales Manager":  "Telesales",
+    "Logistics Officer":  "Logistics",
+    "Logistics Manager":  "Logistics",
+    "DA Manager":         "DA Management",
+    "Delivery Agent":     "Delivery Agent",
+    "Finance Controller": "Finance",
+    "Accountant":         "Finance",
+    "Operations Manager": "Operations",
+    "Inventory Manager":  "Inventory",
+    "VV Owner":           "Owner",
+    "VV Finance":         "Finance",
+    "VV Staff":           "Staff",
+}
+
 
 @frappe.whitelist()
 def get_payroll():
-    g = _guard(); 
+    g = _guard()
     if g: return g
     try:
-        staff = []
-        total_gross = total_net = 0
+        staff        = []
+        total_gross  = total_net = 0
 
-        if _tbl("VV Employee"):
-            rows = frappe.get_all("VV Employee",
-                filters={"is_active": 1},
-                fields=_safe("VV Employee", ["name","employee_name","role","base_salary","bank_name","bank_account"]),
-                order_by="base_salary desc")
-            for r in rows:
-                base  = flt(r.get("base_salary") or 0)
-                paye  = base * 0.15
-                net   = base - paye
-                total_gross += base
-                total_net   += net
-                staff.append({
-                    "name":    r.get("employee_name") or r.name,
-                    "role":    r.role or "",
-                    "base":    _fmt(base),
-                    "tax":     _fmt(paye),
-                    "net":     _fmt(net),
-                    "bank":    r.get("bank_name") or "",
-                    "account": r.get("bank_account") or "",
-                })
+        # ── Step 1: fetch all enabled non-system users that hold at least one staff role ──
+        users = frappe.get_all("User",
+            filters={"enabled": 1, "user_type": "System User",
+                     "name": ["not in", ["Administrator", "Guest"]]},
+            fields=["name", "full_name", "email"])
+
+        # Build a {email: [roles]} map in one query
+        if users:
+            user_names   = [u.name for u in users]
+            role_rows    = frappe.get_all("Has Role",
+                filters={"parent": ["in", user_names], "role": ["in", list(STAFF_ROLES)]},
+                fields=["parent", "role"])
+            user_roles   = {}
+            for rr in role_rows:
+                user_roles.setdefault(rr.parent, []).append(rr.role)
         else:
-            # Static fallback
-            defaults = [
-                ("Ngozi E.",  "Telesales",  120_000),
-                ("Adaobi K.", "Telesales",  120_000),
-                ("Tunde O.",  "Telesales",  100_000),
-                ("Tayo",      "Logistics",  150_000),
-                ("Chisom",    "Inventory",  130_000),
-                ("Accountant","Finance",    150_000),
-            ]
-            for name, role, base in defaults:
-                paye = base * 0.15
-                net  = base - paye
-                total_gross += base
-                total_net   += net
-                staff.append({"name": name, "role": role, "base": _fmt(base), "tax": _fmt(paye), "net": _fmt(net)})
+            user_roles = {}
+
+        # Keep only users that have at least one STAFF_ROLES role
+        staff_users = [u for u in users if u.name in user_roles]
+
+        # ── Step 2: load VV Employee salary/bank data if the table exists ──
+        emp_by_user = {}
+        if _tbl("VV Employee"):
+            emp_fields = {f.fieldname for f in frappe.get_meta("VV Employee").fields}
+            fetch = ["name"]
+            for f in ["user", "employee_name", "base_salary", "bank_name", "bank_account"]:
+                if f in emp_fields:
+                    fetch.append(f)
+            emps = frappe.get_all("VV Employee", fields=fetch)
+            for e in emps:
+                key = e.get("user") or e.name   # link by user email if field exists
+                emp_by_user[key] = e
+
+        # ── Step 3: build the staff list ──
+        for u in staff_users:
+            roles     = user_roles.get(u.name, [])
+            # Pick the most specific / senior role label
+            label     = next((ROLE_LABELS[r] for r in roles if r in ROLE_LABELS), roles[0] if roles else "Staff")
+            emp       = emp_by_user.get(u.name) or emp_by_user.get(u.email) or {}
+            base      = flt(emp.get("base_salary") or 0)
+            paye      = base * 0.15
+            net       = base - paye
+            total_gross += base
+            total_net   += net
+            staff.append({
+                "name":    emp.get("employee_name") or u.full_name or u.name,
+                "email":   u.name,
+                "role":    label,
+                "roles":   roles,
+                "base":    _fmt(base),
+                "tax":     _fmt(paye),
+                "net":     _fmt(net),
+                "bank":    emp.get("bank_name") or "",
+                "account": emp.get("bank_account") or "",
+            })
+
+        # Sort by role then name
+        staff.sort(key=lambda x: (x["role"], x["name"]))
 
         return {
             "staff":       staff,
@@ -1249,7 +1381,7 @@ def get_payroll():
         }
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "finance.get_payroll")
-        return {"staff": [], "total_gross": "₦0", "error": str(e)}
+        return {"staff": [], "total_gross": "₦0", "total_net": "₦0", "count": 0, "error": str(e)}
 
 
 # ═══════════════════════════════════════════════════════════
@@ -1382,18 +1514,18 @@ def action_match_webhook(webhook_id, order_id):
                 f"for order {order_id}: {str(fin_err)}",
                 "Manual Match Finalization Error"
             )
-        # Audit log
+        # Audit log — FIX 2A: use correct field names from Payment Reconciliation Log schema
         try:
             if _tbl("Payment Reconciliation Log"):
                 frappe.get_doc({
                     "doctype": "Payment Reconciliation Log",
-                    "webhook_ref": webhook_id,
-                    "matched_order": order_id,
-                    "match_type": "Manual",
-                    "status": "Matched",
-                    "matched_by": frappe.session.user,
-                    "matched_at": now_datetime(),
-                    "confidence": 100,
+                    "webhook": webhook_id,          # correct field (not webhook_ref)
+                    "order": order_id,              # correct field (not matched_order)
+                    "match_tier": "Manual",         # match_tier is the Select field
+                    "reconciliation_status": "Manually Confirmed",  # correct field (not status)
+                    "reconciled_by": frappe.session.user,  # correct field (not matched_by)
+                    "reconciled_at": now_datetime(),       # correct field (not matched_at)
+                    "match_confidence": 1.0,
                 }).insert(ignore_permissions=True)
                 frappe.db.commit()
         except Exception:
@@ -1412,19 +1544,21 @@ def action_confirm_recon(recon_id):
         # 1. Mark the reconciliation log as confirmed
         recon_doc = frappe.db.get_value(
             "Payment Reconciliation Log", recon_id,
-            ["matched_order", "webhook_ref"], as_dict=True
+            ["order", "webhook"], as_dict=True  # FIX 2A: correct field names (not matched_order/webhook_ref)
         )
         if not recon_doc:
             return {"success": False, "error": f"Reconciliation log {recon_id} not found"}
 
+        # FIX 2A: 'status' field does not exist; correct field is reconciliation_status.
+        # Also 'confirmed_by'/'confirmed_at' don't exist; use reconciled_by/reconciled_at.
         frappe.db.set_value("Payment Reconciliation Log", recon_id, {
-            "status":       "Matched",
-            "confirmed_by": frappe.session.user,
-            "confirmed_at": now_datetime(),
+            "reconciliation_status": "Manually Confirmed",
+            "reconciled_by": frappe.session.user,
+            "reconciled_at": now_datetime(),
         })
 
-        order_id   = recon_doc.get("matched_order")
-        webhook_id = recon_doc.get("webhook_ref")
+        order_id   = recon_doc.get("order")
+        webhook_id = recon_doc.get("webhook")
 
         # 2. Mark the webhook log as Matched
         if webhook_id and _tbl("Moniepoint Webhook Log"):
@@ -1435,12 +1569,16 @@ def action_confirm_recon(recon_id):
 
         # 3. Set payment fields on the order
         if order_id:
-            frappe.db.set_value("VV Order", order_id, {
+            order_vals = {
                 "payment_confirmed":    1,
                 "payment_confirmed_at": now_datetime(),
                 "paid_at":             now_datetime(),
-                "payment_reference":   webhook_id or recon_id,
-            })
+            }
+            # FIX 2A: payment_reference not yet in VV Order schema — guard until added
+            vv_fields = {f.fieldname for f in frappe.get_meta("VV Order").fields}
+            if "payment_reference" in vv_fields:
+                order_vals["payment_reference"] = webhook_id or recon_id
+            frappe.db.set_value("VV Order", order_id, order_vals)
 
         frappe.db.commit()
 
@@ -1471,14 +1609,15 @@ def action_reject_recon(recon_id):
         if not frappe.db.exists("Payment Reconciliation Log", recon_id):
             return {"success": False, "error": f"Reconciliation log {recon_id} not found"}
 
+        # FIX 2A: 'status' does not exist; correct field is reconciliation_status
         frappe.db.set_value("Payment Reconciliation Log", recon_id, {
-            "status":       "Rejected",
-            "confirmed_by": frappe.session.user,
-            "confirmed_at": now_datetime(),
+            "reconciliation_status": "Rejected",
+            "reconciled_by": frappe.session.user,
+            "reconciled_at": now_datetime(),
         })
 
         # Also push the webhook back to Unmatched so it shows up for re-review
-        webhook_id = frappe.db.get_value("Payment Reconciliation Log", recon_id, "webhook_ref")
+        webhook_id = frappe.db.get_value("Payment Reconciliation Log", recon_id, "webhook")  # FIX 2A: webhook not webhook_ref
         if webhook_id and _tbl("Moniepoint Webhook Log"):
             frappe.db.set_value("Moniepoint Webhook Log", webhook_id, {
                 "processing_status": "Unmatched",

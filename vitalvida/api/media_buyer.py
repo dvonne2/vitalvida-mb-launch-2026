@@ -461,7 +461,7 @@ def get_mb_earnings(mb_id=None, period="w"):
                     fields=_safe_fields("Affiliate Payout Batch", [
                         "name", "period_label", "period_start", "period_end",
                         "total_orders", "paid_orders", "total_commission",
-                        "status", "paid_on", "bundle_breakdown",
+                        "status", "paid_at", "bundle_breakdown",
                     ]),
                     order_by="period_start desc",
                     limit=10,
@@ -479,7 +479,7 @@ def get_mb_earnings(mb_id=None, period="w"):
                         "paid_orders":  cint(b.get("paid_orders")),
                         "commission":   _fmt(b.get("total_commission")),
                         "status":       b.get("status") or "Pending",
-                        "paid_on":      str(b.get("paid_on") or ""),
+                        "paid_on":      str(b.get("paid_at") or ""),
                         "breakdown":    breakdown,
                     })
         except Exception:
@@ -566,9 +566,9 @@ def get_mb_payouts(mb_id=None):
                     filters={"media_buyer": mb_id, "status": "Paid"},
                     fields=_safe_fields("Affiliate Payout Batch", [
                         "name", "period_label", "paid_orders",
-                        "total_commission", "paid_on", "transfer_reference",
+                        "total_commission", "paid_at", "payment_reference",
                     ]),
-                    order_by="paid_on desc",
+                    order_by="paid_at desc",
                     limit=20,
                 )
                 for b in paid_batches:
@@ -579,7 +579,7 @@ def get_mb_payouts(mb_id=None):
                         "period":    b.get("period_label") or b.name,
                         "orders":    cint(b.get("paid_orders")),
                         "amount":    _fmt(amt),
-                        "paid_on":   str(b.get("paid_on") or ""),
+                        "paid_on":   str(b.get("paid_at") or ""),
                         "reference": b.get("transfer_reference") or "",
                     })
             except Exception as e:

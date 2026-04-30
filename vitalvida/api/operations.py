@@ -165,11 +165,17 @@ def _count_approvals():
 def _get_alerts():
     alerts = []
     try:
-        frozen_das = frappe.get_all("Delivery Agent",
+        # FIX 6A: Delivery Agent has no is_frozen field. Source of truth is DA Warehouse.is_frozen
+        frozen_wh_rows = frappe.get_all("DA Warehouse",
             filters={"is_frozen": 1},
-            fields=["agent_name", "name"],
+            fields=["delivery_agent"],
             limit=5
         )
+        frozen_da_ids = list({r.delivery_agent for r in frozen_wh_rows if r.delivery_agent})
+        frozen_das = []
+        for da_id in frozen_da_ids:
+            da_name = frappe.db.get_value("Delivery Agent", da_id, "agent_name") or da_id
+            frozen_das.append({"name": da_id, "agent_name": da_name})
         for da in frozen_das:
             alerts.append({
                 "variant": "red", "icon": "🔒",
@@ -572,9 +578,11 @@ def _get_payout_approvals():
     if not _table_exists("DA Payout Record"):
         return []
     try:
+        # FIX 2B: actual field is total_payout_amount, not total_amount.
+        # order_count and period do not exist — use what's available and compute.
         rows = frappe.get_all("DA Payout Record",
             filters={"status": "Pending Approval"},
-            fields=["name", "delivery_agent", "total_amount", "period", "order_count"],
+            fields=["name", "delivery_agent", "total_payout_amount", "order"],
             limit=20
         )
         result = []
@@ -582,10 +590,10 @@ def _get_payout_approvals():
             da_name = frappe.db.get_value("Delivery Agent", r.delivery_agent, "agent_name") or r.delivery_agent
             result.append({
                 "id":          r.name,
-                "title":       f"💰 {da_name} — {r.period or 'This Week'}",
-                "amount":      _fmt(r.total_amount),
-                "order_count": cint(r.order_count),
-                "body":        f"{cint(r.order_count)} orders delivered. Weekly payout requires approval.",
+                "title":       f"💰 {da_name}",
+                "amount":      _fmt(r.total_payout_amount),
+                "order_count": 1,  # per-order payout record; count separately if needed
+                "body":        f"Order {r.order or r.name} delivered. Weekly payout requires approval.",
                 "da_id":       r.delivery_agent,
                 "variant":     "info",
             })
@@ -984,16 +992,14 @@ def action_unfreeze_da(da_id):
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "action_unfreeze_da Error")
         return {"success": False, "error": str(e)}
-
-
-@frappe.whitelist()
-def action_approve_payout(payout_id):
     _require_ops_role()
     try:
+        # FIX 2B: approved_by/approved_at do not exist. Correct fields are
+        # finance_approved_by and finance_approved_at per DA Payout Record schema.
         frappe.db.set_value("DA Payout Record", payout_id, {
             "status": "Approved",
-            "approved_by": frappe.session.user,
-            "approved_at": now_datetime(),
+            "finance_approved_by": frappe.session.user,
+            "finance_approved_at": now_datetime(),
         })
         frappe.db.commit()
         return {"success": True}
@@ -1008,12 +1014,22 @@ def action_approve_payout(payout_id):
 def action_reject_payout(payout_id, reason=""):
     _require_ops_role()
     try:
-        frappe.db.set_value("DA Payout Record", payout_id, {
-            "status": "Rejected",
-            "rejection_reason": reason,
-            "rejected_by": frappe.session.user,
-            "rejected_at": now_datetime(),
-        })
+        # FIX B3: rejected_by and rejected_at do not yet exist on DA Payout Record.
+        # Write status/reason unconditionally; write audit fields only if schema has them.
+        # TODO: Add rejected_by (Link: User) and rejected_at (Datetime) to DA Payout Record.
+        update = {"status": "Rejected", "rejection_reason": reason}
+        dpr_fields = {f.fieldname for f in frappe.get_meta("DA Payout Record").fields}
+        if "rejected_by" in dpr_fields:
+            update["rejected_by"] = frappe.session.user
+        if "rejected_at" in dpr_fields:
+            update["rejected_at"] = now_datetime()
+        if "rejected_by" not in dpr_fields:
+            frappe.log_error(
+                f"DA Payout Record {payout_id} rejected by {frappe.session.user} — "
+                "rejected_by/rejected_at fields missing; add them to DA Payout Record schema.",
+                "DA Payout Record Schema Gap"
+            )
+        frappe.db.set_value("DA Payout Record", payout_id, update)
         frappe.db.commit()
         return {"success": True}
     except frappe.PermissionError:
@@ -1034,10 +1050,12 @@ def action_manual_confirm_payment(order_id, reason=""):
     # Daily limit: max 5 manual confirms per user per day
     today = str(date.today())
     if _table_exists("Payment Reconciliation Log"):
+        # FIX 7: matched_by/matched_at don't exist. Correct fields are reconciled_by/reconciled_at.
+        # Also filter on reconciliation_status='Manually Confirmed' not match_tier to count only manuals.
         manual_count = frappe.db.count("Payment Reconciliation Log", {
-            "match_tier": "Tier 1 \u2014 Exact",
-            "matched_by": frappe.session.user,
-            "matched_at": [">=", today],
+            "reconciliation_status": "Manually Confirmed",
+            "reconciled_by": frappe.session.user,
+            "reconciled_at": [">=", today],
         })
         if manual_count >= 5:
             return {"success": False, "error": "Daily limit reached. Max 5 manual confirmations per day."}
@@ -1211,11 +1229,21 @@ def action_resolve_dispute(dispute_id, resolution="resolved"):
 def action_allow_override(override_id):
     _require_ops_role()
     try:
-        frappe.db.set_value("Block Override Log", override_id, {
-            "status": "Approved",
-            "approved_by": frappe.session.user,
-            "approved_at": now_datetime(),
-        })
+        # FIX A2: approved_by / approved_at do not currently exist on Block Override Log.
+        # Write status unconditionally; write audit fields only if they exist on the schema.
+        update = {"status": "Approved"}
+        bol_fields = {f.fieldname for f in frappe.get_meta("Block Override Log").fields}
+        if "approved_by" in bol_fields:
+            update["approved_by"] = frappe.session.user
+        if "approved_at" in bol_fields:
+            update["approved_at"] = now_datetime()
+        if "approved_by" not in bol_fields:
+            frappe.log_error(
+                f"Block Override Log {override_id} approved by {frappe.session.user} — "
+                "approved_by/approved_at fields missing from schema; add them to capture audit trail.",
+                "Block Override Log Schema Gap"
+            )
+        frappe.db.set_value("Block Override Log", override_id, update)
         frappe.db.commit()
         return {"success": True}
     except frappe.PermissionError:
@@ -1229,10 +1257,18 @@ def action_allow_override(override_id):
 def action_deny_override(override_id):
     _require_ops_role()
     try:
-        frappe.db.set_value("Block Override Log", override_id, {
-            "status": "Denied",
-            "denied_by": frappe.session.user,
-        })
+        # FIX A2: denied_by does not currently exist on Block Override Log schema.
+        update = {"status": "Denied"}
+        bol_fields = {f.fieldname for f in frappe.get_meta("Block Override Log").fields}
+        if "denied_by" in bol_fields:
+            update["denied_by"] = frappe.session.user
+        else:
+            frappe.log_error(
+                f"Block Override Log {override_id} denied by {frappe.session.user} — "
+                "denied_by field missing from schema; add it to capture audit trail.",
+                "Block Override Log Schema Gap"
+            )
+        frappe.db.set_value("Block Override Log", override_id, update)
         frappe.db.commit()
         return {"success": True}
     except frappe.PermissionError:
@@ -1255,7 +1291,7 @@ def get_filter_options():
             fields=["name", "agent_name"]
         )
         closers = frappe.get_all("Telesales Closer",
-            filters={"active": 1},
+            filters={"is_active": 1},  # is_active confirmed for Telesales Closer
             fields=["name", "closer_name"]
         )
         return {

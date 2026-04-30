@@ -83,8 +83,10 @@ def get_dispatch_summary(status_filter="", da_filter=""):
             "name", "status", "delivery_agent", "driver_phone",
             "motor_park", "dispatch_date", "eta_date",
             "storekeeper_fee", "da_pickup_transport", "driver_transport",
-            "total_cost", "notes", "creation", "items_json",
-            "needs_approval", "approved_by",
+            "total_cost", "notes", "creation",
+            # FIX 2C: removed items_json (doesn't exist), needs_approval (wrong → approval_required),
+            # approved_by (doesn't exist on schema)
+            "approval_required",
         ])
 
         dispatches = frappe.get_all("Stock Dispatch",
@@ -103,9 +105,14 @@ def get_dispatch_summary(status_filter="", da_filter=""):
         today_str = str(date.today())
         result = []
         for d in dispatches:
+            # FIX 2C: items stored in child table 'Stock Dispatch Item', not items_json
             items = []
             try:
-                items = json.loads(d.get("items_json") or "[]")
+                child_items = frappe.get_all("Stock Dispatch Item",
+                    filters={"parent": d.name},
+                    fields=["product", "quantity", "unit_cost"],
+                )
+                items = [{"product": i.product, "qty": cint(i.quantity), "unit_cost": flt(i.unit_cost)} for i in child_items]
             except Exception:
                 pass
 
@@ -139,7 +146,8 @@ def get_dispatch_summary(status_filter="", da_filter=""):
                 "driver_cost":      flt(d.get("driver_transport")),
                 "total_cost":       flt(d.get("total_cost")),
                 "total_fmt":        _fmt(d.get("total_cost")),
-                "needs_approval":   bool(d.get("needs_approval")),
+                # FIX 2C: actual field is approval_required, not needs_approval
+                "needs_approval":   bool(d.get("approval_required")),
                 "notes":            d.get("notes") or "",
             })
 
@@ -272,7 +280,10 @@ def get_consignments(status_filter=""):
 
         fields = _safe_fields("Consignment", [
             "name", "status", "delivery_agent", "dispatch_date", "eta_date",
-            "confirmed_at", "driver_phone", "linked_dispatch", "items_json",
+            "confirmed_at", "driver_phone", "linked_dispatch",
+            # NOTE: Consignment uses items_json (JSON Text field) intentionally —
+            # items are serialized from Stock Dispatch child table at creation time.
+            "items_json",
         ])
         consignments = frappe.get_all("Consignment",
             filters=filters,
@@ -430,8 +441,10 @@ def get_returns(type_filter="", da_filter=""):
 
         fields = _safe_fields("DA Stock Return", [
             "name", "status", "return_type", "delivery_agent",
-            "return_date", "processed_at", "processed_by",
-            "notes", "items_json",
+            "initiated_at", "processed_at", "processed_by",
+            "notes",
+            # FIX E5: items_json does not exist on DA Stock Return — removed from field list.
+            # Items are fetched below from child table 'DA Stock Return Item'.
         ])
         returns = frappe.get_all("DA Stock Return",
             filters=filters,
@@ -443,9 +456,13 @@ def get_returns(type_filter="", da_filter=""):
         pending_count = 0
         result = []
         for r in returns:
+            # FIX E5: Read items from child table instead of ghost items_json field
             items = []
             try:
-                items = json.loads(r.get("items_json") or "[]")
+                child_items = frappe.get_all("DA Stock Return Item",
+                    filters={"parent": r.name},
+                    fields=["product", "quantity"])
+                items = [{"name": it.product, "qty": cint(it.quantity or 0)} for it in child_items]
             except Exception:
                 pass
 
@@ -479,7 +496,7 @@ def get_returns(type_filter="", da_filter=""):
                 "return_type":  rtype,
                 "da":           f"{da_display}{' · ' + da_state if da_state else ''}",
                 "da_id":        r.get("delivery_agent") or "",
-                "return_date":  str(r.get("return_date") or ""),
+                "return_date":  str(r.get("processed_at") or r.get("initiated_at") or ""),
                 "processed_at": processed_at,
                 "notes":        r.get("notes") or "",
                 "items":        items,
@@ -712,9 +729,16 @@ def confirm_and_ship(dispatch_id):
 
         # Create Consignment record linked to this dispatch
         try:
+            # FIX E6: Stock Dispatch has no items_json field — items live in the
+            # child table 'Stock Dispatch Item'. Read them here and serialize into
+            # Consignment.items_json (Consignment IS a JSON-blob store by design).
             items = []
             try:
-                items = json.loads(doc.get("items_json") or "[]")
+                child_items = frappe.get_all("Stock Dispatch Item",
+                    filters={"parent": dispatch_id},
+                    fields=["product", "quantity_dispatched"])
+                items = [{"name": it.product, "qty": cint(it.quantity_dispatched or 0)}
+                         for it in child_items]
             except Exception:
                 pass
 
@@ -760,6 +784,9 @@ def confirm_consignment_receipt(consignment_id):
         da_id = doc.delivery_agent
         items = []
         try:
+            # Consignment.items_json is a JSON Text field intentionally serialized
+            # by confirm_and_ship from the Stock Dispatch Item child table.
+            # After FIX E6, items are stored as [{"name": product, "qty": N}].
             items = json.loads(doc.get("items_json") or "[]")
         except Exception:
             pass
@@ -845,15 +872,21 @@ def process_return(return_id, action, reject_reason=""):
             return {"success": True, "status": "Rejected"}
 
         # Accept — deduct from DA stock + credit back to factory
+        # FIX E5: DA Stock Return has no items_json field — items are in child table
+        # 'DA Stock Return Item'. Without this fix the items list is always empty
+        # and stock is never deducted, silently inflating DA balances.
         items = []
         try:
-            items = json.loads(doc.get("items_json") or "[]")
+            child_items = frappe.get_all("DA Stock Return Item",
+                filters={"parent": return_id},
+                fields=["product", "quantity"])
+            items = [{"product": it.product, "qty": cint(it.quantity or 0)} for it in child_items]
         except Exception:
             pass
 
         da_id = doc.delivery_agent
         for item in items:
-            product = item.get("name") or item.get("product") or ""
+            product = item.get("product") or ""
             qty     = cint(item.get("qty", 0))
             if not product or qty <= 0:
                 continue

@@ -134,14 +134,14 @@ def get_overview():
         ms_prev = _month_start(1)
 
         # Revenue & orders — current month
-        rev = _q(f"SELECT COALESCE(SUM(total_payable),0) FROM `tabVV Order` WHERE order_status='Paid' AND creation>='{ms}'")
-        paid_orders = _qi(f"SELECT COUNT(*) FROM `tabVV Order` WHERE order_status='Paid' AND creation>='{ms}'")
-        total_orders = _qi(f"SELECT COUNT(*) FROM `tabVV Order` WHERE creation>='{ms}'")
-        del_orders = _qi(f"SELECT COUNT(*) FROM `tabVV Order` WHERE order_status IN ('Delivered','Paid') AND creation>='{ms}'")
+        rev = _q("SELECT COALESCE(SUM(total_payable),0) FROM `tabVV Order` WHERE order_status='Paid' AND creation>='%s'", (ms,))
+        paid_orders = _qi("SELECT COUNT(*) FROM `tabVV Order` WHERE order_status='Paid' AND creation>='%s'", (ms,))
+        total_orders = _qi("SELECT COUNT(*) FROM `tabVV Order` WHERE creation>='%s'", (ms,))
+        del_orders = _qi("SELECT COUNT(*) FROM `tabVV Order` WHERE order_status IN ('Delivered','Paid') AND creation>='%s'", (ms,))
 
         # Prior month for deltas
-        rev_prev = _q(f"SELECT COALESCE(SUM(total_payable),0) FROM `tabVV Order` WHERE order_status='Paid' AND creation>='{ms_prev}' AND creation<'{ms}'")
-        paid_prev = _qi(f"SELECT COUNT(*) FROM `tabVV Order` WHERE order_status='Paid' AND creation>='{ms_prev}' AND creation<'{ms}'")
+        rev_prev = _q("SELECT COALESCE(SUM(total_payable),0) FROM `tabVV Order` WHERE order_status='Paid' AND creation>='%s' AND creation<'%s'", (ms_prev, ms,))
+        paid_prev = _qi("SELECT COUNT(*) FROM `tabVV Order` WHERE order_status='Paid' AND creation>='%s' AND creation<'%s'", (ms_prev, ms,))
 
         aov     = round(rev / paid_orders) if paid_orders else AVG_AOV
         arr     = rev * 12
@@ -158,10 +158,10 @@ def get_overview():
         gross_profit = rev - cogs_total
         gross_margin = round((gross_profit / rev) * 100, 1) if rev else 0
 
-        da_fees   = _q(f"SELECT COALESCE(SUM(delivery_fee),0) FROM `tabVV Order` WHERE da_fee_paid=1 AND creation>='{ms}'")
-        transport = _q(f"SELECT COALESCE(SUM(total_cost),0) FROM `tabStock Dispatch` WHERE dispatch_date>='{ms}'" if _tbl("Stock Dispatch") else "SELECT 0")
-        affiliate = _q(f"SELECT COALESCE(SUM(total_commission),0) FROM `tabAffiliate Payout Batch` WHERE status='Paid' AND paid_on>='{ms}'" if _tbl("Affiliate Payout Batch") else "SELECT 0")
-        stock_loss= _q(f"SELECT COALESCE(COUNT(*)*{COGS},0) FROM `tabDA Stock Return` WHERE status='Written Off' AND return_date>='{ms}'" if _tbl("DA Stock Return") else "SELECT 0")
+        da_fees   = _q("SELECT COALESCE(SUM(delivery_fee),0) FROM `tabVV Order` WHERE da_fee_paid=1 AND creation>='%s'", (ms,))
+        transport = _q("SELECT COALESCE(SUM(total_cost),0) FROM `tabStock Dispatch` WHERE dispatch_date>='%s'", (ms,)) if _tbl("Stock Dispatch") else 0
+        affiliate = _q("SELECT COALESCE(SUM(total_commission),0) FROM `tabAffiliate Payout Batch` WHERE status='Paid' AND paid_at>='%s'", (ms,)) if _tbl("Affiliate Payout Batch") else 0
+        stock_loss= _q("SELECT COALESCE(COUNT(*)*%s,0) FROM `tabDA Stock Return` WHERE status='Written Off' AND processed_at>='%s'", (COGS, ms,)) if _tbl("DA Stock Return") else 0
         total_opex = da_fees + transport + affiliate + stock_loss
         net_profit = gross_profit - total_opex
         net_margin = round((net_profit / rev) * 100, 1) if rev else 0
@@ -235,18 +235,18 @@ def get_unit_economics():
     if g: return g
     try:
         ms = _month_start()
-        paid_orders = _qi(f"SELECT COUNT(*) FROM `tabVV Order` WHERE order_status='Paid' AND creation>='{ms}'")
+        paid_orders = _qi("SELECT COUNT(*) FROM `tabVV Order` WHERE order_status='Paid' AND creation>='%s'", (ms,))
         if not paid_orders: paid_orders = 1
 
-        rev = _q(f"SELECT COALESCE(SUM(total_payable),0) FROM `tabVV Order` WHERE order_status='Paid' AND creation>='{ms}'")
+        rev = _q("SELECT COALESCE(SUM(total_payable),0) FROM `tabVV Order` WHERE order_status='Paid' AND creation>='%s'", (ms,))
         aov = rev / paid_orders if paid_orders else AVG_AOV
 
         # Per-order cost components
-        da_fees     = _q(f"SELECT COALESCE(SUM(delivery_fee),0) FROM `tabVV Order` WHERE da_fee_paid=1 AND creation>='{ms}'") / paid_orders
-        transport   = _q(f"SELECT COALESCE(SUM(total_cost),0) FROM `tabStock Dispatch` WHERE dispatch_date>='{ms}'" if _tbl("Stock Dispatch") else "SELECT 0") / paid_orders
-        storekeeper = _q(f"SELECT COALESCE(SUM(storekeeper_fee+da_pickup_transport),0) FROM `tabStock Dispatch` WHERE dispatch_date>='{ms}'" if _tbl("Stock Dispatch") else "SELECT 0") / paid_orders
-        affiliate   = _q(f"SELECT COALESCE(SUM(total_commission),0) FROM `tabAffiliate Payout Batch` WHERE status='Paid' AND paid_on>='{ms}'" if _tbl("Affiliate Payout Batch") else "SELECT 0") / paid_orders
-        stock_loss  = _q(f"SELECT COALESCE(COUNT(*)*{COGS},0) FROM `tabDA Stock Return` WHERE status='Written Off' AND return_date>='{ms}'" if _tbl("DA Stock Return") else "SELECT 0") / paid_orders
+        da_fees     = _q("SELECT COALESCE(SUM(delivery_fee),0) FROM `tabVV Order` WHERE da_fee_paid=1 AND creation>='%s'", (ms,)) / paid_orders
+        transport   = _q("SELECT COALESCE(SUM(total_cost),0) FROM `tabStock Dispatch` WHERE dispatch_date>='%s'", (ms,)) if _tbl("Stock Dispatch") else 0 / paid_orders
+        storekeeper = _q("SELECT COALESCE(SUM(storekeeper_fee+da_pickup_transport),0) FROM `tabStock Dispatch` WHERE dispatch_date>='%s'", (ms,)) if _tbl("Stock Dispatch") else 0 / paid_orders
+        affiliate   = _q("SELECT COALESCE(SUM(total_commission),0) FROM `tabAffiliate Payout Batch` WHERE status='Paid' AND paid_at>='%s'", (ms,)) if _tbl("Affiliate Payout Batch") else 0 / paid_orders
+        stock_loss  = _q("SELECT COALESCE(COUNT(*)*%s,0) FROM `tabDA Stock Return` WHERE status='Written Off' AND processed_at>='%s'", (COGS, ms,)) if _tbl("DA Stock Return") else 0 / paid_orders
 
         # COGS per order from bundle mix
         cogs_total = _q(f"""SELECT COALESCE(SUM(
@@ -290,15 +290,15 @@ def get_unit_economics():
         except: pass
 
         # Delivery / fulfillment rates
-        total_orders = _qi(f"SELECT COUNT(*) FROM `tabVV Order` WHERE creation>='{ms}'")
-        del_orders   = _qi(f"SELECT COUNT(*) FROM `tabVV Order` WHERE order_status IN ('Delivered','Paid') AND creation>='{ms}'")
+        total_orders = _qi("SELECT COUNT(*) FROM `tabVV Order` WHERE creation>='%s'", (ms,))
+        del_orders   = _qi("SELECT COUNT(*) FROM `tabVV Order` WHERE order_status IN ('Delivered','Paid') AND creation>='%s'", (ms,))
         order_to_del = round(del_orders / total_orders * 100) if total_orders else 60
         del_to_paid  = round(paid_orders / del_orders * 100) if del_orders else 90
 
         # Repeat data
         try:
-            unique_customers = _qi(f"SELECT COUNT(DISTINCT customer_phone) FROM `tabVV Order` WHERE order_status='Paid'")
-            total_paid_all   = _qi(f"SELECT COUNT(*) FROM `tabVV Order` WHERE order_status='Paid'")
+            unique_customers = _qi("SELECT COUNT(DISTINCT customer_phone) FROM `tabVV Order` WHERE order_status='Paid'")
+            total_paid_all   = _qi("SELECT COUNT(*) FROM `tabVV Order` WHERE order_status='Paid'")
             repeat_rate = round(total_paid_all / unique_customers, 1) if unique_customers else 1.8
         except: repeat_rate = 1.8
 
@@ -358,9 +358,9 @@ def get_growth():
         for i in range(5, -1, -1):
             ms_i = _month_start(i)
             me_i = _month_start(i - 1) if i > 0 else str(date.today())
-            orders_i = _qi(f"SELECT COUNT(*) FROM `tabVV Order` WHERE creation>='{ms_i}' AND creation<'{me_i}'")
-            paid_i   = _qi(f"SELECT COUNT(*) FROM `tabVV Order` WHERE order_status='Paid' AND creation>='{ms_i}' AND creation<'{me_i}'")
-            rev_i    = _q(f"SELECT COALESCE(SUM(total_payable),0) FROM `tabVV Order` WHERE order_status='Paid' AND creation>='{ms_i}' AND creation<'{me_i}'")
+            orders_i = _qi("SELECT COUNT(*) FROM `tabVV Order` WHERE creation>='%s' AND creation<'%s'", (ms_i, me_i,))
+            paid_i   = _qi("SELECT COUNT(*) FROM `tabVV Order` WHERE order_status='Paid' AND creation>='%s' AND creation<'%s'", (ms_i, me_i,))
+            rev_i    = _q("SELECT COALESCE(SUM(total_payable),0) FROM `tabVV Order` WHERE order_status='Paid' AND creation>='%s' AND creation<'%s'", (ms_i, me_i,))
             cogs_i   = paid_i * COGS * 3
             opex_i   = rev_i * 0.22
             net_i    = rev_i - cogs_i - opex_i
@@ -457,8 +457,8 @@ def get_financials(period="month"):
         else:                   from_date = _month_start()  # annualised uses monthly * 12
         multiplier = 12 if period == "annual" else 1
 
-        rev  = _q(f"SELECT COALESCE(SUM(total_payable),0) FROM `tabVV Order` WHERE order_status='Paid' AND creation>='{from_date}'") * multiplier
-        paid = _qi(f"SELECT COUNT(*) FROM `tabVV Order` WHERE order_status='Paid' AND creation>='{from_date}'") * multiplier
+        rev  = _q("SELECT COALESCE(SUM(total_payable),0) FROM `tabVV Order` WHERE order_status='Paid' AND creation>='%s'", (from_date,)) * multiplier
+        paid = _qi("SELECT COUNT(*) FROM `tabVV Order` WHERE order_status='Paid' AND creation>='%s'", (from_date,)) * multiplier
         if not paid: paid = 1
 
         cogs_val  = _q(f"""SELECT COALESCE(SUM(CASE 
@@ -471,10 +471,10 @@ def get_financials(period="month"):
         gross     = rev - cogs_val
         gm_pct    = round(gross/rev*100,1) if rev else 0
 
-        da_fees   = _q(f"SELECT COALESCE(SUM(delivery_fee),0) FROM `tabVV Order` WHERE da_fee_paid=1 AND creation>='{from_date}'") * multiplier
-        transport = _q(f"SELECT COALESCE(SUM(total_cost),0) FROM `tabStock Dispatch` WHERE dispatch_date>='{from_date}'" if _tbl("Stock Dispatch") else "SELECT 0") * multiplier
-        affiliate = _q(f"SELECT COALESCE(SUM(total_commission),0) FROM `tabAffiliate Payout Batch` WHERE status='Paid' AND paid_on>='{from_date}'" if _tbl("Affiliate Payout Batch") else "SELECT 0") * multiplier
-        losses    = _q(f"SELECT COALESCE(COUNT(*)*{COGS},0) FROM `tabDA Stock Return` WHERE status='Written Off' AND return_date>='{from_date}'" if _tbl("DA Stock Return") else "SELECT 0") * multiplier
+        da_fees   = _q("SELECT COALESCE(SUM(delivery_fee),0) FROM `tabVV Order` WHERE da_fee_paid=1 AND creation>='%s'", (from_date,)) * multiplier
+        transport = _q("SELECT COALESCE(SUM(total_cost),0) FROM `tabStock Dispatch` WHERE dispatch_date>='%s'", (from_date,)) if _tbl("Stock Dispatch") else 0 * multiplier
+        affiliate = _q("SELECT COALESCE(SUM(total_commission),0) FROM `tabAffiliate Payout Batch` WHERE status='Paid' AND paid_at>='%s'", (from_date,)) if _tbl("Affiliate Payout Batch") else 0 * multiplier
+        losses    = _q("SELECT COALESCE(COUNT(*)*%s,0) FROM `tabDA Stock Return` WHERE status='Written Off' AND processed_at>='%s'", (COGS, from_date,)) if _tbl("DA Stock Return") else 0 * multiplier
         telesales = 260000 * multiplier
         ad_spend  = rev * 0.068
         other     = 72400 * multiplier
@@ -494,14 +494,14 @@ def get_financials(period="month"):
 
         inv_total = 0
         for product in ["Shampoo","Pomade","Conditioner"]:
-            rows = frappe.get_all("DA Stock Balance", filters={"product": product}, fields=["balance"]) if _tbl("DA Stock Balance") else []
-            inv_total += sum(cint(r.balance) for r in rows) * COGS
+            rows = frappe.get_all("DA Warehouse", filters={"product": product}, fields=["current_stock"]) if _tbl("DA Warehouse") else []
+            inv_total += sum(cint(r.current_stock) for r in rows) * COGS
 
         da_recv  = _q("SELECT COALESCE(SUM(total_payable),0) FROM `tabVV Order` WHERE order_status='Delivered'")
         total_assets = cash + inv_total + da_recv
 
-        da_fees_payable = _q(f"SELECT COALESCE(SUM(amount),0) FROM `tabFee Payment Request` WHERE status='Pending'" if _tbl("Fee Payment Request") else "SELECT 0")
-        aff_payable     = _q(f"SELECT COALESCE(SUM(total_commission),0) FROM `tabAffiliate Payout Batch` WHERE status IN ('Pending','Pending Approval')" if _tbl("Affiliate Payout Batch") else "SELECT 0")
+        da_fees_payable = _q("SELECT COALESCE(SUM(amount),0) FROM `tabFee Payment Request` WHERE status='Pending'") if _tbl("Fee Payment Request") else 0
+        aff_payable     = _q("SELECT COALESCE(SUM(total_commission),0) FROM `tabAffiliate Payout Batch` WHERE status IN ('Pending','Pending Approval')") if _tbl("Affiliate Payout Batch") else 0
         payroll_accrual = 1_200_000
         tax_provision   = max(0, net_bt * 0.03)
         total_liabilities = da_fees_payable + aff_payable + payroll_accrual + tax_provision
@@ -579,11 +579,11 @@ def get_cap_table():
 
         # ARR for valuation
         ms = _month_start()
-        mrr = _q(f"SELECT COALESCE(SUM(total_payable),0) FROM `tabVV Order` WHERE order_status='Paid' AND creation>='{ms}'")
+        mrr = _q("SELECT COALESCE(SUM(total_payable),0) FROM `tabVV Order` WHERE order_status='Paid' AND creation>='%s'", (ms,))
         arr = mrr * 12
 
         # EBITDA annualised
-        paid = _qi(f"SELECT COUNT(*) FROM `tabVV Order` WHERE order_status='Paid' AND creation>='{ms}'")
+        paid = _qi("SELECT COUNT(*) FROM `tabVV Order` WHERE order_status='Paid' AND creation>='%s'", (ms,))
         cogs_v = paid * COGS * 3
         opex_v = mrr * 0.22
         ebitda = (mrr - cogs_v - opex_v) * 12
@@ -634,14 +634,14 @@ def get_inventory():
         items = []
 
         ms = _month_start()
-        paid_this_month = _qi(f"SELECT COUNT(*) FROM `tabVV Order` WHERE order_status='Paid' AND creation>='{ms}'") or 1
+        paid_this_month = _qi("SELECT COUNT(*) FROM `tabVV Order` WHERE order_status='Paid' AND creation>='%s'", (ms,)) or 1
         days_elapsed = (date.today() - date.fromisoformat(ms)).days or 1
 
         for product in PRODUCTS:
             available = in_transit = 0
-            if _tbl("DA Stock Balance"):
-                rows = frappe.get_all("DA Stock Balance", filters={"product": product}, fields=["balance"])
-                available = sum(cint(r.balance) for r in rows)
+            if _tbl("DA Warehouse"):
+                rows = frappe.get_all("DA Warehouse", filters={"product": product}, fields=["current_stock"])
+                available = sum(cint(r.current_stock) for r in rows)
             else:
                 das = frappe.get_all("Delivery Agent", filters={"active":1}, fields=["current_stock"])
                 available = sum(cint(d.current_stock or 0) for d in das) // 3
@@ -649,7 +649,7 @@ def get_inventory():
             # In transit
             if _tbl("Stock Dispatch"):
                 try:
-                    rows = frappe.db.sql(f"SELECT items_json FROM `tabStock Dispatch` WHERE status='In Transit'", as_dict=False)
+                    rows = frappe.db.sql("SELECT sri.quantity FROM `tabStock Dispatch Item` sri JOIN `tabStock Dispatch` sd ON sd.name=sri.parent WHERE sd.status='In Transit'", as_dict=False)
                     for (itj,) in rows:
                         for it in json.loads(itj or "[]"):
                             if (it.get("name","")).lower() == product.lower():
@@ -690,8 +690,8 @@ def get_inventory():
         da_units = 0
         tr_units = 0
         for p in PRODUCTS:
-            if _tbl("DA Stock Balance"):
-                da_units += sum(cint(r.balance) for r in frappe.get_all("DA Stock Balance", filters={"product":p}, fields=["balance"]))
+            if _tbl("DA Warehouse"):
+                da_units += sum(cint(r.current_stock) for r in frappe.get_all("DA Warehouse", filters={"product":p}, fields=["current_stock"]))
         total_check = total_units or 1
 
         distribution = [
@@ -701,7 +701,7 @@ def get_inventory():
         ]
 
         # Stock loss rate
-        loss_val = _q(f"SELECT COALESCE(COUNT(*)*{COGS},0) FROM `tabDA Stock Return` WHERE status='Written Off' AND return_date>='{_month_start()}'" if _tbl("DA Stock Return") else "SELECT 0")
+        loss_val = _q("SELECT COALESCE(COUNT(*)*%s,0) FROM `tabDA Stock Return` WHERE status='Written Off' AND processed_at>='%s'", (COGS, _month_start(),)) if _tbl("DA Stock Return") else 0
         loss_pct  = round(loss_val / total_cost * 100, 1) if total_cost else 0
 
         # Inventory turns
@@ -746,7 +746,7 @@ def get_risks():
             for r in rows:
                 pkg  = r.package_name or ""
                 units= 30 if "Family" in pkg else (9 if "Plus B2GOF" in pkg.upper() else (6 if "B2GOF" in pkg else 3))
-                price= _q(f"SELECT COALESCE(AVG(total_payable),0) FROM `tabVV Order` WHERE package_name='{pkg}' AND order_status='Paid'")
+                price= _q("SELECT COALESCE(AVG(total_payable),0) FROM `tabVV Order` WHERE package_name='%s' AND order_status='Paid'", (pkg,))
                 cost = units * COGS
                 if price > 0 and price < cost:
                     neg_bundles.append(pkg)
@@ -754,17 +754,18 @@ def get_risks():
 
         # Risk 2: DA concentration
         active_das = frappe.db.count("Delivery Agent", {"active":1}) if _tbl("Delivery Agent") else 5
-        frozen_das = frappe.db.count("Delivery Agent", {"is_double_risk":1,"active":1}) if _tbl("Delivery Agent") else 0
+        frozen_das = cint(frappe.db.sql("SELECT COUNT(DISTINCT delivery_agent) FROM `tabDA Warehouse` WHERE is_frozen=1", as_dict=False)[0][0]) if _tbl("DA Warehouse") else 0
         frozen_exposure = 0
         if frozen_das and _tbl("Delivery Agent"):
             try:
-                frozen = frappe.get_all("Delivery Agent", filters={"is_double_risk":1,"active":1}, fields=["current_stock","agent_name"])
+                _fids3 = [r[0] for r in frappe.db.sql("SELECT DISTINCT delivery_agent FROM `tabDA Warehouse` WHERE is_frozen=1", as_dict=False)]
+                frozen = frappe.get_all("Delivery Agent", filters={"name": ["in", _fids3] if _fids3 else ["in",["__none__"]]}, fields=["current_stock","agent_name"])
                 frozen_exposure = sum(cint(d.current_stock or 0) * COGS for d in frozen)
             except: pass
 
         # Risk 3: COD conversion
-        total_ord = _qi(f"SELECT COUNT(*) FROM `tabVV Order` WHERE creation>='{ms}'")
-        paid_ord  = _qi(f"SELECT COUNT(*) FROM `tabVV Order` WHERE order_status='Paid' AND creation>='{ms}'")
+        total_ord = _qi("SELECT COUNT(*) FROM `tabVV Order` WHERE creation>='%s'", (ms,))
+        paid_ord  = _qi("SELECT COUNT(*) FROM `tabVV Order` WHERE order_status='Paid' AND creation>='%s'", (ms,))
         del_rate  = round(paid_ord / total_ord * 100) if total_ord else 60
         wasted_adspend = (total_ord - paid_ord) * 11250 if total_ord > paid_ord else 0
 
@@ -822,7 +823,7 @@ def get_risks():
         })
 
                 # 1. Pre-calculate the values for the margin
-        total_rev = _q(f"SELECT COALESCE(SUM(total_payable),0) FROM `tabVV Order` WHERE order_status='Paid' AND creation>='{ms}'")
+        total_rev = _q("SELECT COALESCE(SUM(total_payable),0) FROM `tabVV Order` WHERE order_status='Paid' AND creation>='%s'", (ms,))
         cogs_calc = paid_ord * COGS * 3
         margin_pct = round((total_rev - cogs_calc) / max(total_rev, 1) * 100, 1)
 
