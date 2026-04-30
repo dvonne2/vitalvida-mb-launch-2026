@@ -37,18 +37,41 @@ fixtures = [
 # M31: Auto-provision role on LMS course completion
 doc_events = {
     "VV Order": {
-        "on_update": "vitalvida.reconciliation.on_vv_order_update"
+        "after_insert": "vitalvida.emails.on_order_received",
+        "on_update": [
+            "vitalvida.reconciliation.on_vv_order_update",
+            "vitalvida.emails.dispatch_vv_order_email",
+        ],
+    },
+    "Stock Dispatch": {
+        "after_insert": "vitalvida.emails.on_dispatch_created",
+        "on_update":    "vitalvida.emails.dispatch_stock_dispatch_email",
+    },
+    "DA Payout Record": {
+        "on_update": "vitalvida.emails.dispatch_payout_email",
+    },
+    "DA Application": {
+        "after_insert": "vitalvida.emails.on_application_received",
+        "on_update":    "vitalvida.emails.dispatch_application_email",
+    },
+    "DA Strike Log": {
+        "after_insert": "vitalvida.emails.on_strike_issued",
+        "on_update":    "vitalvida.emails.dispatch_strike_email",
+    },
+    "Fee Payment Request": {
+        "after_insert": "vitalvida.emails.on_fee_requested",
+        "on_update":    "vitalvida.emails.dispatch_fee_email",
     },
     "Sales Invoice": {
-        "on_submit": "vitalvida.firs.on_sales_invoice_submit"
+        "on_submit": "vitalvida.firs.on_sales_invoice_submit",
     },
     # Frappe LMS hooks — safe even if LMS not installed (import guard in academy.py)
     "LMS Enrollment": {
-        "on_update": "vitalvida.academy.on_course_completion"
+        "on_update": "vitalvida.academy.on_course_completion",
     },
     "Course Enrollment": {
-        "on_update": "vitalvida.academy.on_course_completion"
-    }
+        "on_update": "vitalvida.academy.on_course_completion",
+    },
 }
 
 scheduler_events = {

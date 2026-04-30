@@ -24,6 +24,7 @@ class VitalvidaSettings(Document):
 		max_storekeeper_fee: DF.Currency
 		mini_whale_sla_hours: DF.Int
 		mini_whale_threshold: DF.Currency
+		ops_alert_emails: DF.SmallText | None
 		performance_weight_lead_share: DF.Float
 		performance_weight_top_percent: DF.Float
 		stock_movement_sla_hours: DF.Int

@@ -16,12 +16,9 @@ def _require_logistics():
     user = frappe.session.user
     roles = frappe.get_roles(user)
     allowed = ["Logistics Manager", "Logistics User", "Operations Manager", "System Manager"]
-    # FIX BUG 8: Removed debug message that leaked user's full role list in 403 response
     if not any(r in roles for r in allowed):
         return {"error": "Access denied. Logistics role required.", "code": 403}
     return None
-
-
 
 
 def _table_exists(doctype):
@@ -84,8 +81,6 @@ def get_dispatch_summary(status_filter="", da_filter=""):
             "motor_park", "dispatch_date", "eta_date",
             "storekeeper_fee", "da_pickup_transport", "driver_transport",
             "total_cost", "notes", "creation",
-            # FIX 2C: removed items_json (doesn't exist), needs_approval (wrong → approval_required),
-            # approved_by (doesn't exist on schema)
             "approval_required",
         ])
 
@@ -105,7 +100,7 @@ def get_dispatch_summary(status_filter="", da_filter=""):
         today_str = str(date.today())
         result = []
         for d in dispatches:
-            # FIX 2C: items stored in child table 'Stock Dispatch Item', not items_json
+            # Items stored in child table 'Stock Dispatch Item'
             items = []
             try:
                 child_items = frappe.get_all("Stock Dispatch Item",
@@ -146,7 +141,6 @@ def get_dispatch_summary(status_filter="", da_filter=""):
                 "driver_cost":      flt(d.get("driver_transport")),
                 "total_cost":       flt(d.get("total_cost")),
                 "total_fmt":        _fmt(d.get("total_cost")),
-                # FIX 2C: actual field is approval_required, not needs_approval
                 "needs_approval":   bool(d.get("approval_required")),
                 "notes":            d.get("notes") or "",
             })
@@ -154,7 +148,7 @@ def get_dispatch_summary(status_filter="", da_filter=""):
         return {
             "dispatches": result,
             "counts": {
-                "pending":   counts.get("Pending", 0),
+                "pending":    counts.get("Pending", 0),
                 "in_transit": counts.get("In Transit", 0),
                 "delivered":  counts.get("Delivered", 0) + counts.get("Confirmed", 0),
                 "overdue":    len([r for r in result if r["overdue"]]),
@@ -169,6 +163,8 @@ def get_dispatch_summary(status_filter="", da_filter=""):
 # ═══════════════════════════════════════════════════════════
 # API 2 — get_da_stock
 # Stock levels per DA for DAStockPanel
+# FIX: Read per-product stock from DA Warehouse.current_stock
+#      (not DA Stock Balance which is unused in this deployment)
 # ═══════════════════════════════════════════════════════════
 
 @frappe.whitelist()
@@ -195,30 +191,22 @@ def get_da_stock(search="", state_filter="", stock_status=""):
             if search and search.lower() not in da_name.lower():
                 continue
 
-            # FIX BUG 7: Use DA Warehouse.is_frozen as source of truth
+            # Frozen status from DA Warehouse
             frozen = bool(frappe.db.exists("DA Warehouse", {"delivery_agent": da.get("name"), "is_frozen": 1}))
             dsr    = flt(da.get("dsr_strict") or da.get("dsr_adjusted") or 0)
 
-            # Get per-product stock
+            # Per-product stock from DA Warehouse.current_stock
             products = []
             total    = 0
-            if _table_exists("DA Stock Balance"):
-                for product in PRODUCTS:
-                    try:
-                        bal = frappe.db.get_value("DA Stock Balance",
-                            {"delivery_agent": da.name, "product": product}, "balance") or 0
-                        qty = cint(bal)
-                    except Exception:
-                        qty = 0
-                    products.append({"name": product, "qty": qty})
-                    total += qty
-            else:
-                # Fallback — distribute current_stock equally
-                cs = cint(da.get("current_stock") or 0)
-                for product in PRODUCTS:
-                    qty = cs // 3
-                    products.append({"name": product, "qty": qty})
-                total = cs
+            for product in PRODUCTS:
+                try:
+                    qty = cint(frappe.db.get_value("DA Warehouse",
+                        {"delivery_agent": da.name, "product": product},
+                        "current_stock") or 0)
+                except Exception:
+                    qty = 0
+                products.append({"name": product, "qty": qty})
+                total += qty
 
             # Stock status label
             if frozen:
@@ -281,7 +269,7 @@ def get_consignments(status_filter=""):
         fields = _safe_fields("Consignment", [
             "name", "status", "delivery_agent", "dispatch_date", "eta_date",
             "confirmed_at", "driver_phone", "linked_dispatch",
-            # NOTE: Consignment uses items_json (JSON Text field) intentionally —
+            # Consignment uses items_json (JSON Text field) intentionally —
             # items are serialized from Stock Dispatch child table at creation time.
             "items_json",
         ])
@@ -413,9 +401,9 @@ def get_tracker(da_filter="", status_filter="", park_filter="", date_filter="", 
 
         total_k = total_cost / 1000
         return {
-            "dispatches":  result,
-            "total_count": len(result),
-            "total_cost":  f"₦{total_k:.1f}k" if total_k >= 1 else _fmt(total_cost),
+            "dispatches":    result,
+            "total_count":   len(result),
+            "total_cost":    f"₦{total_k:.1f}k" if total_k >= 1 else _fmt(total_cost),
             "overdue_count": len([r for r in result if r["overdue"]]),
         }
 
@@ -443,8 +431,8 @@ def get_returns(type_filter="", da_filter=""):
             "name", "status", "return_type", "delivery_agent",
             "initiated_at", "processed_at", "processed_by",
             "notes",
-            # FIX E5: items_json does not exist on DA Stock Return — removed from field list.
-            # Items are fetched below from child table 'DA Stock Return Item'.
+            # items_json does not exist on DA Stock Return —
+            # items are fetched from child table 'DA Stock Return Item'
         ])
         returns = frappe.get_all("DA Stock Return",
             filters=filters,
@@ -456,7 +444,7 @@ def get_returns(type_filter="", da_filter=""):
         pending_count = 0
         result = []
         for r in returns:
-            # FIX E5: Read items from child table instead of ghost items_json field
+            # Items from child table
             items = []
             try:
                 child_items = frappe.get_all("DA Stock Return Item",
@@ -530,17 +518,25 @@ def get_form_options():
         )
         das = []
         for da in das_raw:
-            # FIX BUG 7: Use DA Warehouse.is_frozen as source of truth
             frozen = bool(frappe.db.exists("DA Warehouse", {"delivery_agent": da.get("name"), "is_frozen": 1}))
-            stock  = cint(da.get("current_stock") or 0)
-            s      = da.get("state") or ""
+            # Use sum of DA Warehouse current_stock across products for display
+            total_stock = 0
+            try:
+                wh_rows = frappe.get_all("DA Warehouse",
+                    filters={"delivery_agent": da.get("name")},
+                    fields=["current_stock"])
+                total_stock = sum(cint(w.get("current_stock") or 0) for w in wh_rows)
+            except Exception:
+                total_stock = cint(da.get("current_stock") or 0)
+
+            s = da.get("state") or ""
             das.append({
                 "id":     da.name,
                 "name":   da.get("agent_name") or da.name,
                 "state":  s,
-                "stock":  stock,
+                "stock":  total_stock,
                 "frozen": frozen,
-                "label":  f"{da.get('agent_name') or da.name} — {s} ({stock} units){' 🔒 FROZEN' if frozen else ''}",
+                "label":  f"{da.get('agent_name') or da.name} — {s} ({total_stock} units){' 🔒 FROZEN' if frozen else ''}",
             })
 
         # Motor parks
@@ -565,12 +561,12 @@ def get_form_options():
         except Exception:
             pass
 
-        # Factory/warehouse stock
+        # Factory/warehouse stock — read from DA Warehouse with warehouse_type = Factory
         factory_stock = {"Shampoo": 0, "Pomade": 0, "Conditioner": 0}
         try:
             for product in factory_stock:
                 qty = frappe.db.get_value("DA Warehouse",
-                    {"product": product, "warehouse_type": "Factory"}, "quantity")
+                    {"product": product, "warehouse_type": "Factory"}, "current_stock")
                 if qty:
                     factory_stock[product] = cint(qty)
         except Exception:
@@ -603,8 +599,7 @@ def create_dispatch(da_id, driver_phone, motor_park, eta_date, items,
         if not da_id:
             return {"success": False, "error": "Delivery Agent is required"}
 
-        # Check DA is not frozen
-        # FIX BUG 7: Check DA Warehouse not Delivery Agent
+        # Check DA is not frozen via DA Warehouse
         frozen = frappe.db.exists("DA Warehouse", {"delivery_agent": da_id, "is_frozen": 1})
         if frozen:
             return {"success": False, "error": "Cannot dispatch to a frozen DA warehouse"}
@@ -660,9 +655,9 @@ def create_dispatch(da_id, driver_phone, motor_park, eta_date, items,
             "approval_required":    1 if needs_approval else 0,
             "status":               "Pending Approval" if needs_approval else "Pending",
         })
-        # Add items as child table rows (Stock Dispatch Item)
+        # Add items as child table rows
         for item in items:
-            qty = cint(item.get("qty") or item.get("quantity") or 0)
+            qty     = cint(item.get("qty") or item.get("quantity") or 0)
             product = item.get("name") or item.get("product") or ""
             if qty > 0 and product:
                 dispatch_doc.append("items", {
@@ -674,7 +669,7 @@ def create_dispatch(da_id, driver_phone, motor_park, eta_date, items,
         dispatch_doc.insert(ignore_permissions=True)
         frappe.db.commit()
 
-        # If needs approval, create Block Override Log or alert ops
+        # If needs approval, create Block Override Log
         if needs_approval:
             try:
                 reasons = []
@@ -696,10 +691,10 @@ def create_dispatch(da_id, driver_phone, motor_park, eta_date, items,
                 pass
 
         return {
-            "success":         True,
-            "dispatch_id":     dispatch_doc.name,
-            "needs_approval":  needs_approval,
-            "status":          dispatch_doc.status,
+            "success":        True,
+            "dispatch_id":    dispatch_doc.name,
+            "needs_approval": needs_approval,
+            "status":         dispatch_doc.status,
         }
 
     except Exception as e:
@@ -729,9 +724,6 @@ def confirm_and_ship(dispatch_id):
 
         # Create Consignment record linked to this dispatch
         try:
-            # FIX E6: Stock Dispatch has no items_json field — items live in the
-            # child table 'Stock Dispatch Item'. Read them here and serialize into
-            # Consignment.items_json (Consignment IS a JSON-blob store by design).
             items = []
             try:
                 child_items = frappe.get_all("Stock Dispatch Item",
@@ -743,14 +735,14 @@ def confirm_and_ship(dispatch_id):
                 pass
 
             frappe.get_doc({
-                "doctype":          "Consignment",
-                "delivery_agent":   doc.delivery_agent,
-                "linked_dispatch":  dispatch_id,
-                "status":           "Pending Receipt",
-                "dispatch_date":    str(date.today()),
-                "eta_date":         str(doc.get("eta_date") or ""),
-                "driver_phone":     doc.get("driver_phone") or "",
-                "items_json":       json.dumps(items),
+                "doctype":         "Consignment",
+                "delivery_agent":  doc.delivery_agent,
+                "linked_dispatch": dispatch_id,
+                "status":          "Pending Receipt",
+                "dispatch_date":   str(date.today()),
+                "eta_date":        str(doc.get("eta_date") or ""),
+                "driver_phone":    doc.get("driver_phone") or "",
+                "items_json":      json.dumps(items),
             }).insert(ignore_permissions=True)
             frappe.db.commit()
         except Exception:
@@ -767,7 +759,8 @@ def confirm_and_ship(dispatch_id):
 
 # ═══════════════════════════════════════════════════════════
 # API 9 — confirm_consignment_receipt
-# Mark consignment as received + credit DA stock
+# Mark consignment as received + credit DA stock via DA Warehouse
+# FIX: Credit stock to DA Warehouse.current_stock instead of DA Stock Balance
 # ═══════════════════════════════════════════════════════════
 
 @frappe.whitelist()
@@ -784,9 +777,6 @@ def confirm_consignment_receipt(consignment_id):
         da_id = doc.delivery_agent
         items = []
         try:
-            # Consignment.items_json is a JSON Text field intentionally serialized
-            # by confirm_and_ship from the Stock Dispatch Item child table.
-            # After FIX E6, items are stored as [{"name": product, "qty": N}].
             items = json.loads(doc.get("items_json") or "[]")
         except Exception:
             pass
@@ -803,34 +793,31 @@ def confirm_consignment_receipt(consignment_id):
             except Exception:
                 pass
 
-        # Credit stock to DA
+        # Credit stock to DA Warehouse.current_stock
         for item in items:
             product = item.get("name") or item.get("product") or ""
             qty     = cint(item.get("qty", 0))
             if not product or qty <= 0:
                 continue
             try:
-                if _table_exists("DA Stock Balance"):
-                    existing = frappe.db.get_value("DA Stock Balance",
-                        {"delivery_agent": da_id, "product": product}, "name")
-                    if existing:
-                        frappe.db.sql(
-                            "UPDATE `tabDA Stock Balance` SET balance = balance + %s WHERE name = %s",
-                            (qty, existing)
-                        )
-                    else:
-                        frappe.get_doc({
-                            "doctype":         "DA Stock Balance",
-                            "delivery_agent":  da_id,
-                            "product":         product,
-                            "balance":         qty,
-                        }).insert(ignore_permissions=True)
-                    frappe.db.commit()
+                wh_name = frappe.db.get_value("DA Warehouse",
+                    {"delivery_agent": da_id, "product": product}, "name")
+                if wh_name:
+                    frappe.db.sql(
+                        "UPDATE `tabDA Warehouse` SET current_stock = current_stock + %s, "
+                        "last_updated = %s WHERE name = %s",
+                        (qty, now_datetime(), wh_name)
+                    )
                 else:
-                    # Fallback: increment current_stock on DA
-                    current = cint(frappe.db.get_value("Delivery Agent", da_id, "current_stock") or 0)
-                    frappe.db.set_value("Delivery Agent", da_id, "current_stock", current + qty)
-                    frappe.db.commit()
+                    # Create warehouse record if it doesn't exist
+                    frappe.get_doc({
+                        "doctype":        "DA Warehouse",
+                        "delivery_agent": da_id,
+                        "product":        product,
+                        "current_stock":  qty,
+                        "is_frozen":      0,
+                    }).insert(ignore_permissions=True)
+                frappe.db.commit()
             except Exception as stock_err:
                 frappe.log_error(str(stock_err), f"Stock credit error for {da_id} {product}")
 
@@ -846,6 +833,7 @@ def confirm_consignment_receipt(consignment_id):
 # ═══════════════════════════════════════════════════════════
 # API 10 — process_return
 # Accept or reject a DA stock return
+# FIX: Deduct from DA Warehouse.current_stock instead of DA Stock Balance
 # ═══════════════════════════════════════════════════════════
 
 @frappe.whitelist()
@@ -871,10 +859,7 @@ def process_return(return_id, action, reject_reason=""):
             frappe.db.commit()
             return {"success": True, "status": "Rejected"}
 
-        # Accept — deduct from DA stock + credit back to factory
-        # FIX E5: DA Stock Return has no items_json field — items are in child table
-        # 'DA Stock Return Item'. Without this fix the items list is always empty
-        # and stock is never deducted, silently inflating DA balances.
+        # Accept — deduct from DA Warehouse.current_stock
         items = []
         try:
             child_items = frappe.get_all("DA Stock Return Item",
@@ -891,16 +876,12 @@ def process_return(return_id, action, reject_reason=""):
             if not product or qty <= 0:
                 continue
             try:
-                if _table_exists("DA Stock Balance"):
-                    bal = frappe.db.get_value("DA Stock Balance",
-                        {"delivery_agent": da_id, "product": product}, ["name", "balance"], as_dict=True)
-                    if bal:
-                        new_bal = max(0, cint(bal.balance) - qty)
-                        frappe.db.set_value("DA Stock Balance", bal.name, "balance", new_bal)
-                    frappe.db.commit()
-                else:
-                    current = cint(frappe.db.get_value("Delivery Agent", da_id, "current_stock") or 0)
-                    frappe.db.set_value("Delivery Agent", da_id, "current_stock", max(0, current - qty))
+                wh = frappe.db.get_value("DA Warehouse",
+                    {"delivery_agent": da_id, "product": product},
+                    ["name", "current_stock"], as_dict=True)
+                if wh:
+                    new_stock = max(0, cint(wh.current_stock) - qty)
+                    frappe.db.set_value("DA Warehouse", wh.name, "current_stock", new_stock)
                     frappe.db.commit()
             except Exception as se:
                 frappe.log_error(str(se), f"Stock deduction error for {da_id} {product}")
@@ -929,7 +910,6 @@ def unfreeze_da_warehouse(da_id):
     if guard: return guard
 
     try:
-        # FIX BUG 7: Unfreeze via freeze.py which correctly clears DA Warehouse records
         try:
             from vitalvida.freeze import unfreeze_da_warehouse
             frozen_warehouses = frappe.get_all(
@@ -946,7 +926,7 @@ def unfreeze_da_warehouse(da_id):
                 )
         except ImportError:
             frappe.db.sql(
-                "UPDATE `tabDA Warehouse` SET is_frozen=0, freeze_reason=\'\' "
+                "UPDATE `tabDA Warehouse` SET is_frozen=0, freeze_reason='' "
                 "WHERE delivery_agent=%s AND is_frozen=1", da_id
             )
             frappe.db.commit()
@@ -994,5 +974,3 @@ def get_dashboard_badges():
 
     except Exception as e:
         return {"dispatch_badge": 0, "consign_badge": 0, "returns_badge": 0, "error": str(e)}
-
-
