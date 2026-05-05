@@ -1302,3 +1302,21 @@ def dispatch_fee_email(doc, method):
                            queue="short", timeout=60, fee_name=doc.name)
     except Exception as e:
         frappe.log_error(str(e), "Email Dispatcher: dispatch_fee_email")
+
+
+# ── Frappe doc_events wrappers (Frappe passes doc, method — not just name) ────
+
+def hook_order_received(doc, method=None):
+    on_order_received(doc.name)
+
+def hook_dispatch_created(doc, method=None):
+    on_dispatch_created(doc.name)
+
+def hook_application_received(doc, method=None):
+    on_application_received(doc.name)
+
+def hook_strike_created(doc, method=None):
+    on_strike_issued(doc.name)
+
+def hook_fee_created(doc, method=None):
+    on_fee_requested(doc.name)

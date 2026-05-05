@@ -1093,6 +1093,63 @@ def create_purchase_order(supplier, items, expected_date=""):
         return {"success": False, "error": str(e)}
 
 
+
+# ═══════════════════════════════════════════════════════════
+# API — get_das
+# Returns active non-frozen DAs for the transfer/dispatch dropdown
+# ═══════════════════════════════════════════════════════════
+
+@frappe.whitelist()
+def get_das(state_filter=""):
+    guard = _guard()
+    if guard: return guard
+    try:
+        filters = {"active": 1}
+        if state_filter:
+            filters["state"] = state_filter
+
+        da_fields = _safe("Delivery Agent", [
+            "name", "agent_name", "phone", "state",
+            "dsr_strict", "current_stock",
+        ])
+        das = frappe.get_all("Delivery Agent", filters=filters, fields=da_fields, order_by="agent_name asc")
+
+        result = []
+        for da in das:
+            # Skip frozen DAs — they cannot receive new stock
+            if frappe.db.exists("DA Warehouse", {"delivery_agent": da.name, "is_frozen": 1}):
+                continue
+
+            # Per-product stock from DA Warehouse
+            stock_by_product = {}
+            if _tbl("DA Warehouse"):
+                wh_rows = frappe.get_all("DA Warehouse",
+                    filters={"delivery_agent": da.name},
+                    fields=["product", "current_stock"])
+                stock_by_product = {w.product: cint(w.current_stock or 0) for w in wh_rows}
+
+            total_stock = sum(stock_by_product.values()) or cint(da.get("current_stock") or 0)
+
+            result.append({
+                "id":                da.name,
+                "name":              da.get("agent_name") or da.name,
+                "phone":             da.get("phone") or "",
+                "state":             da.get("state") or "",
+                "dsr":               round(flt(da.get("dsr_strict") or 0)),
+                "total_stock":       total_stock,
+                "stock_shampoo":     stock_by_product.get("Shampoo", 0),
+                "stock_pomade":      stock_by_product.get("Pomade", 0),
+                "stock_conditioner": stock_by_product.get("Conditioner", 0),
+                "frozen":            False,
+            })
+
+        return {"success": True, "das": result, "count": len(result)}
+
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "get_das Error")
+        return {"success": False, "das": [], "error": str(e)}
+
+
 @frappe.whitelist()
 def create_transfer(da_id, items, notes=""):
     guard = _guard()
@@ -1150,4 +1207,3 @@ def escalate_count(da_id, product, reason=""):
         return {"success": True}
     except Exception as e:
         return {"success": False, "error": str(e)}
-

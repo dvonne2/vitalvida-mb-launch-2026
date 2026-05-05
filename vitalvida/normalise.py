@@ -53,6 +53,24 @@ def normalise_payload(raw: dict, queue_row_name: str) -> dict:
     )
     log.append(f"Name: {data['customer_name']}")
 
+    # ── CUSTOMER EMAIL ───────────────────────────────────────
+    email = (
+        raw.get("customer_email")
+        or raw.get("customerEmail")
+        or raw.get("email")
+        or raw.get("email_address")
+        or raw.get("emailAddress")
+        or ""
+    )
+    # Basic validation — only keep if it looks like a real email
+    if email and "@" in str(email) and "." in str(email):
+        data["customer_email"] = email.strip().lower()
+        log.append(f"Email: {data['customer_email']}")
+    else:
+        data["customer_email"] = ""
+        if email:
+            log.append(f"Warning: Bad email format '{email}' — discarded")
+
     # ── PACKAGE / PRODUCT ─────────────────────────────────────
     # Cover every field name variant from all sources
     package = (

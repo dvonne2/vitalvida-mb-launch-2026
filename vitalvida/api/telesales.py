@@ -276,10 +276,8 @@ def get_my_stats(closer=None, period='d'):
 @frappe.whitelist()
 def get_available_das(state=''):
     """
-    Returns active, non-frozen Delivery Agents available for assignment.
-
-    FIX: Uses runtime field detection so 'active' vs 'is_active' is resolved
-    from the actual live schema rather than hardcoded.
+    Returns active, non-frozen Delivery Agents with per-product stock levels.
+    Used by both telesales DA assignment and the operations OrdersPanel.
     """
     try:
         meta        = frappe.get_meta('Delivery Agent')
@@ -291,38 +289,73 @@ def get_available_das(state=''):
             filters['active'] = 1
         elif 'is_active' in field_names:
             filters['is_active'] = 1
-
-        # Exclude high-risk DAs if the field exists
-        if 'is_double_risk' in field_names:
-            filters['is_double_risk'] = 0
+        # NOTE: is_double_risk intentionally NOT used as a hard filter —
+        # it is a risk rating, not a freeze flag. Frozen check is done below.
 
         fields = ['name']
         for f in ['agent_name', 'phone', 'state', 'current_stock', 'dsr_strict']:
             if f in field_names:
                 fields.append(f)
 
-        das = frappe.get_all('Delivery Agent', filters=filters, fields=fields, order_by='name asc', limit=50)
+        das = frappe.get_all(
+            'Delivery Agent',
+            filters=filters,
+            fields=fields,
+            order_by='name asc',
+            limit=100
+        )
 
-        # Filter by state in Python (avoids DB-level issues with optional field)
+        # Filter by state if provided
         if state and 'state' in field_names:
             das = [d for d in das if (d.get('state') or '') == state]
 
-        # Remove frozen DAs (DA Warehouse.is_frozen is the authoritative freeze source)
-        das = [
-            d for d in das
-            if not frappe.db.exists("DA Warehouse", {"delivery_agent": d.name, "is_frozen": 1})
-        ]
+        PRODUCTS = ['Shampoo', 'Pomade', 'Conditioner']
+        result = []
 
-        # Attach DSR score
         for da in das:
-            dsr = da.get('dsr_strict') or frappe.db.get_value('Delivery Agent', da.name, 'dsr_strict')
-            da['dsr'] = round(flt(dsr) or 0)
+            # Skip frozen DAs — DA Warehouse is the authoritative freeze source
+            frozen = frappe.db.exists(
+                "DA Warehouse", {"delivery_agent": da.name, "is_frozen": 1}
+            )
 
-        return das
+            # Per-product stock from DA Warehouse
+            stock = {}
+            total_stock = 0
+            for product in PRODUCTS:
+                qty = cint(
+                    frappe.db.get_value(
+                        "DA Warehouse",
+                        {"delivery_agent": da.name, "product": product},
+                        "current_stock"
+                    ) or 0
+                )
+                key = f"stock_{product.lower()}"
+                stock[key] = qty
+                total_stock += qty
+
+            dsr = round(flt(da.get("dsr_strict") or 0))
+
+            result.append({
+                "id":                 da.name,
+                "name":               da.get("agent_name") or da.name,
+                "phone":              da.get("phone") or "",
+                "state":              da.get("state") or "",
+                "dsr":                dsr,
+                "frozen":             bool(frozen),
+                "total_stock":        total_stock,
+                "stock_shampoo":      stock.get("stock_shampoo", 0),
+                "stock_pomade":       stock.get("stock_pomade", 0),
+                "stock_conditioner":  stock.get("stock_conditioner", 0),
+            })
+
+        # Sort: non-frozen first, then by total stock descending
+        result.sort(key=lambda x: (x["frozen"], -x["total_stock"]))
+
+        return {"success": True, "das": result}
 
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), 'get_available_das')
-        return []
+        return {"success": False, "das": [], "error": str(e)}
 
 
 @frappe.whitelist()

@@ -225,6 +225,9 @@ def _create_vv_order(order_id, raw_payload, clean_data):
         "click_id":         clean_data.get("click_id")         or raw_payload.get("fbclid", ""),
         "landing_page_url": clean_data.get("landing_page_url") or raw_payload.get("page_url", ""),
 
+        # Customer email
+        "customer_email": clean_data.get("customer_email", ""),
+
         # Source
         "source": raw_payload.get("source", "React-Web"),
     })

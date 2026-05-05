@@ -1423,6 +1423,21 @@ def action_pay_da_fee(request_id, transfer_reference="", proof_url=""):
         order_status = frappe.db.get_value("VV Order", doc.order, "order_status") if doc.order else ""
         if order_status != "Paid":
             return {"success": False, "error": "Order payment not confirmed. Cannot pay DA fee."}
+        # Check fee does not exceed max threshold — requires Owner approval if it does
+        try:
+            settings = frappe.get_single("Vitalvida Settings")
+            max_fee = flt(settings.get("max_delivery_fee") or 4000)
+            fee_amount = flt(doc.amount or 0)
+            if fee_amount > max_fee:
+                user_roles = frappe.get_roles(frappe.session.user)
+                if "Owner" not in user_roles and "System Manager" not in user_roles:
+                    return {
+                        "success": False,
+                        "error": f"Fee of {_fmt(fee_amount)} exceeds the maximum allowed "
+                                 f"({_fmt(max_fee)}). Owner approval required to process this payment."
+                    }
+        except Exception:
+            pass
         # FIX BUG 7: Use DA Warehouse is_frozen as source of truth (consistent with freeze.py)
         frozen_warehouse = frappe.db.exists("DA Warehouse", {
             "delivery_agent": doc.delivery_agent, "is_frozen": 1

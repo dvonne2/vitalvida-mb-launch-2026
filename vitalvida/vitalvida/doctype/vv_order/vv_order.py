@@ -106,7 +106,6 @@ class VVOrder(Document):
                 self._create_payment_intent()
                 if self.order_status == "Partial":
                         self._create_cart_recovery()
-                self._send_order_received_email()
 
         def before_save(self):
                 """Run all auto-computations before saving."""
@@ -391,22 +390,27 @@ class VVOrder(Document):
                                 pass
 
         def _compute_delivery_fee(self):
-            if not self.state:
+            """
+            Delivery fee comes from DA's agreed rate on their profile.
+            Falls back to Vitalvida Settings max_delivery_fee if DA has no rate set.
+            Fee only populates when a DA is assigned — not on order creation.
+            """
+            if not self.delivery_agent:
                 return
-
             try:
                 fee = frappe.db.get_value(
-                  "Delivery Fee Table",
-                  {
-                  "parent": "Vitalvida Settings",
-                  "state": self.state
-                  },
-                "fee_amount"
+                    "Delivery Agent", self.delivery_agent, "delivery_fee_rate"
                 )
-
-                if fee is not None:
+                if fee:
                     self.delivery_fee = float(fee)
-
+                else:
+                    # Fallback to max_delivery_fee from settings
+                    try:
+                        settings = frappe.get_single("Vitalvida Settings")
+                        fallback = float(settings.get("max_delivery_fee") or 4000)
+                        self.delivery_fee = fallback
+                    except Exception:
+                        self.delivery_fee = 4000.0
             except Exception:
                 frappe.log_error(frappe.get_traceback(), "Delivery Fee Computation Failed")
 

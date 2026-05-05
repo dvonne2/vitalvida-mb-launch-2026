@@ -37,29 +37,29 @@ fixtures = [
 # M31: Auto-provision role on LMS course completion
 doc_events = {
     "VV Order": {
-        "after_insert": "vitalvida.emails.on_order_received",
+        "after_insert": "vitalvida.emails.hook_order_received",
         "on_update": [
             "vitalvida.reconciliation.on_vv_order_update",
             "vitalvida.emails.dispatch_vv_order_email",
         ],
     },
     "Stock Dispatch": {
-        "after_insert": "vitalvida.emails.on_dispatch_created",
+        "after_insert": "vitalvida.emails.hook_dispatch_created",
         "on_update":    "vitalvida.emails.dispatch_stock_dispatch_email",
     },
     "DA Payout Record": {
         "on_update": "vitalvida.emails.dispatch_payout_email",
     },
     "DA Application": {
-        "after_insert": "vitalvida.emails.on_application_received",
+        "after_insert": "vitalvida.emails.hook_application_received",
         "on_update":    "vitalvida.emails.dispatch_application_email",
     },
     "DA Strike Log": {
-        "after_insert": "vitalvida.emails.on_strike_issued",
+        "after_insert": "vitalvida.emails.hook_strike_created",
         "on_update":    "vitalvida.emails.dispatch_strike_email",
     },
     "Fee Payment Request": {
-        "after_insert": "vitalvida.emails.on_fee_requested",
+        "after_insert": "vitalvida.emails.hook_fee_created",
         "on_update":    "vitalvida.emails.dispatch_fee_email",
     },
     "Sales Invoice": {

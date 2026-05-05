@@ -77,6 +77,12 @@
    "label": "Mini Whale SLA (Hours)"
   },
   {
+    "fieldname": "max_delivery_fee",
+    "fieldtype": "Currency",
+    "label": "Max Delivery Fee (Requires Owner Approval Above This)",
+    "default": "4000"
+  },
+  {
    "fieldname": "section_break_telesales",
    "fieldtype": "Section Break",
    "label": "Telesales Assignment"

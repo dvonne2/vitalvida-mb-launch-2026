@@ -1303,3 +1303,10 @@ def get_filter_options():
     except Exception as e:
         return {"das": [], "closers": [], "error": str(e)}
 
+
+
+@frappe.whitelist()
+def get_available_das(state=''):
+    """Proxy to telesales.get_available_das — single source of truth."""
+    from vitalvida.api.telesales import get_available_das as _get
+    return _get(state=state)
