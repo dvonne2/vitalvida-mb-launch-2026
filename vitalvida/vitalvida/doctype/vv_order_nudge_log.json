@@ -1,0 +1,90 @@
+{
+ "actions": [],
+ "creation": "2026-05-17 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "reference_order",
+  "nudged_by",
+  "column_break_1",
+  "media_buyer",
+  "outcome",
+  "section_break_details",
+  "notified_users",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "reference_order",
+   "fieldtype": "Link",
+   "label": "Reference Order",
+   "options": "VV Order",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "nudged_by",
+   "fieldtype": "Link",
+   "label": "Nudged By",
+   "options": "User",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "media_buyer",
+   "fieldtype": "Link",
+   "label": "Media Buyer",
+   "options": "VV Media Buyer",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "outcome",
+   "fieldtype": "Select",
+   "label": "Outcome",
+   "options": "\nSent\nRate-Limited\nFailed",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "section_break_details",
+   "fieldtype": "Section Break",
+   "label": "Details"
+  },
+  {
+   "fieldname": "notified_users",
+   "fieldtype": "Small Text",
+   "label": "Notified Users",
+   "description": "JSON array of emails notified"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  }
+ ],
+ "modified": "2026-05-17 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Vitalvida",
+ "name": "VV Order Nudge Log",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Media Buyer Portal"
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "track_changes": 0
+}

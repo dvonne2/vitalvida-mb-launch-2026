@@ -12,6 +12,7 @@
   "mini_whale_threshold",
   "whale_sla_hours",
   "mini_whale_sla_hours",
+  "max_delivery_fee",
   "section_break_telesales",
   "telesales_assignment_mode",
   "performance_weight_top_percent",
@@ -31,7 +32,9 @@
   "zero_weeks_suspend_threshold",
   "max_storekeeper_fee",
   "max_da_pickup_transport",
-  "delivery_fee_table"
+  "delivery_fee_table",
+  "section_break_logistics",
+  "motor_parks"
  ],
  "fields": [
   {
@@ -77,10 +80,10 @@
    "label": "Mini Whale SLA (Hours)"
   },
   {
-    "fieldname": "max_delivery_fee",
-    "fieldtype": "Currency",
-    "label": "Max Delivery Fee (Requires Owner Approval Above This)",
-    "default": "4000"
+   "fieldname": "max_delivery_fee",
+   "fieldtype": "Currency",
+   "label": "Max Delivery Fee (Requires Owner Approval Above This)",
+   "default": "4000"
   },
   {
    "fieldname": "section_break_telesales",
@@ -209,13 +212,25 @@
    "fieldtype": "Small Text",
    "label": "Ops Alert Emails",
    "options": "admin@vitalvida.ng"
+  },
+  {
+   "fieldname": "section_break_logistics",
+   "fieldtype": "Section Break",
+   "label": "Logistics Settings"
+  },
+  {
+   "fieldname": "motor_parks",
+   "fieldtype": "Text",
+   "label": "Motor Parks",
+   "description": "One motor park per line. Logistics portal dropdown will show these options.",
+   "default": "Jibowu Motor Park\nOjota Motor Park\nBerger Motor Park\nIsale-Eko Motor Park\nMile 2 Motor Park\nOther"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-05-01 00:18:14.026838",
+ "modified": "2026-05-14 00:00:00.000000",
  "modified_by": "admin@vitalvida.ng",
  "module": "Vitalvida",
  "name": "Vitalvida Settings",

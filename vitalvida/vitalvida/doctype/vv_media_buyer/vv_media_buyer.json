@@ -7,11 +7,14 @@
   "full_name",
   "phone",
   "email",
+  "user",
   "utm_ref",
   "platform",
   "column_break_1",
   "is_active",
   "batch_number",
+  "status",
+  "date_joined",
   "section_break_commitment",
   "commitment_fee_status",
   "commitment_fee_amount",
@@ -21,10 +24,10 @@
   "section_break_banking",
   "bank_name",
   "account_number",
+  "account_name",
   "section_break_contact",
   "whatsapp",
-  "status",
-  "date_joined",
+  "state",
   "section_break_commission",
   "default_commission_tier",
   "allowed_offers",
@@ -34,13 +37,23 @@
   "total_revenue_generated",
   "section_break_payout_notes",
   "payout_notes",
-  "account_name",
   "section_break_performance",
   "total_lifetime_orders",
   "total_lifetime_earned",
   "consecutive_zero_weeks",
   "is_suspended",
-  "suspension_reason"
+  "suspension_reason",
+  "section_break_magic_link",
+  "magic_link_token",
+  "magic_link_expires_at",
+  "magic_link_url",
+  "section_break_application",
+  "primary_ad_platform",
+  "ad_experience",
+  "monthly_ad_spend",
+  "previous_selling_experience",
+  "niches_promoted",
+  "why_should_we_give_you_slot"
  ],
  "fields": [
   {
@@ -63,6 +76,15 @@
    "fieldname": "email",
    "fieldtype": "Data",
    "label": "Email",
+   "options": "Email",
+   "in_create": 0
+  },
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "label": "User",
+   "options": "User",
+   "description": "The ERPNext User account for this Media Buyer. Required for Portal Login.",
    "in_create": 0
   },
   {
@@ -73,7 +95,7 @@
    "unique": 1,
    "in_list_view": 1,
    "in_create": 0,
-   "description": "Unique code e.g. MB001 \u2014 used in ?aff_id= tracking link. This is the primary identifier."
+   "description": "Unique code e.g. MB-0013 — used in ?aff_id= tracking link. This is the primary identifier."
   },
   {
    "fieldname": "platform",
@@ -103,6 +125,21 @@
    "label": "Batch",
    "description": "Onboarding batch number",
    "in_list_view": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "\nPending\nActive\nSuspended\nRejected",
+   "default": "Pending",
+   "in_list_view": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "date_joined",
+   "fieldtype": "Date",
+   "label": "Date Joined",
    "in_create": 0
   },
   {
@@ -171,6 +208,12 @@
    "in_create": 0
   },
   {
+   "fieldname": "account_name",
+   "fieldtype": "Data",
+   "label": "Account Name",
+   "in_create": 0
+  },
+  {
    "fieldname": "section_break_contact",
    "fieldtype": "Section Break",
    "label": "Contact",
@@ -183,18 +226,10 @@
    "in_create": 0
   },
   {
-   "fieldname": "status",
+   "fieldname": "state",
    "fieldtype": "Select",
-   "label": "Status",
-   "options": "Active\nSuspended\nPending Approval",
-   "default": "Active",
-   "in_list_view": 1,
-   "in_create": 0
-  },
-  {
-   "fieldname": "date_joined",
-   "fieldtype": "Date",
-   "label": "Date Joined",
+   "label": "State",
+   "options": "\nAbia\nAdamawa\nAkwa Ibom\nAnambra\nBauchi\nBayelsa\nBenue\nBorno\nCross River\nDelta\nEbonyi\nEdo\nEkiti\nEnugu\nFCT\nGombe\nImo\nJigawa\nKaduna\nKano\nKatsina\nKebbi\nKogi\nKwara\nLagos\nNasarawa\nNiger\nOgun\nOndo\nOsun\nOyo\nPlateau\nRivers\nSokoto\nTaraba\nYobe\nZamfara",
    "in_create": 0
   },
   {
@@ -229,7 +264,7 @@
    "label": "Delivery Quality Score",
    "read_only": 1,
    "in_create": 0,
-   "description": "Delivered / Total assigned \u00d7 100"
+   "description": "Delivered / Total assigned × 100"
   },
   {
    "fieldname": "fraud_flag_count",
@@ -257,12 +292,6 @@
    "fieldname": "payout_notes",
    "fieldtype": "Small Text",
    "label": "Payout Notes",
-   "in_create": 0
-  },
-  {
-   "fieldname": "account_name",
-   "fieldtype": "Data",
-   "label": "Account Name",
    "in_create": 0
   },
   {
@@ -310,9 +339,86 @@
    "label": "Suspension Reason",
    "read_only": 1,
    "in_create": 0
+  },
+  {
+   "fieldname": "section_break_magic_link",
+   "fieldtype": "Section Break",
+   "label": "Magic Link Auth",
+   "hidden": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "magic_link_token",
+   "fieldtype": "Data",
+   "label": "Magic Link Token",
+   "hidden": 1,
+   "read_only": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "magic_link_expires_at",
+   "fieldtype": "Datetime",
+   "label": "Magic Link Expires At",
+   "hidden": 1,
+   "read_only": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "magic_link_url",
+   "fieldtype": "Data",
+   "label": "Magic Link URL",
+   "hidden": 1,
+   "read_only": 1,
+   "in_create": 0
+  },
+  {
+   "fieldname": "section_break_application",
+   "fieldtype": "Section Break",
+   "label": "Application Details",
+   "in_create": 0
+  },
+  {
+   "fieldname": "primary_ad_platform",
+   "fieldtype": "Select",
+   "label": "Primary Ad Platform",
+   "options": "\nFacebook/Instagram\nTikTok\nFacebook+TikTok\nOther",
+   "in_create": 0
+  },
+  {
+   "fieldname": "ad_experience",
+   "fieldtype": "Select",
+   "label": "Ad Experience",
+   "options": "\n<3 months\n3-6 months\n6-12 months\n1-2 years\n2+ years",
+   "in_create": 0
+  },
+  {
+   "fieldname": "monthly_ad_spend",
+   "fieldtype": "Select",
+   "label": "Monthly Ad Spend",
+   "options": "\n<₦50k\n₦50-150k\n₦150-500k\n₦500k-1M\n>₦1M",
+   "in_create": 0
+  },
+  {
+   "fieldname": "previous_selling_experience",
+   "fieldtype": "Select",
+   "label": "Previous Selling Experience",
+   "options": "\ne-commerce\ninfo products\nservices\nfirst time",
+   "in_create": 0
+  },
+  {
+   "fieldname": "niches_promoted",
+   "fieldtype": "Data",
+   "label": "Niches Promoted",
+   "in_create": 0
+  },
+  {
+   "fieldname": "why_should_we_give_you_slot",
+   "fieldtype": "Long Text",
+   "label": "Why Should We Give You a Slot?",
+   "in_create": 0
   }
  ],
- "modified": "2026-03-16 00:00:00.000000",
+ "modified": "2026-05-17 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Vitalvida",
  "name": "VV Media Buyer",
@@ -330,6 +436,12 @@
    "read": 1,
    "role": "Sales Manager",
    "report": 1
+  },
+  {
+   "create": 0,
+   "read": 1,
+   "role": "Media Buyer Portal",
+   "write": 0
   }
  ],
  "sort_field": "full_name",

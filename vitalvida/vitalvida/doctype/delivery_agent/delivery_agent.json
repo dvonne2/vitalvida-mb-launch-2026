@@ -15,6 +15,7 @@
   "active",
   "section_break_bank",
   "bank_name",
+  "delivery_fee_rate",
   "bank_account_number",
   "column_break_bank",
   "bank_account_name",
@@ -36,7 +37,72 @@
   "section_break_strike",
   "strike_count",
   "strike_status",
-  "column_break_partner"
+  "column_break_partner",
+  "section_personal_info",
+  "full_name",
+  "gender",
+  "date_of_birth",
+  "phone_1",
+  "phone_2",
+  "email_address",
+  "place_of_birth",
+  "parents_name",
+  "passport_photo",
+  "government_id",
+  "facebook_profile",
+  "section_marital_status",
+  "marital_status",
+  "spouse_name",
+  "spouse_phone",
+  "spouse_address",
+  "number_of_children",
+  "section_residential_address",
+  "current_address",
+  "previous_address",
+  "residence_address",
+  "city_of_residence",
+  "state_of_residence",
+  "utility_bill",
+  "section_next_of_kin",
+  "nok_name",
+  "nok_phone",
+  "nok_relationship",
+  "nok_address",
+  "section_employment_history",
+  "recent_employer",
+  "employer_contact_name",
+  "employer_phone",
+  "employer_email",
+  "employment_dates",
+  "other_employers",
+  "other_employer_contacts",
+  "current_delivery_company",
+  "current_delivery_company_phone",
+  "section_education",
+  "schools_attended",
+  "section_guarantor_1",
+  "guarantor_1_surname",
+  "guarantor_1_first_name",
+  "guarantor_1_phone",
+  "guarantor_1_email",
+  "guarantor_1_relationship",
+  "guarantor_1_address",
+  "guarantor_1_occupation",
+  "guarantor_1_id",
+  "guarantor_1_photo",
+  "section_guarantor_2",
+  "guarantor_2_surname",
+  "guarantor_2_first_name",
+  "guarantor_2_phone",
+  "guarantor_2_email",
+  "guarantor_2_relationship",
+  "guarantor_2_address",
+  "guarantor_2_occupation",
+  "guarantor_2_id",
+  "guarantor_2_photo",
+  "section_recruitment",
+  "independent_recruiter",
+  "application_timestamp"
  ],
  "fields": [
   {
@@ -103,12 +169,12 @@
    "label": "Bank Name"
   },
   {
-    "fieldname": "delivery_fee_rate",
-    "fieldtype": "Currency",
-    "label": "Agreed Delivery Fee Per Order",
-    "default": "4000",
-    "in_list_view": 0,
-    "in_standard_filter": 0
+   "fieldname": "delivery_fee_rate",
+   "fieldtype": "Currency",
+   "label": "Agreed Delivery Fee Per Order",
+   "default": "4000",
+   "in_list_view": 0,
+   "in_standard_filter": 0
   },
   {
    "fieldname": "bank_account_number",
@@ -242,11 +308,406 @@
   {
    "fieldname": "column_break_partner",
    "fieldtype": "Column Break"
+  },
+
+  {
+   "fieldname": "section_personal_info",
+   "fieldtype": "Section Break",
+   "label": "Personal Information"
+  },
+  {
+   "fieldname": "full_name",
+   "fieldtype": "Data",
+   "label": "Full Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "gender",
+   "fieldtype": "Select",
+   "label": "Gender",
+   "options": "\nMale\nFemale",
+   "reqd": 1
+  },
+  {
+   "fieldname": "date_of_birth",
+   "fieldtype": "Date",
+   "label": "Date of Birth",
+   "reqd": 1
+  },
+  {
+   "fieldname": "phone_1",
+   "fieldtype": "Data",
+   "label": "Phone 1",
+   "reqd": 1
+  },
+  {
+   "fieldname": "phone_2",
+   "fieldtype": "Data",
+   "label": "Phone 2"
+  },
+  {
+   "fieldname": "email_address",
+   "fieldtype": "Data",
+   "label": "Email Address",
+   "options": "Email"
+  },
+  {
+   "fieldname": "place_of_birth",
+   "fieldtype": "Data",
+   "label": "Place of Birth",
+   "reqd": 1
+  },
+  {
+   "fieldname": "parents_name",
+   "fieldtype": "Data",
+   "label": "Parents Name"
+  },
+  {
+   "fieldname": "passport_photo",
+   "fieldtype": "Attach Image",
+   "label": "Passport Photo",
+   "reqd": 1
+  },
+  {
+   "fieldname": "government_id",
+   "fieldtype": "Attach",
+   "label": "Government ID",
+   "reqd": 1
+  },
+  {
+   "fieldname": "facebook_profile",
+   "fieldtype": "Data",
+   "label": "Facebook Profile"
+  },
+
+  {
+   "fieldname": "section_marital_status",
+   "fieldtype": "Section Break",
+   "label": "Marital Status"
+  },
+  {
+   "fieldname": "marital_status",
+   "fieldtype": "Select",
+   "label": "Marital Status",
+   "options": "\nSingle\nMarried\nDivorced\nWidowed",
+   "reqd": 1
+  },
+  {
+   "fieldname": "spouse_name",
+   "fieldtype": "Data",
+   "label": "Spouse Name",
+   "depends_on": "eval:doc.marital_status=='Married'",
+   "mandatory_depends_on": ""
+  },
+  {
+   "fieldname": "spouse_phone",
+   "fieldtype": "Data",
+   "label": "Spouse Phone",
+   "depends_on": "eval:doc.marital_status=='Married'"
+  },
+  {
+   "fieldname": "spouse_address",
+   "fieldtype": "Small Text",
+   "label": "Spouse Address",
+   "depends_on": "eval:doc.marital_status=='Married'"
+  },
+  {
+   "fieldname": "number_of_children",
+   "fieldtype": "Int",
+   "label": "Number of Children",
+   "depends_on": "eval:doc.marital_status=='Married'",
+   "default": "0"
+  },
+
+  {
+   "fieldname": "section_residential_address",
+   "fieldtype": "Section Break",
+   "label": "Residential Address"
+  },
+  {
+   "fieldname": "current_address",
+   "fieldtype": "Small Text",
+   "label": "Current Address",
+   "reqd": 1
+  },
+  {
+   "fieldname": "previous_address",
+   "fieldtype": "Small Text",
+   "label": "Previous Address"
+  },
+  {
+   "fieldname": "residence_address",
+   "fieldtype": "Small Text",
+   "label": "Residence Address",
+   "description": "For background check — must be full verifiable address",
+   "reqd": 1
+  },
+  {
+   "fieldname": "city_of_residence",
+   "fieldtype": "Data",
+   "label": "City of Residence",
+   "reqd": 1
+  },
+  {
+   "fieldname": "state_of_residence",
+   "fieldtype": "Data",
+   "label": "State of Residence",
+   "reqd": 1
+  },
+  {
+   "fieldname": "utility_bill",
+   "fieldtype": "Attach",
+   "label": "Utility Bill",
+   "reqd": 1
+  },
+
+  {
+   "fieldname": "section_next_of_kin",
+   "fieldtype": "Section Break",
+   "label": "Next of Kin"
+  },
+  {
+   "fieldname": "nok_name",
+   "fieldtype": "Data",
+   "label": "Next of Kin Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "nok_phone",
+   "fieldtype": "Data",
+   "label": "Next of Kin Phone",
+   "reqd": 1
+  },
+  {
+   "fieldname": "nok_relationship",
+   "fieldtype": "Data",
+   "label": "Next of Kin Relationship",
+   "reqd": 1
+  },
+  {
+   "fieldname": "nok_address",
+   "fieldtype": "Small Text",
+   "label": "Next of Kin Address",
+   "description": "Full address: house number, street, town, LGA, state",
+   "reqd": 1
+  },
+
+  {
+   "fieldname": "section_employment_history",
+   "fieldtype": "Section Break",
+   "label": "Employment History"
+  },
+  {
+   "fieldname": "recent_employer",
+   "fieldtype": "Data",
+   "label": "Most Recent Employer",
+   "reqd": 1
+  },
+  {
+   "fieldname": "employer_contact_name",
+   "fieldtype": "Data",
+   "label": "Employer Contact Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "employer_phone",
+   "fieldtype": "Data",
+   "label": "Employer Phone",
+   "reqd": 1
+  },
+  {
+   "fieldname": "employer_email",
+   "fieldtype": "Data",
+   "label": "Employer Email",
+   "options": "Email"
+  },
+  {
+   "fieldname": "employment_dates",
+   "fieldtype": "Data",
+   "label": "Employment Dates (Start – End)",
+   "description": "e.g. Jan 2022 – Mar 2024",
+   "reqd": 1
+  },
+  {
+   "fieldname": "other_employers",
+   "fieldtype": "Small Text",
+   "label": "Other Employers"
+  },
+  {
+   "fieldname": "other_employer_contacts",
+   "fieldtype": "Small Text",
+   "label": "Other Employer Contacts"
+  },
+  {
+   "fieldname": "current_delivery_company",
+   "fieldtype": "Data",
+   "label": "Current Delivery Company"
+  },
+  {
+   "fieldname": "current_delivery_company_phone",
+   "fieldtype": "Data",
+   "label": "Current Delivery Company Phone"
+  },
+
+  {
+   "fieldname": "section_education",
+   "fieldtype": "Section Break",
+   "label": "Education"
+  },
+  {
+   "fieldname": "schools_attended",
+   "fieldtype": "Small Text",
+   "label": "Schools Attended",
+   "description": "Most recent to primary school, include years attended",
+   "reqd": 1
+  },
+
+  {
+   "fieldname": "section_guarantor_1",
+   "fieldtype": "Section Break",
+   "label": "Guarantor 1",
+   "description": "At least one guarantor must reside in Lagos"
+  },
+  {
+   "fieldname": "guarantor_1_surname",
+   "fieldtype": "Data",
+   "label": "Guarantor 1 Surname",
+   "reqd": 1
+  },
+  {
+   "fieldname": "guarantor_1_first_name",
+   "fieldtype": "Data",
+   "label": "Guarantor 1 First Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "guarantor_1_phone",
+   "fieldtype": "Data",
+   "label": "Guarantor 1 Phone",
+   "reqd": 1
+  },
+  {
+   "fieldname": "guarantor_1_email",
+   "fieldtype": "Data",
+   "label": "Guarantor 1 Email",
+   "options": "Email"
+  },
+  {
+   "fieldname": "guarantor_1_relationship",
+   "fieldtype": "Data",
+   "label": "Guarantor 1 Relationship",
+   "reqd": 1
+  },
+  {
+   "fieldname": "guarantor_1_address",
+   "fieldtype": "Small Text",
+   "label": "Guarantor 1 Address",
+   "description": "Full address: house number, street, town, LGA, state",
+   "reqd": 1
+  },
+  {
+   "fieldname": "guarantor_1_occupation",
+   "fieldtype": "Data",
+   "label": "Guarantor 1 Occupation",
+   "reqd": 1
+  },
+  {
+   "fieldname": "guarantor_1_id",
+   "fieldtype": "Attach",
+   "label": "Guarantor 1 Government ID",
+   "reqd": 1
+  },
+  {
+   "fieldname": "guarantor_1_photo",
+   "fieldtype": "Attach Image",
+   "label": "Guarantor 1 Passport Photo",
+   "reqd": 1
+  },
+
+  {
+   "fieldname": "section_guarantor_2",
+   "fieldtype": "Section Break",
+   "label": "Guarantor 2"
+  },
+  {
+   "fieldname": "guarantor_2_surname",
+   "fieldtype": "Data",
+   "label": "Guarantor 2 Surname",
+   "reqd": 1
+  },
+  {
+   "fieldname": "guarantor_2_first_name",
+   "fieldtype": "Data",
+   "label": "Guarantor 2 First Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "guarantor_2_phone",
+   "fieldtype": "Data",
+   "label": "Guarantor 2 Phone",
+   "reqd": 1
+  },
+  {
+   "fieldname": "guarantor_2_email",
+   "fieldtype": "Data",
+   "label": "Guarantor 2 Email",
+   "options": "Email"
+  },
+  {
+   "fieldname": "guarantor_2_relationship",
+   "fieldtype": "Data",
+   "label": "Guarantor 2 Relationship",
+   "reqd": 1
+  },
+  {
+   "fieldname": "guarantor_2_address",
+   "fieldtype": "Small Text",
+   "label": "Guarantor 2 Address",
+   "description": "Full address: house number, street, town, LGA, state",
+   "reqd": 1
+  },
+  {
+   "fieldname": "guarantor_2_occupation",
+   "fieldtype": "Data",
+   "label": "Guarantor 2 Occupation",
+   "reqd": 1
+  },
+  {
+   "fieldname": "guarantor_2_id",
+   "fieldtype": "Attach",
+   "label": "Guarantor 2 Government ID",
+   "reqd": 1
+  },
+  {
+   "fieldname": "guarantor_2_photo",
+   "fieldtype": "Attach Image",
+   "label": "Guarantor 2 Passport Photo",
+   "reqd": 1
+  },
+
+  {
+   "fieldname": "section_recruitment",
+   "fieldtype": "Section Break",
+   "label": "Recruitment"
+  },
+  {
+   "fieldname": "independent_recruiter",
+   "fieldtype": "Data",
+   "label": "Independent Recruiter",
+   "description": "Enter recruiter name, or 'none' if no recruiter",
+   "reqd": 1
+  },
+  {
+   "fieldname": "application_timestamp",
+   "fieldtype": "Datetime",
+   "label": "Application Timestamp",
+   "read_only": 1,
+   "no_copy": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-10 16:30:00.000000",
+ "modified": "2026-05-17 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Vitalvida",
  "name": "Delivery Agent",
