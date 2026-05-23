@@ -2,7 +2,7 @@ app_name = "vitalvida"
 app_title = "Vitalvida"
 app_publisher = "azeez"
 app_description = "custom frappe"
-app_email = "olaniyisulaimon221@gmail.com"
+app_email = "admin@vitalvida.com"
 app_license = "mit"
 
 
