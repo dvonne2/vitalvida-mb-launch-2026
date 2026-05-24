@@ -59,9 +59,17 @@ def attribute_order(order_name, payload):
     }
 
     if aff_id:
-        # utm_ref IS the aff_id field on VV Media Buyer
+        # utm_ref IS the aff_id field on VV Media Buyer.
+        # Query by is_active (source-of-truth boolean), not status (UI label).
+        # Defensively exclude is_suspended=1 affiliates.
         buyer = frappe.db.get_value("VV Media Buyer",
-            {"utm_ref": aff_id, "status": "Active"}, "name")
+            {
+                "utm_ref": aff_id,
+                "is_active": 1,
+                "is_suspended": 0,
+            },
+            "name"
+        )
         if buyer:
             update["media_buyer"] = buyer
             update["aff_id"] = aff_id
