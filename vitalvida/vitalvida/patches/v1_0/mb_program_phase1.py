@@ -30,7 +30,7 @@ def execute():
     print("✓ Phase 1 complete")
 
 
-# ─── 1.1 + 1.3 ────────────────────────────────────────────────────────
+
 def add_vv_media_buyer_fields():
     fields = {
         "VV Media Buyer": [
@@ -74,7 +74,7 @@ def add_vv_media_buyer_fields():
     create_custom_fields(fields, update=True)
 
 
-# ─── 1.2 ─────────────────────────────────────────────────────────────
+
 def set_vv_media_buyer_naming_series():
     """
     Set autoname to 'MB-.####.' via Property Setter and seed the series counter
@@ -92,8 +92,7 @@ def set_vv_media_buyer_naming_series():
         validate_fields_for_doctype=False,
     )
 
-    # tabSeries stores the prefix without the placeholder; for "MB-.####." that prefix is "MB-".
-    # current=12 means the next auto-issued doc will be MB-0013.
+
     existing = frappe.db.sql(
         "SELECT current FROM tabSeries WHERE name = %s",
         ("MB-",),
@@ -112,7 +111,7 @@ def set_vv_media_buyer_naming_series():
         )
 
 
-# ─── 1.4 + 1.5 ────────────────────────────────────────────────────────
+
 def add_vv_order_fields():
     fields = {
         "VV Order": [
@@ -144,11 +143,10 @@ def add_vv_order_fields():
         ]
     }
     create_custom_fields(fields, update=True)
-    # NOTE: courier_cost_actual is intentionally NOT added — SOW §1.4
-    # explicitly excludes it; courier cost is hidden from affiliates.
 
 
-# ─── 1.7 ─────────────────────────────────────────────────────────────
+
+
 def add_vitalvida_settings_fields():
     fields = {
         "VitalVida Settings": [
@@ -185,13 +183,9 @@ def populate_vitalvida_settings():
     settings.save(ignore_permissions=True)
 
 
-# ─── 1.8 ─────────────────────────────────────────────────────────────
 def seed_affiliate_commission_rules():
-    """
-    Field-name assumption: bundle, payout_amount, affiliate_tier, active.
-    Wrapped in try/except per rule so a fieldname mismatch on one row
-    doesn't kill the whole patch — we want to see WHICH fields are wrong.
-    """
+    """Seed the 5 default commission rules. Uses try/except per rule
+    so a fieldname mismatch on one row doesn't kill the whole patch."""
     rules = [
         ("Self Love Plus",        7000),
         ("Self Love Return",      10000),
@@ -202,20 +196,18 @@ def seed_affiliate_commission_rules():
 
     for bundle, amount in rules:
         try:
-            if frappe.db.exists("Affiliate Commission Rule", {"bundle": bundle}):
+            if frappe.db.exists("Affiliate Commission Rule", {"bundle_name": bundle}):
                 print(f"  · skipping {bundle} (rule already exists)")
                 continue
 
             doc = frappe.get_doc({
                 "doctype": "Affiliate Commission Rule",
-                "bundle": bundle,
+                "bundle_name": bundle,
                 "payout_amount": amount,
                 "affiliate_tier": None,
-                "active": 1,
+                "is_active": 1,
             })
             doc.insert(ignore_permissions=True)
             print(f"  · seeded {bundle} → ₦{amount:,}")
         except Exception as e:
             print(f"  ✗ FAILED to seed {bundle}: {type(e).__name__}: {e}")
-            print(f"    → Verify field names on Affiliate Commission Rule doctype "
-                  f"(expected: bundle, payout_amount, affiliate_tier, active).")

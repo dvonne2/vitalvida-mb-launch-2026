@@ -17,7 +17,7 @@ SITE="vitalvida.systemforce.ng"
 BENCH_DIR="/home/frappe/frappe-bench"
 BACKUP_DIR="$BENCH_DIR/sites/$SITE/private/backups"
 LOG_FILE="/home/frappe/scripts/backup.log"
-RCLONE_REMOTE="vv-backups"  # Configured in Part B
+RCLONE_REMOTE="vv-backups"
 RCLONE_FOLDER="vitalvida-erpnext-backups"
 ALERT_EMAIL="admin@vitalvida.ng"  # Replace with real admin email
 

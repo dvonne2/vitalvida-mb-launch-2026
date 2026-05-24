@@ -2,14 +2,13 @@ import frappe
 from vitalvida.media_buyer import _calculate_order_commission
 
 def execute_cleanup():
-    # Find all VV Orders with aff_id set but no media_buyer link
     stuck_orders = frappe.get_all("VV Order",
         filters={
             "aff_id": ["is", "set"],
             "media_buyer": ["in", ["", None]],
         },
         fields=["name", "aff_id"],
-        limit=200  # Process in batches
+        limit=200
     )
 
     print(f"Found {len(stuck_orders)} orders with aff_id but no media_buyer link")
@@ -41,7 +40,7 @@ def execute_cleanup():
     frappe.db.commit()
     print(f"\nFixed: {fixed}, Not found: {not_found}")
 
-    # Optional — also recalculate commission for fixed orders
+    # Recalculate commission for fixed orders
     for order_name in [o.name for o in stuck_orders]:
         order = frappe.get_doc("VV Order", order_name)
         if order.media_buyer and order.affiliate_commission_amount in (0, None):
