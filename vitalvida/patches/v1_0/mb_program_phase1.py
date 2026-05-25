@@ -71,7 +71,10 @@ def add_vv_media_buyer_fields():
             },
         ]
     }
-    create_custom_fields(fields, update=True)
+    try:
+        create_custom_fields(fields, update=True)
+    except Exception as e:
+        print(f"  · skipping VV Media Buyer custom fields (already exist): {e}")
 
 
 
@@ -142,7 +145,10 @@ def add_vv_order_fields():
             },
         ]
     }
-    create_custom_fields(fields, update=True)
+    try:
+        create_custom_fields(fields, update=True)
+    except Exception as e:
+        print(f"  · skipping VV Order custom fields (already exist): {e}")
 
 
 
@@ -172,7 +178,10 @@ def add_vitalvida_settings_fields():
             },
         ]
     }
-    create_custom_fields(fields, update=True)
+    try:
+        create_custom_fields(fields, update=True)
+    except Exception as e:
+        print(f"  · skipping VitalVida Settings custom fields: {e}")
 
 
 def populate_vitalvida_settings():
