@@ -20,6 +20,8 @@ CRITICAL_DOCTYPES=("VV Order" "VV Media Buyer" "Delivery Agent" "User" "Item")
 MIN_ROWS_EXPECTED=1  # At least 1 row in each
 
 # ── Helper functions ──────────────────────────────────────────
+mkdir -p "$(dirname "$LOG_FILE")"
+
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
 }

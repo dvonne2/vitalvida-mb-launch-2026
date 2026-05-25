@@ -14,6 +14,8 @@ RCLONE_FOLDER="vitalvida-erpnext-backups"
 ALERT_EMAIL="admin@vitalvida.ng"
 
 # ── Helper functions ──────────────────────────────────────────
+mkdir -p "$(dirname "$LOG_FILE")"
+
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
 }
