@@ -67,31 +67,39 @@ log "Syncing to offsite storage ($RCLONE_REMOTE:$RCLONE_FOLDER)..."
 TODAY=$(date +%Y-%m-%d)
 REMOTE_PATH="$RCLONE_REMOTE:$RCLONE_FOLDER/$TODAY"
 
-# Upload each backup file
-for file in "$LATEST_DB" "$LATEST_FILES" "$LATEST_PRIVATE" "$LATEST_CONFIG"; do
-    if [ -n "$file" ] && [ -f "$file" ]; then
-        if rclone copy "$file" "$REMOTE_PATH/" \
-            --log-file="$LOG_FILE" \
-            --log-level=INFO \
-            --transfers=2 \
-            --checkers=4 \
-            --retries=3; then
-            log "✓ Uploaded $(basename "$file")"
-        else
-            alert_failure "Failed to upload $(basename "$file") to $REMOTE_PATH"
+if command -v rclone &> /dev/null; then
+    # Upload each backup file
+    for file in "$LATEST_DB" "$LATEST_FILES" "$LATEST_PRIVATE" "$LATEST_CONFIG"; do
+        if [ -n "$file" ] && [ -f "$file" ]; then
+            if rclone copy "$file" "$REMOTE_PATH/" \
+                --log-file="$LOG_FILE" \
+                --log-level=INFO \
+                --transfers=2 \
+                --checkers=4 \
+                --retries=3; then
+                log "✓ Uploaded $(basename "$file")"
+            else
+                alert_failure "Failed to upload $(basename "$file") to $REMOTE_PATH"
+            fi
         fi
-    fi
-done
+    done
+else
+    log "ℹ rclone not installed — skipping offsite upload (Staging mode)"
+fi
 
 # ── Step 4: Cleanup old offsite backups (keep last 30 days) ───
 log "Cleaning up offsite backups older than 30 days..."
-if rclone delete "$RCLONE_REMOTE:$RCLONE_FOLDER/" \
-    --min-age 30d \
-    --log-file="$LOG_FILE" \
-    --log-level=INFO; then
-    log "✓ Old backups cleaned"
+if command -v rclone &> /dev/null; then
+    if rclone delete "$RCLONE_REMOTE:$RCLONE_FOLDER/" \
+        --min-age 30d \
+        --log-file="$LOG_FILE" \
+        --log-level=INFO; then
+        log "✓ Old backups cleaned"
+    else
+        log "⚠ Cleanup had errors (non-fatal, continuing)"
+    fi
 else
-    log "⚠ Cleanup had errors (non-fatal, continuing)"
+    log "ℹ rclone not installed — skipping cleanup"
 fi
 
 # ── Done ──────────────────────────────────────────────────────

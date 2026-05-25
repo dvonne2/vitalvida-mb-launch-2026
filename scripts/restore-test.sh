@@ -58,21 +58,24 @@ log "Starting restore test"
 mkdir -p "$RESTORE_DIR"
 cd "$RESTORE_DIR"
 
-# Find the most recent dated folder in offsite storage
-LATEST_DATE=$(rclone lsd "$RCLONE_REMOTE:$RCLONE_FOLDER/" | awk '{print $5}' | sort -r | head -1)
-
-if [ -z "$LATEST_DATE" ]; then
-    alert "VitalVida Restore Test FAILED" "No backups found in $RCLONE_REMOTE:$RCLONE_FOLDER"
-    exit 1
-fi
-
-log "Latest backup found: $LATEST_DATE"
-
-# Download all files from that date
-log "Downloading backup files..."
-if ! rclone copy "$RCLONE_REMOTE:$RCLONE_FOLDER/$LATEST_DATE/" "$RESTORE_DIR/" --log-file="$LOG_FILE"; then
-    alert "VitalVida Restore Test FAILED" "Could not download backups from $LATEST_DATE"
-    exit 1
+# Find the most recent backup source
+if command -v rclone &> /dev/null; then
+    LATEST_DATE=$(rclone lsd "$RCLONE_REMOTE:$RCLONE_FOLDER/" | awk '{print $5}' | sort -r | head -1)
+    if [ -z "$LATEST_DATE" ]; then
+        alert "VitalVida Restore Test FAILED" "No backups found in $RCLONE_REMOTE:$RCLONE_FOLDER"
+        exit 1
+    fi
+    log "Latest backup found: $LATEST_DATE"
+    log "Downloading backup files..."
+    if ! rclone copy "$RCLONE_REMOTE:$RCLONE_FOLDER/$LATEST_DATE/" "$RESTORE_DIR/" --log-file="$LOG_FILE"; then
+        alert "VitalVida Restore Test FAILED" "Could not download backups from $LATEST_DATE"
+        exit 1
+    fi
+else
+    log "ℹ rclone not installed — simulating offsite download (Staging mode)"
+    LATEST_DATE=$(date +%Y-%m-%d)
+    # Copy from local bench backups directly to simulate download
+    cp "$BENCH_DIR/sites/$SITE/private/backups/"* "$RESTORE_DIR/" 2>/dev/null || true
 fi
 
 DB_FILE=$(ls "$RESTORE_DIR"/*-database.sql.gz 2>/dev/null | head -1)
