@@ -55,4 +55,12 @@ def execute_cleanup():
     frappe.db.commit()
 
 if __name__ == "__main__":
-    execute_cleanup()
+    import sys
+    site = sys.argv[1] if len(sys.argv) > 1 else "vitalvida.systemforce.ng"
+    frappe.init(site=site)
+    frappe.connect()
+    try:
+        frappe.session.user = "Administrator"
+        execute_cleanup()
+    finally:
+        frappe.destroy()
