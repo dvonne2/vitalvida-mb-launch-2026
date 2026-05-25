@@ -1,16 +1,8 @@
 #!/bin/bash
-#
-# VitalVida Daily Backup Script
-# Runs nightly via cron at 2 AM Lagos time.
-#
-# What it does:
-# 1. Runs bench backup --with-files for the production site
-# 2. Pushes the latest backup to offsite storage (Google Drive via rclone)
-# 3. Logs everything to /home/frappe/scripts/backup.log
-# 4. Sends an alert email if anything fails
-#
 
-set -euo pipefail  # Fail fast on errors
+# VitalVida Daily Backup Script
+
+set -euo pipefail
 
 # ── Configuration ─────────────────────────────────────────────
 SITE="vitalvida.systemforce.ng"
@@ -19,7 +11,7 @@ BACKUP_DIR="$BENCH_DIR/sites/$SITE/private/backups"
 LOG_FILE="/home/frappe/scripts/backup.log"
 RCLONE_REMOTE="vv-backups"
 RCLONE_FOLDER="vitalvida-erpnext-backups"
-ALERT_EMAIL="admin@vitalvida.ng"  # Replace with real admin email
+ALERT_EMAIL="admin@vitalvida.ng"
 
 # ── Helper functions ──────────────────────────────────────────
 log() {
@@ -29,7 +21,6 @@ log() {
 alert_failure() {
     local message="$1"
     log "❌ FAILURE: $message"
-    # Send alert email (uses Frappe's configured SMTP)
     cd "$BENCH_DIR"
     bench --site "$SITE" execute frappe.sendmail \
         --kwargs "{

@@ -1,6 +1,4 @@
 # Copyright (c) 2026, VitalVida and contributors
-# Phase 1 of MB Program launch — see SOW §1.
-# Idempotent: safe to re-run.
 
 import frappe
 from frappe.utils import cint
@@ -79,11 +77,6 @@ def add_vv_media_buyer_fields():
 
 
 def set_vv_media_buyer_naming_series():
-    """
-    Set autoname to 'MB-.####.' via Property Setter and seed the series counter
-    so that the next issued name is MB-0013 (MB-0001..MB-0012 are reserved
-    for hand-created test affiliates per SOW §1.2).
-    """
     frappe.make_property_setter(
         {
             "doctype": "VV Media Buyer",
@@ -193,8 +186,6 @@ def populate_vitalvida_settings():
 
 
 def seed_affiliate_commission_rules():
-    """Seed the 5 default commission rules. Uses try/except per rule
-    so a fieldname mismatch on one row doesn't kill the whole patch."""
     rules = [
         ("Self Love Plus",        7000),
         ("Self Love Return",      10000),

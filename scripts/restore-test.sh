@@ -1,19 +1,5 @@
 #!/bin/bash
-#
-# VitalVida Backup Restore Test
-# Runs weekly via cron on Sunday at 3 AM Lagos time.
-#
-# Purpose: prove that the backups are actually restorable.
-# Without this, "we have backups" is a hope, not a fact.
-#
-# What it does:
-# 1. Downloads the latest backup from offsite (rclone)
-# 2. Creates a temporary site on this bench
-# 3. Restores the backup into the temp site
-# 4. Runs sanity checks (table counts, critical doctype presence)
-# 5. Tears down the temp site
-# 6. Emails the results
-#
+
 
 set -euo pipefail
 
