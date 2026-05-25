@@ -29,7 +29,7 @@ log() {
 cleanup() {
     log "Cleaning up test site $TEST_SITE..."
     cd "$BENCH_DIR"
-    if bench --site "$TEST_SITE" drop-site --no-backup --root-password "$(grep -oP '"db_password":\s*"\K[^"]+' sites/$SITE/site_config.json)" --force 2>&1 | tee -a "$LOG_FILE"; then
+    if bench drop-site "$TEST_SITE" --no-backup --root-password "$(grep -oP '"db_password":\s*"\K[^"]+' sites/$SITE/site_config.json)" --force 2>&1 | tee -a "$LOG_FILE"; then
         log "✓ Test site dropped"
     else
         log "⚠ Could not drop test site (manual cleanup may be needed)"
