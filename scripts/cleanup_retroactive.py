@@ -57,7 +57,7 @@ def execute_cleanup():
 if __name__ == "__main__":
     import sys
     site = sys.argv[1] if len(sys.argv) > 1 else "vitalvida.systemforce.ng"
-    frappe.init(site=site)
+    frappe.init(site=site, sites_path="sites")
     frappe.connect()
     try:
         frappe.session.user = "Administrator"
