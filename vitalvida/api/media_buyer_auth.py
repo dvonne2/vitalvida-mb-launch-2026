@@ -73,7 +73,7 @@ def consume_magic_link(token=None):
             "send_welcome_email": 0,
             "user_type": "Website User",
             "enabled": 1,
-            "roles": [{"role": "Media Buyer"}],
+            "roles": [{"role": "Media Buyer Portal"}],
         })
         user_doc.flags.ignore_permissions = True
         user_doc.insert()
@@ -129,7 +129,8 @@ def request_new_magic_link(email=None):
     # Generate new token
     import secrets
     from datetime import timedelta
-    token = secrets.token_urlsafe(48)
+    # Use 24 bytes (32 chars) so the full URL fits in the 140-char limit of a Data field
+    token = secrets.token_urlsafe(24)
     expires_at = now_datetime() + timedelta(days=7)
     magic_link = f"{get_url()}/api/method/vitalvida.api.media_buyer_auth.consume_magic_link?token={token}"
 
@@ -140,20 +141,43 @@ def request_new_magic_link(email=None):
     }, update_modified=False)
     frappe.db.commit()
 
-    # Send Email 2 (re-issue magic link)
+    # Send magic link email with inline HTML (no template dependency)
+    email_html = f"""
+    <div style="font-family: 'Montserrat', Arial, sans-serif; max-width: 560px; margin: 0 auto; background: #0a0a0a; border: 1px solid rgba(212,175,55,0.3); border-radius: 16px; overflow: hidden;">
+        <div style="background: linear-gradient(135deg, #1a1500 0%, #0a0a0a 100%); padding: 40px 32px; text-align: center; border-bottom: 1px solid rgba(212,175,55,0.2);">
+            <h1 style="color: #d4af37; font-size: 24px; margin: 0 0 8px 0; letter-spacing: 2px;">VITALVIDA</h1>
+            <p style="color: #888; font-size: 12px; margin: 0; letter-spacing: 3px; text-transform: uppercase;">Affiliate Program</p>
+        </div>
+        <div style="padding: 40px 32px;">
+            <p style="color: #ccc; font-size: 16px; margin: 0 0 8px 0;">Hello <strong style="color: #fff;">{mb.full_name or 'Partner'}</strong>,</p>
+            <p style="color: #999; font-size: 14px; line-height: 1.6; margin: 0 0 32px 0;">
+                Click the button below to securely access your affiliate dashboard. This link is single-use and expires in 7 days.
+            </p>
+            <div style="text-align: center; margin: 32px 0;">
+                <a href="{magic_link}" style="display: inline-block; background: linear-gradient(135deg, #b8860b, #d4af37, #f0d060); color: #000; text-decoration: none; padding: 16px 48px; border-radius: 12px; font-weight: 700; font-size: 14px; letter-spacing: 1px; text-transform: uppercase;">
+                    Access My Dashboard
+                </a>
+            </div>
+            <p style="color: #666; font-size: 12px; line-height: 1.5; margin: 32px 0 0 0; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.1);">
+                Your Affiliate ID: <strong style="color: #d4af37;">{mb.utm_ref or mb.name}</strong><br>
+                If you didn't request this link, you can safely ignore this email.
+            </p>
+        </div>
+    </div>
+    """
+
     try:
         frappe.sendmail(
             recipients=[mb.email],
-            subject="Your VitalVida Affiliate Magic Link",
-            template="Affiliate Magic Link",
-            args={
-                "full_name": mb.full_name,
-                "utm_ref": mb.utm_ref,
-                "magic_link_url": magic_link,
-            },
+            subject="Your VitalVida Affiliate Portal Access",
+            message=email_html,
             now=True,
         )
     except Exception as e:
-        frappe.log_error(f"Failed to send magic link email to {mb.email}: {str(e)}", "Magic Link Resend")
+        # Log the error AND the magic link URL so it's always retrievable
+        frappe.log_error(
+            f"Failed to send magic link to {mb.email}. Link: {magic_link}\nError: {str(e)}",
+            "Magic Link Email Failed"
+        )
 
     return {"success": True, "message": "If this email is registered, a magic link has been sent."}
