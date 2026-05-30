@@ -667,3 +667,223 @@ def get_mb_links(mb_id=None):
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "get_mb_links Error")
         return {"error": str(e)}
+
+
+# ═══════════════════════════════════════════════════════════
+# nudge_team — Affiliate escalates a stale order to internal team
+# ═══════════════════════════════════════════════════════════
+
+@frappe.whitelist()
+def nudge_team(order_name=None, message=None):
+    """
+    Affiliate-facing endpoint: nudge internal team about a stale order.
+
+    Affiliate sees their order isn't moving (e.g., stuck Pending for 24+ hours)
+    and clicks "Nudge Team" in their portal. This:
+
+    1. Verifies the affiliate owns the order (attribution)
+    2. Rate-limits to 1 nudge per order per 24 hours
+    3. Logs the nudge in VV Order Nudge Log
+    4. Emails the assigned telesales agent + operations manager
+    5. Returns a confirmation
+
+    Args:
+        order_name: Name of the VV Order (e.g., "VV-ORD-00321")
+        message: Optional message from the affiliate (max 200 chars)
+
+    Returns:
+        {"success": True, "outcome": "Sent"} on success
+        {"success": False, "error": "..."} on failure
+    """
+
+    # 1. Resolve the calling media buyer
+    mb_id = _get_mb_id()
+    if not mb_id:
+        frappe.local.response["http_status_code"] = 401
+        return {"success": False, "error": "Not authenticated as a media buyer"}
+
+    # 2. Validate inputs
+    if not order_name:
+        frappe.local.response["http_status_code"] = 400
+        return {"success": False, "error": "order_name is required"}
+
+    # Truncate message to 200 chars to prevent abuse
+    message = (message or "").strip()[:200]
+
+    # 3. Fetch the order
+    if not frappe.db.exists("VV Order", order_name):
+        frappe.local.response["http_status_code"] = 404
+        return {"success": False, "error": "Order not found"}
+
+    order = frappe.db.get_value(
+        "VV Order",
+        order_name,
+        ["name", "media_buyer", "status", "customer_name", "package_name",
+         "assigned_telesales_agent", "creation"],
+        as_dict=True
+    )
+
+    # 4. Verify attribution — the calling affiliate must own this order
+    if order.media_buyer != mb_id:
+        frappe.local.response["http_status_code"] = 403
+        return {"success": False, "error": "You can only nudge orders attributed to you"}
+
+    # 5. Don't allow nudging completed/closed orders
+    closed_statuses = ["Delivered", "Paid", "Cancelled", "Refunded", "Failed"]
+    if order.status in closed_statuses:
+        return {
+            "success": False,
+            "outcome": "Failed",
+            "error": f"Cannot nudge a {order.status} order"
+        }
+
+    # 6. Rate limit: 1 nudge per order per 24 hours
+    last_nudge = frappe.db.sql(
+        """
+        SELECT creation
+        FROM `tabVV Order Nudge Log`
+        WHERE reference_order = %s
+          AND media_buyer = %s
+          AND outcome = 'Sent'
+        ORDER BY creation DESC
+        LIMIT 1
+        """,
+        (order_name, mb_id),
+        as_dict=True
+    )
+
+    if last_nudge:
+        hours_since = (now_datetime() - get_datetime(last_nudge[0].creation)).total_seconds() / 3600
+        if hours_since < 24:
+            # Log the rate-limited attempt for audit
+            _log_nudge(order_name, mb_id, "Rate-Limited", message,
+                       notified_users=None, note=f"Blocked: last nudge {hours_since:.1f}h ago")
+            return {
+                "success": False,
+                "outcome": "Rate-Limited",
+                "error": f"You already nudged this order recently. Try again in {24 - hours_since:.1f} hours."
+            }
+
+    # 7. Determine who gets notified
+    notified_users = []
+
+    # Always include the assigned telesales agent if one exists
+    if order.assigned_telesales_agent:
+        ts_email = frappe.db.get_value("User", order.assigned_telesales_agent, "email")
+        if ts_email:
+            notified_users.append(ts_email)
+
+    # Include all users with the "Operations Manager" role
+    ops_managers = frappe.db.sql(
+        """
+        SELECT DISTINCT u.email
+        FROM `tabUser` u
+        JOIN `tabHas Role` r ON r.parent = u.name
+        WHERE r.role = 'Operations Manager'
+          AND u.enabled = 1
+          AND u.email IS NOT NULL
+        """,
+        as_dict=True
+    )
+    notified_users.extend([u.email for u in ops_managers])
+
+    # Deduplicate
+    notified_users = list(set(notified_users))
+
+    if not notified_users:
+        _log_nudge(order_name, mb_id, "Failed", message,
+                   notified_users=None, note="No recipients found")
+        return {
+            "success": False,
+            "outcome": "Failed",
+            "error": "No team members available to nudge. Contact support directly."
+        }
+
+    # 8. Send the email
+    affiliate = frappe.db.get_value(
+        "VV Media Buyer",
+        mb_id,
+        ["full_name", "utm_ref", "phone"],
+        as_dict=True
+    )
+
+    try:
+        frappe.sendmail(
+            recipients=notified_users,
+            subject=f"⚡ Affiliate Nudge: Order {order.name} ({order.status})",
+            template="Affiliate Nudge Notification",
+            args={
+                "order_name": order.name,
+                "order_status": order.status,
+                "customer_name": order.customer_name or "Unknown",
+                "package_name": order.package_name or "Unknown",
+                "order_age_hours": int((now_datetime() - get_datetime(order.creation)).total_seconds() / 3600),
+                "affiliate_name": affiliate.full_name if affiliate else "Unknown",
+                "affiliate_utm_ref": affiliate.utm_ref if affiliate else "",
+                "affiliate_phone": affiliate.phone if affiliate else "",
+                "affiliate_message": message or "(no message provided)",
+                "order_link": f"{frappe.utils.get_url()}/app/vv-order/{order.name}",
+            },
+            now=True,
+        )
+        outcome = "Sent"
+        note = f"Notified {len(notified_users)} team member(s)"
+
+    except Exception as e:
+        frappe.log_error(
+            f"Nudge email failed for {order_name}: {str(e)}",
+            "Affiliate Nudge"
+        )
+        outcome = "Failed"
+        note = f"Email failed: {str(e)[:100]}"
+
+    # 9. Log the nudge (for audit + rate limit + analytics)
+    _log_nudge(
+        order_name=order_name,
+        mb_id=mb_id,
+        outcome=outcome,
+        message=message,
+        notified_users=", ".join(notified_users) if notified_users else None,
+        note=note
+    )
+
+    if outcome == "Sent":
+        return {
+            "success": True,
+            "outcome": "Sent",
+            "message": f"Team notified ({len(notified_users)} people). Expect a response soon.",
+            "notified_count": len(notified_users)
+        }
+    else:
+        return {
+            "success": False,
+            "outcome": outcome,
+            "error": "Could not send notification. Please try again or contact support."
+        }
+
+
+def _log_nudge(order_name, mb_id, outcome, message=None,
+               notified_users=None, note=None):
+    """
+    Internal helper to log a nudge attempt.
+    Uses frappe.get_doc + insert (not direct SQL) so doctype hooks fire properly.
+    """
+    try:
+        doc = frappe.get_doc({
+            "doctype": "VV Order Nudge Log",
+            "reference_order": order_name,
+            "nudged_by": frappe.session.user,
+            "media_buyer": mb_id,
+            "outcome": outcome,
+            "notified_users": notified_users or "",
+            "notes": f"{message}\n---\n{note}" if message else (note or ""),
+        })
+        doc.flags.ignore_permissions = True
+        doc.insert()
+        frappe.db.commit()
+    except Exception as e:
+        # Don't let logging failure break the main flow
+        frappe.log_error(
+            f"Failed to log nudge for {order_name}: {str(e)}",
+            "Nudge Logging"
+        )
