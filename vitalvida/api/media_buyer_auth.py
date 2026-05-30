@@ -95,7 +95,7 @@ def consume_magic_link(token=None):
     frappe.db.commit()
 
     # 7. Redirect to media buyer portal
-    portal_url = "/media-buyer"  # Adjust to wherever the Lovable portal lives
+    portal_url = "https://fulanihairsecrets.com/dashboard"  # Adjust to wherever the Lovable portal lives
     frappe.local.response["type"] = "redirect"
     frappe.local.response["location"] = portal_url
 
