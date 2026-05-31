@@ -1309,10 +1309,10 @@ def after_insert_affiliate(doc, method=None):
             recipients=[doc.email],
             subject=subject,
             message=message,
-            now=True,
+            now=False,
         )
     except Exception as e:
         frappe.log_error(
-            f"Failed to send welcome email to {doc.email}: {str(e)}",
-            "VV Media Buyer Welcome Email"
+            title="VV Media Buyer Welcome Email",
+            message=f"Failed to send welcome email to {doc.email}: {str(e)}"
         )
