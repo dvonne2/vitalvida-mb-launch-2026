@@ -1167,6 +1167,9 @@ def validate_affiliate(doc, method=None):
     import requests
     import frappe
 
+    if hasattr(doc, "fee_status") and doc.fee_status == "Not Required":
+        doc.fee_status = "Unpaid"
+
     if doc.is_active == 1 and not doc.is_new():
         pass
     else:
