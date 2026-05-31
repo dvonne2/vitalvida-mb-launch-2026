@@ -94,8 +94,10 @@ def consume_magic_link(token=None):
     }, update_modified=False)
     frappe.db.commit()
 
-    # 7. Redirect to media buyer portal
-    portal_url = "https://fulanihairsecrets.com/dashboard"  # Adjust to wherever the Lovable portal lives
+    # 7. Redirect to media buyer portal landing page (animated checkmark)
+    # Get base URL dynamically or fallback to production
+    # Vercel env or origin should be passed, but we use the known frontend URL
+    portal_url = "https://fulanihairsecrets.com/media-buyer"
     frappe.local.response["type"] = "redirect"
     frappe.local.response["location"] = portal_url
 
