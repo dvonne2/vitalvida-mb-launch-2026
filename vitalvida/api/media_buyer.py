@@ -622,7 +622,7 @@ def get_mb_links(mb_id=None):
         aff_id   = mb.get("utm_ref") or mb_id
         platform = (mb.get("platform") or "").lower().replace(" ", "_")
 
-        base_url = "https://fulanihairgro.com/order"
+        base_url = "https://fulanihairsecrets.com/order"
         try:
             s = frappe.get_single("Vitalvida Settings")
             base_url = s.get("landing_page_url") or base_url

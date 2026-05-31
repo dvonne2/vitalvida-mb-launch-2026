@@ -162,7 +162,7 @@ else:
                 doc.status = "Pending"
                 doc.is_active = 0
 """
-    _create_server_script("vv_media_buyer_validate", "VV Media Buyer", "Validate", validate_script)
+    _create_server_script("vv_media_buyer_validate", "VV Media Buyer", "Before Validate", validate_script)
 
     # 4. Create Server Script: after_insert
     after_insert_script = """
