@@ -365,7 +365,7 @@
   },
   {
    "fieldname": "magic_link_url",
-   "fieldtype": "Data",
+   "fieldtype": "Small Text",
    "label": "Magic Link URL",
    "hidden": 1,
    "read_only": 1,
