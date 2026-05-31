@@ -10,7 +10,7 @@ class VVMediaBuyer(Document):
         if not self.is_new():
             return
         try:
-            settings = frappe.get_single("Vitalvida Settings")
+            settings = frappe.get_single("VitalVida Settings")
             cap = int(getattr(settings, "max_active_buyers", None) or 0)
             if cap <= 0:
                 return
