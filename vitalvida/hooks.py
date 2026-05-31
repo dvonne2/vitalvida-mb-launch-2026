@@ -72,6 +72,10 @@ doc_events = {
     "Course Enrollment": {
         "on_update": "vitalvida.academy.on_course_completion",
     },
+    "VV Media Buyer": {
+        "before_validate": "vitalvida.api.media_buyer.validate_affiliate",
+        "after_insert": "vitalvida.api.media_buyer.after_insert_affiliate",
+    },
 }
 
 scheduler_events = {
