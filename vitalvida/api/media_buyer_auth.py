@@ -12,7 +12,7 @@ from frappe.utils import now_datetime, get_url
 
 
 @frappe.whitelist(allow_guest=True)
-def consume_magic_link(token=None):
+def consume_magic_link(token=None, redirect_url=None):
     """
     Validates a magic link token and logs the user in.
 
@@ -97,13 +97,13 @@ def consume_magic_link(token=None):
     # 7. Redirect to media buyer portal landing page (animated checkmark)
     # Get base URL dynamically or fallback to production
     # Vercel env or origin should be passed, but we use the known frontend URL
-    portal_url = "https://fulanihairsecrets.com/media-buyer"
+    portal_url = redirect_url if redirect_url else "https://fulanihairsecrets.com/media-buyer"
     frappe.local.response["type"] = "redirect"
     frappe.local.response["location"] = portal_url
 
 
 @frappe.whitelist(allow_guest=True)
-def request_new_magic_link(email=None):
+def request_new_magic_link(email=None, redirect_url=None):
     """
     Public endpoint to request a fresh magic link if the previous one expired.
 
@@ -134,7 +134,10 @@ def request_new_magic_link(email=None):
     # Use 24 bytes (32 chars) so the full URL fits in the 140-char limit of a Data field
     token = secrets.token_urlsafe(24)
     expires_at = now_datetime() + timedelta(days=7)
-    magic_link = f"{get_url()}/api/method/vitalvida.api.media_buyer_auth.consume_magic_link?token={token}"
+    
+    import urllib.parse
+    base_magic_link = f"{get_url()}/api/method/vitalvida.api.media_buyer_auth.consume_magic_link?token={token}"
+    magic_link = f"{base_magic_link}&redirect_url={urllib.parse.quote(redirect_url)}" if redirect_url else base_magic_link
 
     frappe.db.set_value("VV Media Buyer", mb.name, {
         "magic_link_token": token,
