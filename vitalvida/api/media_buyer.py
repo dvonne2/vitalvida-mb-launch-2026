@@ -1114,7 +1114,7 @@ def seed_commission_rules():
         {
             "bundle_name": "Self Love B2GOF",
             "affiliate_tier": "",
-            "payout_amount": 7000,
+            "payout_amount": 6000,
             "is_active": 1,
             "effective_from": "2026-05-20",
             "effective_to": None,
@@ -1122,7 +1122,7 @@ def seed_commission_rules():
         {
             "bundle_name": "Self Love Plus B2GOF",
             "affiliate_tier": "",
-            "payout_amount": 9000,
+            "payout_amount": 8000,
             "is_active": 1,
             "effective_from": "2026-05-20",
             "effective_to": None,
@@ -1130,7 +1130,7 @@ def seed_commission_rules():
         {
             "bundle_name": "Family Saves",
             "affiliate_tier": "",
-            "payout_amount": 25000,
+            "payout_amount": 15000,
             "is_active": 1,
             "effective_from": "2026-05-20",
             "effective_to": None,
@@ -1565,7 +1565,7 @@ def seed_commission_rules():
         {
             "bundle_name": "Self Love B2GOF",
             "affiliate_tier": "",
-            "payout_amount": 7000,
+            "payout_amount": 6000,
             "is_active": 1,
             "effective_from": "2026-05-20",
             "effective_to": None,
@@ -1573,7 +1573,7 @@ def seed_commission_rules():
         {
             "bundle_name": "Self Love Plus B2GOF",
             "affiliate_tier": "",
-            "payout_amount": 9000,
+            "payout_amount": 8000,
             "is_active": 1,
             "effective_from": "2026-05-20",
             "effective_to": None,
@@ -1581,7 +1581,7 @@ def seed_commission_rules():
         {
             "bundle_name": "Family Saves",
             "affiliate_tier": "",
-            "payout_amount": 25000,
+            "payout_amount": 15000,
             "is_active": 1,
             "effective_from": "2026-05-20",
             "effective_to": None,
