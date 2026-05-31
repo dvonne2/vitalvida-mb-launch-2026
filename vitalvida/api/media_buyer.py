@@ -21,154 +21,7 @@ def _get_mb_id():
             "SELECT name FROM `tabVV Media Buyer` WHERE user = %s LIMIT 1",
             (user,), as_dict=True
         )
-    
-def validate_affiliate(doc, method=None):
-    import requests
-
-    if doc.is_active == 1 and not doc.is_new():
-        pass
-    else:
-        existing_phone = frappe.db.exists("VV Media Buyer", {
-            "phone": doc.phone,
-            "name": ["!=", doc.name or ""]
-        })
-        if existing_phone:
-            frappe.throw(f"Phone {doc.phone} is already registered as an affiliate.")
-
-        if doc.email:
-            existing_email = frappe.db.exists("VV Media Buyer", {
-                "email": doc.email,
-                "name": ["!=", doc.name or ""]
-            })
-            if existing_email:
-                frappe.throw(f"Email {doc.email} is already registered as an affiliate.")
-
-        if doc.bank_name and doc.account_number and doc.full_name:
-            paystack_secret = frappe.conf.get("paystack_secret_key")
-            if not paystack_secret:
-                frappe.log_error("Paystack secret key not configured", "VV Media Buyer Bank Verification")
-                doc.status = "Pending"
-                doc.is_active = 0
-            else:
-                bank_code = frappe.db.get_value("Bank", doc.bank_name, "custom_paystack_code") or doc.bank_name
-                try:
-                    response = requests.get(
-                        "https://api.paystack.co/bank/resolve",
-                        params={
-                            "account_number": doc.account_number,
-                            "bank_code": bank_code,
-                        },
-                        headers={"Authorization": f"Bearer {paystack_secret}"},
-                        timeout=10
-                    )
-                    response.raise_for_status()
-                    result = response.json()
-
-                    if not result.get("status"):
-                        frappe.throw(f"Bank verification failed: {result.get('message', 'Account not found')}")
-
-                    resolved_name = (result.get("data", {}).get("account_name") or "").strip().upper()
-                    provided_name = (doc.full_name or "").strip().upper()
-
-                    provided_tokens = set(provided_name.split())
-                    resolved_tokens = set(resolved_name.split())
-                    if not provided_tokens or not resolved_tokens:
-                        frappe.throw("Names cannot be compared. Please provide a valid full name.")
-
-                    overlap = provided_tokens & resolved_tokens
-                    match_score = len(overlap) / max(len(provided_tokens), len(resolved_tokens))
-
-                    if match_score < 0.7:
-                        frappe.throw(
-                            f"Account name doesn't match. Bank shows '{resolved_name}'. "
-                            f"Please check your details and try again."
-                        )
-
-                    doc.account_name = resolved_name
-                    doc.status = "Active"
-                    doc.is_active = 1
-
-                except requests.RequestException as e:
-                    frappe.log_error(f"Paystack API error: {str(e)}", "VV Media Buyer Bank Verification")
-                    doc.status = "Pending"
-                    doc.is_active = 0
-
-def after_insert_affiliate(doc, method=None):
-    import secrets
-    from datetime import timedelta
-
-    token = secrets.token_urlsafe(48)
-    expires_at = frappe.utils.now_datetime() + timedelta(days=7)
-    site_url = frappe.utils.get_url()
-    magic_link = f"{site_url}/api/method/vitalvida.api.media_buyer_auth.consume_magic_link?token={token}"
-
-    frappe.db.set_value("VV Media Buyer", doc.name, {
-        "magic_link_token": token,
-        "magic_link_expires_at": expires_at,
-        "magic_link_url": magic_link,
-    }, update_modified=False)
-
-    is_active = (doc.is_active == 1)
-    subject = "Welcome to VitalVida Affiliates" if is_active else "Application Received — Under Review"
-
-    if is_active:
-        message = f"""
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #fff; background-color: #111; padding: 30px; border-radius: 12px; border: 1px solid #d4af3730;">
-            <h2 style="color: #d4af37; font-size: 24px; margin-bottom: 20px;">Welcome to VitalVida Affiliates!</h2>
-            <p style="color: #ccc; line-height: 1.6; font-size: 15px;">Hi {doc.full_name},</p>
-            <p style="color: #ccc; line-height: 1.6; font-size: 15px;">Your affiliate account is now <strong>Active</strong>. Your bank details have been verified, and you're ready to start earning commissions.</p>
-            
-            <div style="background-color: #000; border-left: 3px solid #d4af37; padding: 15px; margin: 25px 0;">
-                <p style="margin: 0; color: #aaa; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Your Affiliate ID</p>
-                <p style="margin: 5px 0 0 0; color: #d4af37; font-size: 20px; font-weight: bold;">{doc.utm_ref}</p>
-            </div>
-
-            <p style="color: #ccc; line-height: 1.6; font-size: 15px; margin-bottom: 25px;">Click the button below to log into your dashboard and get your marketing links.</p>
-            
-            <a href="{magic_link}" style="display: inline-block; background-color: #d4af37; color: #000; font-weight: bold; text-decoration: none; padding: 14px 28px; border-radius: 8px; text-transform: uppercase; letter-spacing: 1px; font-size: 14px;">Log Into Dashboard</a>
-            
-            <p style="color: #777; font-size: 12px; margin-top: 30px; border-top: 1px solid #333; padding-top: 20px;">
-                This link expires in 7 days. You can always request a new one from the portal.<br><br>
-                © VitalVida ERP
-            </p>
-        </div>
-        """
-    else:
-        message = f"""
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #fff; background-color: #111; padding: 30px; border-radius: 12px; border: 1px solid #333;">
-            <h2 style="color: #f59e0b; font-size: 24px; margin-bottom: 20px;">Application Received</h2>
-            <p style="color: #ccc; line-height: 1.6; font-size: 15px;">Hi {doc.full_name},</p>
-            <p style="color: #ccc; line-height: 1.6; font-size: 15px;">We have received your affiliate application. It is currently <strong>Under Review</strong>.</p>
-            <p style="color: #ccc; line-height: 1.6; font-size: 15px;">Our team will review your details (including your bank account) and notify you once approved.</p>
-            
-            <div style="background-color: #000; border-left: 3px solid #f59e0b; padding: 15px; margin: 25px 0;">
-                <p style="margin: 0; color: #aaa; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Your Affiliate ID</p>
-                <p style="margin: 5px 0 0 0; color: #f59e0b; font-size: 20px; font-weight: bold;">{doc.utm_ref}</p>
-            </div>
-
-            <p style="color: #ccc; line-height: 1.6; font-size: 15px; margin-bottom: 25px;">You can log in now to view your status, but your links will not be active yet.</p>
-            
-            <a href="{magic_link}" style="display: inline-block; background-color: #f59e0b; color: #000; font-weight: bold; text-decoration: none; padding: 14px 28px; border-radius: 8px; text-transform: uppercase; letter-spacing: 1px; font-size: 14px;">Check Application Status</a>
-            
-            <p style="color: #777; font-size: 12px; margin-top: 30px; border-top: 1px solid #333; padding-top: 20px;">
-                This link expires in 7 days. You can always request a new one from the portal.<br><br>
-                © VitalVida ERP
-            </p>
-        </div>
-        """
-
-    try:
-        frappe.sendmail(
-            recipients=[doc.email],
-            subject=subject,
-            message=message,
-            now=True,
-        )
-    except Exception as e:
-        frappe.log_error(
-            f"Failed to send welcome email to {doc.email}: {str(e)}",
-            "VV Media Buyer Welcome Email"
-        )[0].name if result else None
+        return result[0].name if result else None
     except Exception:
         return None
 
@@ -1309,3 +1162,154 @@ def seed_commission_rules():
     frappe.db.commit()
     return {"created": created, "skipped": skipped, "total": len(created) + len(skipped)}
 
+
+def validate_affiliate(doc, method=None):
+    import requests
+    import frappe
+
+    if doc.is_active == 1 and not doc.is_new():
+        pass
+    else:
+        existing_phone = frappe.db.exists("VV Media Buyer", {
+            "phone": doc.phone,
+            "name": ["!=", doc.name or ""]
+        })
+        if existing_phone:
+            frappe.throw(f"Phone {doc.phone} is already registered as an affiliate.")
+
+        if doc.email:
+            existing_email = frappe.db.exists("VV Media Buyer", {
+                "email": doc.email,
+                "name": ["!=", doc.name or ""]
+            })
+            if existing_email:
+                frappe.throw(f"Email {doc.email} is already registered as an affiliate.")
+
+        if doc.bank_name and doc.account_number and doc.full_name:
+            paystack_secret = frappe.conf.get("paystack_secret_key")
+            if not paystack_secret:
+                frappe.log_error("Paystack secret key not configured", "VV Media Buyer Bank Verification")
+                doc.status = "Pending"
+                doc.is_active = 0
+            else:
+                bank_code = frappe.db.get_value("Bank", doc.bank_name, "custom_paystack_code") or doc.bank_name
+                try:
+                    response = requests.get(
+                        "https://api.paystack.co/bank/resolve",
+                        params={
+                            "account_number": doc.account_number,
+                            "bank_code": bank_code,
+                        },
+                        headers={"Authorization": f"Bearer {paystack_secret}"},
+                        timeout=10
+                    )
+                    response.raise_for_status()
+                    result = response.json()
+
+                    if not result.get("status"):
+                        frappe.throw(f"Bank verification failed: {result.get('message', 'Account not found')}")
+
+                    resolved_name = (result.get("data", {}).get("account_name") or "").strip().upper()
+                    provided_name = (doc.full_name or "").strip().upper()
+
+                    provided_tokens = set(provided_name.split())
+                    resolved_tokens = set(resolved_name.split())
+                    if not provided_tokens or not resolved_tokens:
+                        frappe.throw("Names cannot be compared. Please provide a valid full name.")
+
+                    overlap = provided_tokens & resolved_tokens
+                    match_score = len(overlap) / max(len(provided_tokens), len(resolved_tokens))
+
+                    if match_score < 0.7:
+                        frappe.throw(
+                            f"Account name doesn't match. Bank shows '{resolved_name}'. "
+                            f"Please check your details and try again."
+                        )
+
+                    doc.account_name = resolved_name
+                    doc.status = "Active"
+                    doc.is_active = 1
+
+                except requests.RequestException as e:
+                    frappe.log_error(f"Paystack API error: {str(e)}", "VV Media Buyer Bank Verification")
+                    doc.status = "Pending"
+                    doc.is_active = 0
+
+
+def after_insert_affiliate(doc, method=None):
+    import secrets
+    from datetime import timedelta
+    import frappe
+
+    token = secrets.token_urlsafe(48)
+    expires_at = frappe.utils.now_datetime() + timedelta(days=7)
+    site_url = frappe.utils.get_url()
+    magic_link = f"{site_url}/api/method/vitalvida.api.media_buyer_auth.consume_magic_link?token={token}"
+
+    frappe.db.set_value("VV Media Buyer", doc.name, {
+        "magic_link_token": token,
+        "magic_link_expires_at": expires_at,
+        "magic_link_url": magic_link,
+    }, update_modified=False)
+
+    is_active = (doc.is_active == 1)
+    subject = "Welcome to VitalVida Affiliates" if is_active else "Application Received — Under Review"
+
+    if is_active:
+        message = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #fff; background-color: #111; padding: 30px; border-radius: 12px; border: 1px solid #d4af3730;">
+            <h2 style="color: #d4af37; font-size: 24px; margin-bottom: 20px;">Welcome to VitalVida Affiliates!</h2>
+            <p style="color: #ccc; line-height: 1.6; font-size: 15px;">Hi {doc.full_name},</p>
+            <p style="color: #ccc; line-height: 1.6; font-size: 15px;">Your affiliate account is now <strong>Active</strong>. Your bank details have been verified, and you're ready to start earning commissions.</p>
+            
+            <div style="background-color: #000; border-left: 3px solid #d4af37; padding: 15px; margin: 25px 0;">
+                <p style="margin: 0; color: #aaa; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Your Affiliate ID</p>
+                <p style="margin: 5px 0 0 0; color: #d4af37; font-size: 20px; font-weight: bold;">{doc.utm_ref}</p>
+            </div>
+
+            <p style="color: #ccc; line-height: 1.6; font-size: 15px; margin-bottom: 25px;">Click the button below to log into your dashboard and get your marketing links.</p>
+            
+            <a href="{magic_link}" style="display: inline-block; background-color: #d4af37; color: #000; font-weight: bold; text-decoration: none; padding: 14px 28px; border-radius: 8px; text-transform: uppercase; letter-spacing: 1px; font-size: 14px;">Log Into Dashboard</a>
+            
+            <p style="color: #777; font-size: 12px; margin-top: 30px; border-top: 1px solid #333; padding-top: 20px;">
+                This link expires in 7 days. You can always request a new one from the portal.<br><br>
+                © VitalVida ERP
+            </p>
+        </div>
+        """
+    else:
+        message = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #fff; background-color: #111; padding: 30px; border-radius: 12px; border: 1px solid #333;">
+            <h2 style="color: #f59e0b; font-size: 24px; margin-bottom: 20px;">Application Received</h2>
+            <p style="color: #ccc; line-height: 1.6; font-size: 15px;">Hi {doc.full_name},</p>
+            <p style="color: #ccc; line-height: 1.6; font-size: 15px;">We have received your affiliate application. It is currently <strong>Under Review</strong>.</p>
+            <p style="color: #ccc; line-height: 1.6; font-size: 15px;">Our team will review your details (including your bank account) and notify you once approved.</p>
+            
+            <div style="background-color: #000; border-left: 3px solid #f59e0b; padding: 15px; margin: 25px 0;">
+                <p style="margin: 0; color: #aaa; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Your Affiliate ID</p>
+                <p style="margin: 5px 0 0 0; color: #f59e0b; font-size: 20px; font-weight: bold;">{doc.utm_ref}</p>
+            </div>
+
+            <p style="color: #ccc; line-height: 1.6; font-size: 15px; margin-bottom: 25px;">You can log in now to view your status, but your links will not be active yet.</p>
+            
+            <a href="{magic_link}" style="display: inline-block; background-color: #f59e0b; color: #000; font-weight: bold; text-decoration: none; padding: 14px 28px; border-radius: 8px; text-transform: uppercase; letter-spacing: 1px; font-size: 14px;">Check Application Status</a>
+            
+            <p style="color: #777; font-size: 12px; margin-top: 30px; border-top: 1px solid #333; padding-top: 20px;">
+                This link expires in 7 days. You can always request a new one from the portal.<br><br>
+                © VitalVida ERP
+            </p>
+        </div>
+        """
+
+    try:
+        frappe.sendmail(
+            recipients=[doc.email],
+            subject=subject,
+            message=message,
+            now=True,
+        )
+    except Exception as e:
+        frappe.log_error(
+            f"Failed to send welcome email to {doc.email}: {str(e)}",
+            "VV Media Buyer Welcome Email"
+        )
