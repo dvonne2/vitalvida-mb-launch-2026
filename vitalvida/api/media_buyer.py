@@ -1204,13 +1204,16 @@ def validate_affiliate(doc, method=None):
                             "bank_code": bank_code,
                         },
                         headers={"Authorization": f"Bearer {paystack_secret}"},
-                        timeout=10
+                        timeout=3
                     )
                     response.raise_for_status()
                     result = response.json()
 
                     if not result.get("status"):
-                        frappe.throw(f"Bank verification failed: {result.get('message', 'Account not found')}")
+                        frappe.msgprint(f"Bank verification pending: {result.get('message', 'Account not found')}. Manual verification required.")
+                        doc.status = "Pending"
+                        doc.is_active = 0
+                        return
 
                     resolved_name = (result.get("data", {}).get("account_name") or "").strip().upper()
                     provided_name = (doc.full_name or "").strip().upper()
@@ -1218,16 +1221,19 @@ def validate_affiliate(doc, method=None):
                     provided_tokens = set(provided_name.split())
                     resolved_tokens = set(resolved_name.split())
                     if not provided_tokens or not resolved_tokens:
-                        frappe.throw("Names cannot be compared. Please provide a valid full name.")
+                        frappe.msgprint("Names could not be fully matched automatically. Pending manual verification.")
+                        doc.status = "Pending"
+                        doc.is_active = 0
+                        return
 
                     overlap = provided_tokens & resolved_tokens
                     match_score = len(overlap) / max(len(provided_tokens), len(resolved_tokens))
 
                     if match_score < 0.7:
-                        frappe.throw(
-                            f"Account name doesn't match. Bank shows '{resolved_name}'. "
-                            f"Please check your details and try again."
-                        )
+                        frappe.msgprint(f"Name match low ({resolved_name}). Pending manual verification.")
+                        doc.status = "Pending"
+                        doc.is_active = 0
+                        return
 
                     doc.account_name = resolved_name
                     doc.status = "Active"
@@ -1235,6 +1241,11 @@ def validate_affiliate(doc, method=None):
 
                 except requests.RequestException as e:
                     frappe.log_error(f"Paystack API error: {str(e)}", "VV Media Buyer Bank Verification")
+                    frappe.msgprint("Bank verification service is currently unreachable. Pending manual verification.")
+                    doc.status = "Pending"
+                    doc.is_active = 0
+                except Exception as e:
+                    frappe.log_error(f"Bank verification unexpected error: {str(e)}", "VV Media Buyer Bank Verification")
                     doc.status = "Pending"
                     doc.is_active = 0
 
