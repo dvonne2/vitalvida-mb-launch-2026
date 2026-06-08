@@ -25,9 +25,12 @@ def consume_magic_link(token=None, redirect_url=None):
 
     Called via GET: /api/method/vitalvida.api.media_buyer_auth.consume_magic_link?token=...
     """
+    portal_url = redirect_url if redirect_url else "https://fulanihairsecrets.com/media-buyer"
+
     if not token:
-        frappe.local.response["http_status_code"] = 400
-        return {"error": "Token required"}
+        frappe.local.response["type"] = "redirect"
+        frappe.local.response["location"] = f"{portal_url}?error=token_required"
+        return
 
     # 1. Find the affiliate
     mb_name = frappe.db.get_value(
@@ -37,19 +40,22 @@ def consume_magic_link(token=None, redirect_url=None):
     )
 
     if not mb_name:
-        frappe.local.response["http_status_code"] = 404
-        return {"error": "Invalid or expired link. Please request a new one."}
+        frappe.local.response["type"] = "redirect"
+        frappe.local.response["location"] = f"{portal_url}?error=invalid_or_expired_link"
+        return
 
     mb = frappe.get_doc("VV Media Buyer", mb_name)
 
     # 2. Check expiry
     if not mb.magic_link_expires_at:
-        frappe.local.response["http_status_code"] = 410
-        return {"error": "This link has no expiry set. Contact support."}
+        frappe.local.response["type"] = "redirect"
+        frappe.local.response["location"] = f"{portal_url}?error=no_expiry_set"
+        return
 
     if mb.magic_link_expires_at < now_datetime():
-        frappe.local.response["http_status_code"] = 410
-        return {"error": "This link has expired. Please request a new one from the portal login page."}
+        frappe.local.response["type"] = "redirect"
+        frappe.local.response["location"] = f"{portal_url}?error=link_expired"
+        return
 
     # 3. Check affiliate is Active (or Pending review)
     if mb.is_suspended:
