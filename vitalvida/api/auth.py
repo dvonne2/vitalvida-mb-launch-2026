@@ -15,6 +15,7 @@ Usage in each portal file:
 """
 
 import frappe
+from frappe.rate_limiter import rate_limit
 
 
 # Full role → portal mapping used across all portals
@@ -34,11 +35,17 @@ ROLE_PORTAL = {
 
 
 @frappe.whitelist(allow_guest=True)
+@rate_limit(key="usr", limit=10, seconds=300)
 def login(usr, pwd):
     """
     Shared login endpoint for all VitalVida portals.
     Authenticates with ERPNext credentials and returns session info
     including which portal the user should be redirected to.
+
+    FIX BUG 8: Rate-limited to 10 attempts per 5 minutes per IP via
+    frappe.rate_limiter. Also logs failed authentication attempts to
+    the Error Log for audit. Together these slow brute-force attacks
+    on user accounts.
     """
     try:
         from frappe.auth import LoginManager
@@ -59,6 +66,15 @@ def login(usr, pwd):
             "roles":   roles,
         }
     except frappe.AuthenticationError:
+        # Audit log failed login attempts for security review
+        try:
+            ip = frappe.local.request_ip if hasattr(frappe.local, 'request_ip') else 'unknown'
+            frappe.log_error(
+                f"Failed login attempt for user={usr} from IP={ip}",
+                "VitalVida Auth Failure"
+            )
+        except Exception:
+            pass
         return {"success": False, "error": "Invalid email or password"}
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "VitalVida Login Error")

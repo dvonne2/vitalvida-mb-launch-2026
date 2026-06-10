@@ -85,6 +85,15 @@ def ingest():
 # ═══════════════════════════════════════════════════════════
 
 def process_webhook_queue(queue_id=None):
+    """
+    FIX BUG 15: Race condition between scheduler and enqueue paths.
+
+    Both the scheduler (running every minute) and frappe.enqueue (called
+    from ingest()) can read the same Pending row simultaneously and both
+    try to process it. The atomic UPDATE below flips Pending->Processing
+    in a single DB operation; if another worker beat us to it, our UPDATE
+    affects 0 rows and we skip that row.
+    """
     filters = {"status": "Pending"}
     if queue_id:
         filters["queue_id"] = queue_id
@@ -97,6 +106,20 @@ def process_webhook_queue(queue_id=None):
     )
 
     for row in pending_rows:
+        # ── Atomic claim: try to flip status Pending → Processing ─────
+        frappe.db.sql("""
+            UPDATE `tabVitalvida Webhook Queue`
+            SET status = 'Processing', processed_at = %s
+            WHERE name = %s AND status = 'Pending'
+        """, (now_datetime(), row.name))
+
+        # Verify we won the race
+        current_status = frappe.db.get_value(
+            "Vitalvida Webhook Queue", row.name, "status"
+        )
+        if current_status != "Processing":
+            continue  # Another worker claimed it first
+
         try:
             # STEP 1: DUPLICATE CHECK IN QUEUE
             already_done = frappe.db.exists("Vitalvida Webhook Queue", {
@@ -235,15 +258,18 @@ def _create_vv_order(order_id, raw_payload, clean_data):
     vv_doc.insert(ignore_permissions=True)
     frappe.db.commit()
 
-    frappe.log_error(
-        title=f"VV Order Created: {vv_doc.name}",
-        message=(
-            f"Customer: {vv_doc.customer_name}\n"
-            f"Phone: {vv_doc.customer_phone}\n"
-            f"Package: {vv_doc.package_name}\n"
-            f"State: {vv_doc.state} / LGA: {vv_doc.lga}\n"
-            f"Total: ₦{vv_doc.total_payable:,.0f}"
-        ),
+    # FIX BUG 16: Use the info-level logger for successful order creation,
+    # not frappe.log_error. Previously, every new order was written to the
+    # Error Log doctype as if it were an error — making real errors hard to
+    # find amid hundreds of "Order Created" rows per day. Logger output goes
+    # to logs/vitalvida.log instead, where info-level events belong.
+    frappe.logger("vitalvida.orders", allow_site=True).info(
+        f"VV Order Created: {vv_doc.name} | "
+        f"Customer: {vv_doc.customer_name} | "
+        f"Phone: {vv_doc.customer_phone} | "
+        f"Package: {vv_doc.package_name} | "
+        f"State: {vv_doc.state} / LGA: {vv_doc.lga} | "
+        f"Total: ₦{vv_doc.total_payable:,.0f}"
     )
 
     return vv_doc.name

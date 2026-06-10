@@ -275,11 +275,64 @@ class VVOrder(Document):
             )
 
     def _on_cancelled_or_returned(self):
-        """On → Cancelled/Returned: log for now (M6 will handle engine rows)."""
-        frappe.log_error(
-            f"Order {self.name} moved to {self.order_status}. Note: {self.reschedule_note}",
-            "Order Cancelled/Returned"
+        """
+        FIX BUG 2: Cancel/Return stock flow (Decision A from bug-fix decisions).
+
+        When an order is cancelled or returned after being Paid (which deducted
+        stock from the DA's warehouse), restore the stock to the DA. DA keeps
+        the bottle; HQ may request a separate return if they want it back.
+
+        Idempotent: if a Return entry for this order already exists, skip.
+        No-op: if no Deduction entry exists (order never reached Paid), do nothing.
+        """
+        frappe.logger().info(
+            f"VV Order {self.name} moved to {self.order_status}. "
+            f"Note: {self.reschedule_note}"
         )
+
+        # Find original Deduction entries for this order
+        deduction_entries = frappe.get_all(
+            "DA Stock Entry",
+            filters={
+                "reference_order": self.name,
+                "entry_type": "Deduction",
+            },
+            fields=["name", "delivery_agent", "product", "quantity"],
+        )
+        if not deduction_entries:
+            return  # Order never had stock deducted
+
+        # Idempotency: skip if a Return was already processed
+        already_returned = frappe.db.exists("DA Stock Entry", {
+            "reference_order": self.name,
+            "entry_type": "Return",
+        })
+        if already_returned:
+            return
+
+        # Restore each deducted quantity via a Return entry
+        from vitalvida.stock import _create_stock_entry
+        for entry in deduction_entries:
+            try:
+                _create_stock_entry(
+                    delivery_agent=entry.delivery_agent,
+                    product=entry.product,
+                    entry_type="Return",
+                    direction="In",
+                    quantity=float(entry.quantity),
+                    reference_order=self.name,
+                    notes=(
+                        f"Stock returned to DA — order {self.name} "
+                        f"{self.order_status.lower()}. Original deduction: "
+                        f"{entry.name}. DA retains stock for next order."
+                    ),
+                )
+            except Exception as e:
+                frappe.log_error(
+                    f"Cancel/Return stock restore failed for order {self.name}, "
+                    f"DA={entry.delivery_agent}, product={entry.product}: {str(e)}",
+                    "Cancel/Return Stock Error"
+                )
 
     # ─── Validations ───────────────────────────────────────────────────
 

@@ -26,6 +26,7 @@ ZERO HARDCODED: numbers, API keys, routes all in DocType config
 import json
 import re
 import random
+import hmac
 import frappe
 from frappe.utils import now_datetime, add_to_date
 
@@ -771,9 +772,14 @@ def webhook():
     from werkzeug.wrappers import Response
     if frappe.request.method == "GET":
         hub_challenge = frappe.form_dict.get("hub.challenge")
-        verify_token = frappe.form_dict.get("hub.verify_token")
+        verify_token = frappe.form_dict.get("hub.verify_token") or ""
         settings = frappe.get_single("VV Notification Settings")
-        if verify_token != settings.webhook_verify_token:
+        expected_token = settings.webhook_verify_token or ""
+        # FIX BUG 12: Use timing-safe comparison instead of "!=" to avoid
+        # leaking token byte-by-byte via response time analysis. compare_digest
+        # always takes the same amount of time regardless of how many bytes
+        # match, making remote timing attacks against the verify_token useless.
+        if not hmac.compare_digest(str(verify_token), str(expected_token)):
             frappe.throw("Verify token does not match")
         return Response(hub_challenge, status=200)
 

@@ -59,12 +59,28 @@ def compute_da_dsr(delivery_agent: str, period_start: str, period_end: str) -> d
     adjusted_denominator = assigned - customer_cancelled_count
     dsr_adjusted = round((paid / adjusted_denominator * 100), 2) if adjusted_denominator > 0 else 0.0
 
+    # FIX BUG 6: Add revenue-by-paid-date metric (Decision C).
+    # The existing DSR uses assigned_at as the period anchor. For finance
+    # reconciliation we ALSO need to know revenue collected during the
+    # period itself, regardless of when the order was originally assigned.
+    # This second metric anchors on paid_at — when the money actually came in.
+    revenue_by_paid_date = frappe.db.sql("""
+        SELECT COALESCE(SUM(price), 0) as total
+        FROM `tabVV Order`
+        WHERE delivery_agent = %s
+        AND order_status = 'Paid'
+        AND paid_at BETWEEN %s AND %s
+    """, (delivery_agent, period_start, period_end), as_dict=True)
+
+    revenue_paid_in_period = float(revenue_by_paid_date[0].total) if revenue_by_paid_date else 0.0
+
     return {
         "assigned": assigned,
         "paid": paid,
         "customer_cancelled": customer_cancelled_count,
         "dsr_strict": dsr_strict,
         "dsr_adjusted": dsr_adjusted,
+        "revenue_paid_in_period": revenue_paid_in_period,
     }
 
 

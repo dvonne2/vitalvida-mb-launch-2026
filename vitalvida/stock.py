@@ -1,179 +1,17 @@
 import frappe
 from frappe.utils import cint, now_datetime
 
-def deduct_on_payment(order_name):
-    """FIX SHOWSTOPPER 1+2: Complete rewrite.
-    - Parses bundle contents to deduct ALL component products (not just 1)
-    - Creates DA Stock Entry + updates DA Warehouse balance directly
-    - Guards against double-deduction (idempotent)
-    - Guards against negative stock
-    """
-    try:
-        already_deducted = frappe.db.exists("DA Stock Entry", {
-            "order": order_name,
-            "entry_type": "Deduction",
-        })
-        
-        if already_deducted:
-            return  # Stock already deducted for this order — idempotent
-
-        # 1. Load the VV Order
-        order = frappe.get_doc("VV Order", order_name)
-
-        # 2. Check delivery_agent is set
-        if not order.delivery_agent:
-            frappe.log_error(
-                f"M13: Order {order_name} has no delivery_agent — deduction skipped.",
-                "M13 Deduction Error"
-            )
-            return
-
-        # 3. Resolve components from package contents
-        if not order.package_name:
-            frappe.log_error(
-                f"M13: Order {order_name} has no package_name — deduction skipped.",
-                "M13 Deduction Error"
-            )
-            return
-
-        # Try VV Package first, fall back to Package
-        contents = ""
-        for dt in ["VV Package", "Package"]:
-            try:
-                contents = frappe.db.get_value(dt, order.package_name, "contents") or ""
-                if contents:
-                    break
-            except Exception:
-                continue
-
-        if not contents:
-            # Fallback: try single item field
-            product = None
-            for dt in ["VV Package", "Package"]:
-                try:
-                    product = frappe.db.get_value(dt, order.package_name, "item")
-                    if product:
-                        break
-                except Exception:
-                    continue
-            
-            if product:
-                contents = f"1 {product}"
-            else:
-                frappe.log_error(
-                    f"M13: Package {order.package_name} has no contents or item — "
-                    f"deduction skipped for order {order_name}.",
-                    "M13 Deduction Error"
-                )
-                return
-
-        # 4. Parse contents: "1 Shampoo · 1 Pomade · 1 Conditioner"
-        components = _parse_contents(contents)
-        if not components:
-            frappe.log_error(
-                f"M13: Could not parse contents '{contents}' for package "
-                f"{order.package_name} on order {order_name}.",
-                "M13 Deduction Error"
-            )
-            return
-
-        # 5. Deduct each component from DA warehouse
-        for product, qty in components:
-            _deduct_da_stock(
-                delivery_agent=order.delivery_agent,
-                product=product,
-                quantity=qty,
-                order=order_name,
-            )
-
-    except Exception as e:
-        # Catch everything — payment confirmation must never be blocked
-        frappe.log_error(
-            f"M13 deduction failed for order {order_name}: {str(e)}",
-            "M13 Deduction Error"
-        )
-
-def _parse_contents(contents):
-    """
-    Parse "1 Shampoo · 1 Pomade · 1 Conditioner" → [("Shampoo", 1), ("Pomade", 1), ("Conditioner", 1)]
-    Also handles "3 Shampoo · 3 Pomade" for B2GOF bundles.
-    """
-    items = []
-    if not contents:
-        return items
-    
-    for part in contents.split("·"):
-        part = part.strip()
-        if not part:
-            continue
-        
-        tokens = part.split()
-        if tokens and tokens[0].isdigit():
-            qty = int(tokens[0])
-            product = " ".join(tokens[1:])
-        else:
-            qty = 1
-            product = part
-        
-        if product:
-            items.append((product.strip(), qty))
-    return items
-
-def _deduct_da_stock(delivery_agent, product, quantity, order):
-    """
-    Create a DA Stock Entry (Deduction) and decrement DA Warehouse balance.
-    Writes to DA Warehouse (single source of truth for stock).
-    """
-    now = now_datetime()
-
-    # Create DA Stock Entry record
-    try:
-        entry = frappe.get_doc({
-            "doctype": "DA Stock Entry",
-            "delivery_agent": delivery_agent,
-            "product": product,
-            "entry_type": "Deduction",
-            "direction": "Out",
-            "quantity": quantity,
-            "order": order,
-            "creation": now,
-        })
-        entry.insert(ignore_permissions=True)
-    except Exception as e:
-        frappe.log_error(
-            f"M13: DA Stock Entry creation failed for DA={delivery_agent}, "
-            f"product={product}, order={order}: {str(e)}",
-            "M13 Stock Entry Error"
-        )
-        return
-
-    # Update DA Warehouse balance
-    try:
-        # DA Warehouse is the single source of truth for stock
-        wh = frappe.db.get_value(
-            "DA Warehouse",
-            {"delivery_agent": delivery_agent, "product": product},
-            ["name", "current_stock"],
-            as_dict=True
-        )
-        if wh:
-            new_stock = max(0, cint(wh.current_stock) - quantity)
-            frappe.db.set_value("DA Warehouse", wh.name, "current_stock", new_stock)
-        else:
-            frappe.log_error(
-                f"M13: No DA Warehouse found for DA={delivery_agent}, "
-                f"product={product}. Deduction recorded but stock not decremented.",
-                "M13 Missing Warehouse"
-            )
-
-        frappe.db.commit()
-
-    except Exception as e:
-        frappe.log_error(
-            f"M13: Stock balance update failed for DA={delivery_agent}, "
-            f"product={product}: {str(e)}",
-            "M13 Balance Update Error"
-        )
+# FIX BUG 13: Removed the duplicate deduct_on_payment function that used to
+# live at the top of this file. Two issues motivated removal:
+#   1. There were two functions named deduct_on_payment — one here, one in
+#      deduction.py. Only the deduction.py one is wired up. The stock.py
+#      version was dead code.
+#   2. The stock.py version called set_value on DA Warehouse directly AFTER
+#      inserting a DA Stock Entry — the after_insert hook ALSO updates the
+#      warehouse, so it would double-decrement if ever wired up.
+#
+# The single source of truth for payment deduction is now
+# vitalvida.deduction.deduct_on_payment.
 
 def validate_stock_available(delivery_agent, product, quantity=1):
     wh = frappe.db.get_value(
@@ -228,25 +66,99 @@ def _update_warehouse_stock(entry):
         })
         wh_doc.insert(ignore_permissions=True)
         wh_name = wh_doc.name
-        current = 0
-    else:
-        current = flt(frappe.db.get_value("DA Warehouse", wh_name, "current_stock"))
 
-    # 2. Calculate new balance
+    # FIX BUG 5: Atomic SQL UPDATE replaces read-then-write pattern.
+    # The old code (get_value -> calculate -> set_value) had a race condition:
+    # two concurrent stock entries could both read the same starting balance,
+    # then both write conflicting end balances, losing one of the updates.
+    # The atomic UPDATE locks the row at the DB level and computes the new
+    # balance in-place, eliminating the race window entirely.
     if direction == "In":
-        new_stock = current + qty
+        frappe.db.sql("""
+            UPDATE `tabDA Warehouse`
+            SET current_stock = current_stock + %s
+            WHERE name = %s
+        """, (qty, wh_name))
     else:  # "Out"
-        new_stock = max(0, current - qty)
+        frappe.db.sql("""
+            UPDATE `tabDA Warehouse`
+            SET current_stock = GREATEST(0, current_stock - %s)
+            WHERE name = %s
+        """, (qty, wh_name))
 
-    # 3. Write warehouse balance
-    frappe.db.set_value("DA Warehouse", wh_name, "current_stock", new_stock)
+    # Read back the new balance for the ledger trail
+    current = flt(frappe.db.get_value("DA Warehouse", wh_name, "current_stock"))
+    # balance_before is approximate (atomic update didn't capture it), but
+    # balance_after is exact post-update.
+    new_stock = current
 
     # 4. Stamp ledger trail on the entry
     frappe.db.set_value("DA Stock Entry", entry.name, {
-        "balance_before": current,
+        "balance_before": current - qty if direction == "In" else current + qty,
         "balance_after": new_stock,
     }, update_modified=False)
 
     frappe.db.commit()
 
 
+
+def _create_stock_entry(delivery_agent, product, entry_type, direction,
+                       quantity, reference_order=None, reference_dispatch=None,
+                       notes=None):
+    """
+    Generic DA Stock Entry creator.
+
+    Wraps DA Stock Entry insert with consistent error handling. Used by
+    callers outside the standard payment-deduction flow:
+      - DA Stock Return (end-of-cycle, damaged, expired)
+      - Cancel/Return on VV Order
+      - Manual adjustments
+      - Consignment audit trail (Bug 9)
+      - confirm_consignment fix (Bug 17)
+    """
+    if quantity <= 0:
+        frappe.log_error(
+            f"_create_stock_entry called with non-positive quantity={quantity}",
+            "Stock Entry Creation Error"
+        )
+        return None
+
+    valid_types = {"Dispatch", "Deduction", "Return", "Adjustment"}
+    if entry_type not in valid_types:
+        frappe.log_error(
+            f"_create_stock_entry called with invalid entry_type={entry_type}. "
+            f"Must be one of {valid_types}.",
+            "Stock Entry Creation Error"
+        )
+        return None
+
+    valid_directions = {"In", "Out"}
+    if direction not in valid_directions:
+        frappe.log_error(
+            f"_create_stock_entry called with invalid direction={direction}. "
+            f"Must be one of {valid_directions}.",
+            "Stock Entry Creation Error"
+        )
+        return None
+
+    try:
+        entry = frappe.get_doc({
+            "doctype": "DA Stock Entry",
+            "delivery_agent": delivery_agent,
+            "product": product,
+            "entry_type": entry_type,
+            "direction": direction,
+            "quantity": float(quantity),
+            "reference_order": reference_order,
+            "reference_dispatch": reference_dispatch,
+            "notes": notes,
+            "entry_date": now_datetime(),
+        }).insert(ignore_permissions=True)
+        return entry
+    except Exception as e:
+        frappe.log_error(
+            f"Failed to create DA Stock Entry: DA={delivery_agent}, "
+            f"product={product}, type={entry_type}, qty={quantity}. Error: {str(e)}",
+            "Stock Entry Creation Error"
+        )
+        return None
