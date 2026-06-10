@@ -369,42 +369,37 @@ def get_mb_orders(mb_id=None, period="w", limit=30, offset=0):
             status_breakdown[status] = status_breakdown.get(status, 0) + 1
 
             commission = 0
-            if status == "Paid":
+            if status == "Paid" or status == "Delivered":
                 commission = _estimate_commission(o.package_name)
 
             created_dt = get_datetime(o.creation) if o.creation else None
 
             result.append({
-                "id":         o.name,
-                "customer":   o.customer_name or "",
-                "bundle":     o.package_name or "",
-                "status":     status,
-                "amount":     _fmt(o.total_payable),
-                "commission": _fmt(commission) if commission else None,
-                "cancelled":  status in ["Cancelled", "Returned"],
-                "date":       created_dt.strftime("%d %b") if created_dt else "",
-                "source":     o.get("utm_source") or "",
-                "campaign":   o.get("utm_campaign") or "",
+                "name":                 o.name,
+                "customer_name":        o.customer_name or "",
+                "package_name":         o.package_name or "",
+                "status":               status,
+                "total":                flt(o.total_payable),
+                "estimated_commission": flt(commission),
+                "attribution_locked":   1 if status in ["Delivered", "Paid", "Cancelled", "Returned"] else 0,
+                "order_date":           created_dt.strftime("%d %b") if created_dt else "",
             })
 
-        paid_count   = status_breakdown.get("Paid", 0)
-        failed_count = status_breakdown.get("Cancelled", 0) + status_breakdown.get("Returned", 0)
+        period_label = "This Week"
+        if period == "m":
+            period_label = "This Month"
+        elif period == "all":
+            period_label = "All Time"
 
         return {
-            "orders":    result,
-            "total":     len(result),
-            "paid":      paid_count,
-            "failed":    failed_count,
-            "breakdown": [
-                {"status": k, "count": v,
-                 "revenue": _fmt(sum(flt(o.get("total_payable") or 0) for o in orders if (o.order_status or "") == k))}
-                for k, v in status_breakdown.items()
-            ]
+            "orders":       result,
+            "total_count":  len(result),
+            "period_label": period_label
         }
 
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "get_mb_orders Error")
-        return {"orders": [], "total": 0, "paid": 0, "failed": 0, "error": str(e)}
+        return {"orders": [], "total_count": 0, "period_label": "", "error": str(e)}
 
 
 # ═══════════════════════════════════════════════════════════
@@ -1378,23 +1373,25 @@ def nudge_team(order_name=None, message=None):
     order = frappe.db.get_value(
         "VV Order",
         order_name,
-        ["name", "media_buyer", "status", "customer_name", "package_name",
-         "assigned_telesales_agent", "creation"],
+        ["name", "aff_id", "order_status", "customer_name", "package_name",
+         "telesales_rep", "creation"],
         as_dict=True
     )
 
     # 4. Verify attribution — the calling affiliate must own this order
-    if order.media_buyer != mb_id:
+    mb = _get_mb_row(mb_id)
+    expected_aff_id = mb.get("utm_ref") or mb_id
+    if order.aff_id != expected_aff_id:
         frappe.local.response["http_status_code"] = 403
         return {"success": False, "error": "You can only nudge orders attributed to you"}
 
     # 5. Don't allow nudging completed/closed orders
     closed_statuses = ["Delivered", "Paid", "Cancelled", "Refunded", "Failed"]
-    if order.status in closed_statuses:
+    if order.order_status in closed_statuses:
         return {
             "success": False,
             "outcome": "Failed",
-            "error": f"Cannot nudge a {order.status} order"
+            "error": f"Cannot nudge a {order.order_status} order"
         }
 
     # 6. Rate limit: 1 nudge per order per 24 hours
@@ -1428,8 +1425,8 @@ def nudge_team(order_name=None, message=None):
     notified_users = []
 
     # Always include the assigned telesales agent if one exists
-    if order.assigned_telesales_agent:
-        ts_email = frappe.db.get_value("User", order.assigned_telesales_agent, "email")
+    if order.telesales_rep:
+        ts_email = frappe.db.get_value("User", order.telesales_rep, "email")
         if ts_email:
             notified_users.append(ts_email)
 
@@ -1468,22 +1465,47 @@ def nudge_team(order_name=None, message=None):
     )
 
     try:
+        order_age_hours = int((now_datetime() - get_datetime(order.creation)).total_seconds() / 3600)
+        aff_name = affiliate.full_name if affiliate else "Unknown"
+        aff_ref = affiliate.utm_ref if affiliate else ""
+        aff_phone = affiliate.phone if affiliate else ""
+        aff_msg = message or "(no message provided)"
+        order_link = f"{frappe.utils.get_url()}/app/vv-order/{order.name}"
+
+        email_html = f"""
+        <div style="font-family: 'Montserrat', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #0a0a0a; border: 1px solid rgba(212,175,55,0.3); border-radius: 16px; overflow: hidden; color: #ccc;">
+            <div style="background: linear-gradient(135deg, #1a1500 0%, #0a0a0a 100%); padding: 30px 32px; border-bottom: 1px solid rgba(212,175,55,0.2);">
+                <h1 style="color: #d4af37; font-size: 20px; margin: 0; letter-spacing: 1px;">⚡ Affiliate Nudge</h1>
+                <p style="color: #888; font-size: 13px; margin: 5px 0 0 0;">An affiliate is requesting an update on their order.</p>
+            </div>
+            <div style="padding: 30px 32px;">
+                <p><strong>Affiliate:</strong> <span style="color: #fff;">{aff_name}</span> ({aff_ref})</p>
+                <p><strong>Phone:</strong> {aff_phone}</p>
+                
+                <div style="background: rgba(212,175,55,0.05); border-left: 3px solid #d4af37; padding: 15px; margin: 20px 0;">
+                    <p style="margin: 0; font-style: italic; color: #fff;">"{aff_msg}"</p>
+                </div>
+
+                <h3 style="color: #d4af37; margin-top: 30px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;">Order Details</h3>
+                <ul style="list-style: none; padding: 0; margin: 0;">
+                    <li style="margin-bottom: 8px;"><strong>Order ID:</strong> {order.name}</li>
+                    <li style="margin-bottom: 8px;"><strong>Status:</strong> <span style="color: #d4af37;">{order.order_status}</span></li>
+                    <li style="margin-bottom: 8px;"><strong>Customer:</strong> {order.customer_name or 'Unknown'}</li>
+                    <li style="margin-bottom: 8px;"><strong>Package:</strong> {order.package_name or 'Unknown'}</li>
+                    <li style="margin-bottom: 8px;"><strong>Age:</strong> {order_age_hours} hours</li>
+                </ul>
+
+                <div style="margin-top: 30px;">
+                    <a href="{order_link}" style="display: inline-block; background: #d4af37; color: #000; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; font-size: 14px;">View Order in ERPNext</a>
+                </div>
+            </div>
+        </div>
+        """
+
         frappe.sendmail(
             recipients=notified_users,
-            subject=f"⚡ Affiliate Nudge: Order {order.name} ({order.status})",
-            template="Affiliate Nudge Notification",
-            args={
-                "order_name": order.name,
-                "order_status": order.status,
-                "customer_name": order.customer_name or "Unknown",
-                "package_name": order.package_name or "Unknown",
-                "order_age_hours": int((now_datetime() - get_datetime(order.creation)).total_seconds() / 3600),
-                "affiliate_name": affiliate.full_name if affiliate else "Unknown",
-                "affiliate_utm_ref": affiliate.utm_ref if affiliate else "",
-                "affiliate_phone": affiliate.phone if affiliate else "",
-                "affiliate_message": message or "(no message provided)",
-                "order_link": f"{frappe.utils.get_url()}/app/vv-order/{order.name}",
-            },
+            subject=f"⚡ Affiliate Nudge: Order {order.name} ({order.order_status})",
+            message=email_html,
             now=True,
         )
         outcome = "Sent"
