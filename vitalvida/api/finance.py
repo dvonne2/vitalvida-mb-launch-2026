@@ -25,13 +25,13 @@ def _guard():
 
 def _tbl(dt):
     try: return frappe.db.table_exists(dt)
-    except: return False
+    except Exception: return False
 
 def _safe(dt, fields):
     try:
         exist = {f.fieldname for f in frappe.get_meta(dt).fields} | {"name"}
         return [f for f in fields if f in exist]
-    except: return ["name"]
+    except Exception: return ["name"]
 
 def _fmt(n):
     v = flt(n or 0)
@@ -51,19 +51,19 @@ def _sql1(q, params=None):
     try:
         r = frappe.db.sql(q, params or (), as_dict=False)
         return flt(r[0][0]) if r else 0
-    except: return 0
+    except Exception: return 0
 
 def _sql1p(q, params):
     """Parameterised _sql1 — use this for any query with date/user input."""
     try:
         r = frappe.db.sql(q, params, as_dict=False)
         return flt(r[0][0]) if r else 0
-    except: return 0
+    except Exception: return 0
 
 def _da_name(da_id):
     if not da_id: return "—"
     try: return frappe.db.get_value("Delivery Agent", da_id, "agent_name") or da_id
-    except: return da_id
+    except Exception: return da_id
 
 
 # ═══════════════════════════════════════════════════════════
@@ -198,7 +198,7 @@ def get_dashboard(period="w"):
         try:
             s = frappe.get_single("Vitalvida Settings")
             cash_at_bank = flt(s.get("cash_at_bank") or 0)
-        except: pass
+        except Exception: pass
 
         # Alerts
         alerts = []
@@ -220,7 +220,7 @@ def get_dashboard(period="w"):
                 cur_stock = frappe.db.get_value("Delivery Agent", da_id, "current_stock") or 0
                 stuck = cint(cur_stock) * COGS_PER
                 alerts.append({"type": "amber", "icon": "📦", "msg": f"<strong>{da_name} exposure {_fmt(stuck)}</strong> — Frozen. Stock stuck. No remittance possible."})
-        except: pass
+        except Exception: pass
 
         return {
             "period":        period,
@@ -307,7 +307,7 @@ def get_da_fees():
                 days = cint(r.get("days_waiting") or 0)
                 if not days and r.get("requested_at"):
                     try: days = (date.today() - get_datetime(r.requested_at).date()).days
-                    except: days = 0
+                    except Exception: days = 0
                 is_overdue = days > 5
                 if is_overdue:
                     overdue_count += 1
@@ -381,7 +381,7 @@ def get_da_fees():
                 days_open = 0
                 if r.get("raised_at"):
                     try: days_open = (date.today() - get_datetime(r.raised_at).date()).days
-                    except: pass
+                    except Exception: pass
                 disputes.append({
                     "id": r.name, "da": da_name, "order": r.order or "",
                     "amount": _fmt(fee), "note": r.note or "",
@@ -437,7 +437,7 @@ def get_da_exposure():
                     bal = frappe.db.get_value("DA Warehouse", {"delivery_agent": da.name, "product": p}, "current_stock") or 0
                     products[p] = cint(bal)
                     stock_val  += cint(bal) * COGS_PER
-                except: products[p] = 0
+                except Exception: products[p] = 0
             else:
                 cs = cint(da.get("current_stock") or 0)
                 for p in PRODUCTS: products[p] = cs // 3
@@ -507,7 +507,7 @@ def get_da_exposure():
         try:
             s = frappe.get_single("Vitalvida Settings")
             cash_at_bank = flt(s.get("cash_at_bank") or 0)
-        except: pass
+        except Exception: pass
 
         return {
             "total_exposure": _fmt(total_exposure),
@@ -692,7 +692,7 @@ def get_recon():
                 dt_str = ""
                 if r.received_at:
                     try:    dt_str = get_datetime(r.received_at).strftime("%d %b %H:%M")
-                    except: dt_str = str(r.received_at)
+                    except Exception: dt_str = str(r.received_at)
                 unmatched_list.append({
                     "id":            r.name,
                     "reference":     r.get("transaction_id") or r.name,
@@ -790,7 +790,7 @@ def get_profitability(period="w"):
                         contents = pkg_doc[0].contents or ""
                         units    = sum(cint(p.split()[0]) for p in contents.split("·") if p.strip() and p.strip()[0].isdigit())
                         cogs     = cnt * units * COGS_PER
-                except: cogs = cnt * 3 * COGS_PER
+                except Exception: cogs = cnt * 3 * COGS_PER
                 da_fees    = flt(r.da_fees)
                 aff_est    = cnt * 4000  # avg affiliate per order
                 after_costs = rev - cogs - da_fees - aff_est
@@ -804,7 +804,7 @@ def get_profitability(period="w"):
                     "after_costs": _fmt(after_costs),
                     "is_negative": after_costs < 0,
                 })
-        except: pass
+        except Exception: pass
 
         # Per-DA profit
         da_profit = []
@@ -838,7 +838,7 @@ def get_profitability(period="w"):
                     "margin":  f"{margin}%",
                     "negative":net < 0,
                 })
-        except: pass
+        except Exception: pass
 
         # Per-order drill-down (latest 20 paid)
         orders = []
@@ -857,7 +857,7 @@ def get_profitability(period="w"):
                 aff     = 0
                 if _tbl("Affiliate Commission Rule") and o.get("affiliate_id"):
                     try: aff = flt(frappe.db.get_value("Affiliate Commission Rule", {"package": pkg, "is_active": 1}, "commission_amount") or 0)
-                    except: pass
+                    except Exception: pass
                 if not aff: aff = 4000
                 net     = rev - cogs - da_fee - aff
                 margin  = round(net / rev * 100, 1) if rev > 0 else 0
@@ -884,7 +884,7 @@ def get_profitability(period="w"):
                         "paid_at":  str(o.paid_at or ""),
                     }
                 })
-        except: pass
+        except Exception: pass
 
         return {"pnl": pnl, "bundles": bundles, "da_profit": da_profit, "orders": orders}
     except Exception as e:
@@ -1026,7 +1026,7 @@ def get_expenses(period="w"):
                     pct  = round(amt / rev * 100, 1) if rev > 0 else 0
                     meta = f"{cnt} orders" if "Fees" in label else f"{cnt} dispatches" if "Transport" in label or "Pickup" in label else ""
                     lines.append({"name": label, "amount": _fmt(amt), "amount_raw": amt, "pct": f"{pct}%", "meta": meta})
-            except: pass
+            except Exception: pass
 
         total = sum(l["amount_raw"] for l in lines)
         exp_ratio = round(total / rev * 100, 1) if rev > 0 else 0
@@ -1082,7 +1082,7 @@ def get_liabilities():
         try:
             s = frappe.get_single("Vitalvida Settings")
             cash_at_bank = flt(s.get("cash_at_bank") or 0)
-        except: pass
+        except Exception: pass
 
         coverage = round(cash_at_bank / total) if total > 0 else 0
 
@@ -1121,7 +1121,7 @@ def get_reports(period="w"):
         try:
             s = frappe.get_single("Vitalvida Settings")
             cash_at_bank = flt(s.get("cash_at_bank") or 0)
-        except: pass
+        except Exception: pass
 
         da_receivables = _sql1("SELECT COALESCE(SUM(total_payable),0) FROM `tabVV Order` WHERE order_status='Delivered'")
 
