@@ -6,12 +6,28 @@ from datetime import datetime, timedelta
 # LOGISTICS PORTAL APIs - Stock & Dispatch Management
 # ════════════════════════════════════════════════════════════
 
+
+def _require_logistics():
+    """FIX BUG 3: Auth guard mirroring logistics.py pattern.
+    Restricts these endpoints to Logistics/Ops roles only.
+    """
+    user = frappe.session.user
+    roles = frappe.get_roles(user)
+    allowed = ["Logistics Manager", "Logistics User", "Operations Manager", "System Manager"]
+    if not any(r in roles for r in allowed):
+        return {"error": "Access denied. Logistics role required.", "code": 403}
+    return None
+
+
 @frappe.whitelist()
 def dispatch_stock(dispatch_name=None, delivery_agent=None, items=None,
                    storekeeper_fee=0, da_pickup_transport=0, driver_transport=0,
                    driver_phone=None, motor_park=None, eta_date=None,
                    notes=None, approval_required=False):
     """Create or update a stock dispatch"""
+    guard = _require_logistics()
+    if guard:
+        return guard
     try:
         settings = frappe.get_single("Vitalvida Settings")
         
@@ -76,6 +92,9 @@ def dispatch_stock(dispatch_name=None, delivery_agent=None, items=None,
 
 @frappe.whitelist()
 def dispatch_stats():
+    guard = _require_logistics()
+    if guard:
+        return guard
     """Get dispatch statistics"""
     pending = frappe.db.count("Stock Dispatch", {"status": "Pending"})
     in_transit = frappe.db.count("Stock Dispatch", {"status": "In Transit"})
@@ -89,6 +108,9 @@ def dispatch_stats():
 
 @frappe.whitelist()
 def get_da_warehouse(delivery_agent):
+    guard = _require_logistics()
+    if guard:
+        return guard
     """Get DA warehouse stock info"""
     try:
         warehouse = frappe.get_doc("DA Warehouse", delivery_agent)
@@ -103,6 +125,9 @@ def get_da_warehouse(delivery_agent):
 
 @frappe.whitelist()
 def unfreeze_da_warehouse(delivery_agent):
+    guard = _require_logistics()
+    if guard:
+        return guard
     """Unfreeze a DA warehouse"""
     try:
         warehouse = frappe.get_doc("DA Warehouse", delivery_agent)
@@ -116,6 +141,9 @@ def unfreeze_da_warehouse(delivery_agent):
 
 @frappe.whitelist()
 def confirm_consignment(consignment_id):
+    guard = _require_logistics()
+    if guard:
+        return guard
     """
     Mark consignment as confirmed/delivered and add stock to DA Warehouse.
 
@@ -169,19 +197,23 @@ def confirm_consignment(consignment_id):
                             "last_updated": now,
                         }).insert(ignore_permissions=True)
 
-                    # Create DA Stock Entry for the receipt
+                    # FIX BUG 17: Correct field names + valid entry_type.
+                    # Old code used "quantity_change" (field doesn't exist) and
+                    # entry_type "Receipt" (not in doctype's allowed literals).
+                    # Both errors were silently swallowed by the try/except,
+                    # leaving no DA Stock Entry record for consignment receipts.
+                    # Use the canonical _create_stock_entry helper instead.
                     try:
-                        frappe.get_doc({
-                            "doctype": "DA Stock Entry",
-                            "delivery_agent": doc.delivery_agent,
-                            "product": product,
-                            "entry_type": "Receipt",
-                            "quantity_change": qty,
-                            "reference_dispatch": doc.linked_dispatch,
-                            "reference_consignment": consignment_id,
-                            "entry_date": now,
-                            "notes": f"Consignment {consignment_id} confirmed",
-                        }).insert(ignore_permissions=True)
+                        from vitalvida.stock import _create_stock_entry
+                        _create_stock_entry(
+                            delivery_agent=doc.delivery_agent,
+                            product=product,
+                            entry_type="Dispatch",
+                            direction="In",
+                            quantity=qty,
+                            reference_dispatch=doc.linked_dispatch,
+                            notes=f"Consignment {consignment_id} confirmed",
+                        )
                     except Exception as entry_err:
                         frappe.log_error(str(entry_err), "confirm_consignment Stock Entry Error")
 
@@ -203,6 +235,9 @@ def confirm_consignment(consignment_id):
 
 @frappe.whitelist()
 def process_return(return_id, status):
+    guard = _require_logistics()
+    if guard:
+        return guard
     """Process DA stock return"""
     try:
         doc = frappe.get_doc("DA Stock Return", return_id)

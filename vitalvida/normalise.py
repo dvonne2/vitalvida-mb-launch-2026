@@ -124,11 +124,26 @@ def normalise_payload(raw: dict, queue_row_name: str) -> dict:
     log.append(f"Total: {data['total']}")
 
     # ── DELIVERY FEE ──────────────────────────────────────────
-    delivery_type = (
+    # FIX BUG 7: defensive case/space normalisation.
+    # Previously: just .upper() — but if the source sent "  same day  " or
+    # "Same-Day" or "sameday", the comparison to "SAME_DAY" below would
+    # silently fall back to STANDARD pricing without flagging the mismatch.
+    # Now we normalize whitespace, case, and common separators.
+    delivery_type_raw = (
         raw.get("deliveryType")
         or raw.get("delivery_type")
         or "STANDARD"
-    ).upper()
+    )
+    delivery_type = (
+        str(delivery_type_raw)
+        .strip()
+        .upper()
+        .replace("-", "_")
+        .replace(" ", "_")
+    )
+    # Collapse variants that all mean same-day
+    if delivery_type in ("SAMEDAY", "SAME_DAY_DELIVERY", "EXPRESS"):
+        delivery_type = "SAME_DAY"
 
     try:
         fee_config = frappe.get_single("Delivery Fee Config")

@@ -190,36 +190,48 @@ def check_overdue_consignments() -> None:
 
 def _update_da_stock_on_arrival(delivery_agent: str, product: str, qty: float) -> None:
     """
-    Updates DA Warehouse current_stock UPWARD.
-    Uses db.set_value to bypass before_save guard (same pattern as M12).
-    NEVER call this for deductions.
+    FIX BUG 9: Full audit trail (Decision B from bug-fix decisions doc).
+
+    Every stock movement that touches a DA's warehouse must produce a
+    DA Stock Entry row. Previously this function bypassed the audit ledger
+    via direct db.set_value, leaving consignment arrivals invisible.
+
+    Now creates a DA Stock Entry of type "Dispatch" with direction "In".
+    The Stock Entry's after_insert hook handles the warehouse update
+    atomically (via Patch 5), so we no longer call set_value here at all.
     """
     from frappe.utils import now_datetime as _now
+    from vitalvida.stock import _create_stock_entry
 
+    # Ensure DA Warehouse row exists so the after_insert hook has a target
     warehouse_name = frappe.db.exists("DA Warehouse", {
         "delivery_agent": delivery_agent,
         "product": product
     })
 
-    if warehouse_name:
-        current = float(
-            frappe.db.get_value("DA Warehouse", warehouse_name, "current_stock") or 0
-        )
-        frappe.db.set_value("DA Warehouse", warehouse_name, {
-            "current_stock": current + qty,
-            "last_updated": _now(),
-        })
-    else:
-        # Create warehouse record
+    if not warehouse_name:
         doc = frappe.get_doc({
             "doctype": "DA Warehouse",
             "delivery_agent": delivery_agent,
             "product": product,
-            "current_stock": qty,
+            "current_stock": 0,
             "last_updated": _now(),
-        })
-        doc.insert(ignore_permissions=True)
+        }).insert(ignore_permissions=True)
+        warehouse_name = doc.name
 
+    # Create the audit ledger entry — single writer for warehouse balance
+    _create_stock_entry(
+        delivery_agent=delivery_agent,
+        product=product,
+        entry_type="Dispatch",
+        direction="In",
+        quantity=qty,
+        notes=f"Consignment arrival — {qty} units credited to DA stock",
+    )
+
+    # Stamp last_updated on the warehouse for dashboard freshness
+    frappe.db.set_value("DA Warehouse", warehouse_name, "last_updated", _now(),
+                       update_modified=False)
     frappe.db.commit()
 
 

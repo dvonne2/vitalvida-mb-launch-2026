@@ -6,9 +6,20 @@ from datetime import datetime, timedelta
 # OWNER DASHBOARD APIs - Reporting & Analytics
 # ════════════════════════════════════════════════════════════
 
+def _require_owner():
+    """FIX BUG 4: restrict Owner Dashboard reports to Owner/Operations roles."""
+    roles = frappe.get_roles(frappe.session.user)
+    if not any(r in roles for r in ["Owner", "Operations Manager", "System Manager"]):
+        return {"error": "Access denied. Owner role required.", "code": 403}
+    return None
+
+
 @frappe.whitelist()
 def get_revenue_stats():
     """Get revenue statistics"""
+    guard = _require_owner()
+    if guard:
+        return guard
     today = datetime.now().date()
     
     # Get delivered orders
@@ -39,6 +50,9 @@ def get_revenue_stats():
 @frappe.whitelist()
 def get_profit_first_wallets():
     """Get Profit First wallet allocations"""
+    guard = _require_owner()
+    if guard:
+        return guard
     wallets = frappe.get_list("Profit First Wallet",
         fields=["name", "amount", "allocated_percentage", "current_balance", "wallet_type"]
     )
@@ -54,6 +68,9 @@ def get_profit_first_wallets():
 @frappe.whitelist()
 def get_da_leaderboard():
     """Get top delivery agents by performance"""
+    guard = _require_owner()
+    if guard:
+        return guard
     das = frappe.get_list("DA Warehouse",
         fields=["name", "delivery_agent", "current_stock", "dsr_percentage"],
         limit_page_length=10,
@@ -65,6 +82,9 @@ def get_da_leaderboard():
 @frappe.whitelist()
 def get_telesales_leaderboard():
     """Get top closers by revenue"""
+    guard = _require_owner()
+    if guard:
+        return guard
     from datetime import datetime, timedelta
     
     today = datetime.now().date()
@@ -101,6 +121,9 @@ def get_telesales_leaderboard():
 @frappe.whitelist()
 def get_media_buyer_leaderboard():
     """Get top media buyers"""
+    guard = _require_owner()
+    if guard:
+        return guard
     # Similar structure - can be extended based on media buyer field in Order
     return {
         "note": "Media buyer tracking to be implemented",
@@ -110,6 +133,9 @@ def get_media_buyer_leaderboard():
 @frappe.whitelist()
 def get_stock_positions():
     """Get inventory valuation by product"""
+    guard = _require_owner()
+    if guard:
+        return guard
     # Get all products with their stock levels
     products = frappe.get_list("Product",
         fields=["name", "product_name", "unit_price"],
@@ -137,6 +163,9 @@ def get_stock_positions():
 @frappe.whitelist()
 def get_escalations():
     """Get pending escalation requests"""
+    guard = _require_owner()
+    if guard:
+        return guard
     escalations = frappe.get_list("Escalation Request",
         filters={"status": "Pending"},
         fields=["name", "dispatch", "reason", "created_by", "creation"],
@@ -149,6 +178,9 @@ def get_escalations():
 @frappe.whitelist()
 def get_unit_economics():
     """Get cost breakdown and unit economics"""
+    guard = _require_owner()
+    if guard:
+        return guard
     today = datetime.now().date()
     week_start = today - timedelta(days=7)
     
