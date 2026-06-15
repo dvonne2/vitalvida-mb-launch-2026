@@ -111,11 +111,20 @@ def normalise_payload(raw: dict, queue_row_name: str) -> dict:
     log.append(f"Package: {package}")
 
     # ── AMOUNT ────────────────────────────────────────────────
+    # Cover every product-price field name variant from all sources.
+    # NOTE: plain "total" was previously missing even though "total" is the
+    # internal key name used everywhere else (output key + message templates),
+    # so a payload sending "total" resolved to 0 and skipped the product amount.
     data["total"] = float(
-        raw.get("totalAmount")
+        raw.get("total")
+        or raw.get("totalAmount")
         or raw.get("total_amount")
+        or raw.get("product_amount")
+        or raw.get("productAmount")
         or raw.get("packageAmount")
+        or raw.get("package_amount")
         or raw.get("productPrice")
+        or raw.get("subtotal")
         or raw.get("total_payable")
         or raw.get("amount")
         or raw.get("price")
@@ -124,26 +133,11 @@ def normalise_payload(raw: dict, queue_row_name: str) -> dict:
     log.append(f"Total: {data['total']}")
 
     # ── DELIVERY FEE ──────────────────────────────────────────
-    # FIX BUG 7: defensive case/space normalisation.
-    # Previously: just .upper() — but if the source sent "  same day  " or
-    # "Same-Day" or "sameday", the comparison to "SAME_DAY" below would
-    # silently fall back to STANDARD pricing without flagging the mismatch.
-    # Now we normalize whitespace, case, and common separators.
-    delivery_type_raw = (
+    delivery_type = (
         raw.get("deliveryType")
         or raw.get("delivery_type")
         or "STANDARD"
-    )
-    delivery_type = (
-        str(delivery_type_raw)
-        .strip()
-        .upper()
-        .replace("-", "_")
-        .replace(" ", "_")
-    )
-    # Collapse variants that all mean same-day
-    if delivery_type in ("SAMEDAY", "SAME_DAY_DELIVERY", "EXPRESS"):
-        delivery_type = "SAME_DAY"
+    ).upper()
 
     try:
         fee_config = frappe.get_single("Delivery Fee Config")

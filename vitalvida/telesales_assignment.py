@@ -347,31 +347,46 @@ def _save_pool_pointer(pool, pointer):
 
 def _do_assignment(order_name, closer, mode, pool):
     """
-    Atomic lock + assign + log + notify + ToDo.
-    Uses SELECT FOR UPDATE to prevent race conditions under concurrent load.
+    Lock + assign (committed), then best-effort log + ToDo + notify.
+
+    The assignment itself (telesales_rep + last_assigned_at) is committed
+    first. The audit log, ToDo and notification are secondary artifacts, each
+    run in its own guard so a failure in any of them can NEVER roll back the
+    assignment.
+
+    REGRESSION FIX: previously all steps shared one try/except with a blanket
+    frappe.db.rollback(). When the Telesales Assignment Log rejected the
+    "Weighted Round Robin" mode value (missing from its Select options), the
+    rollback also undid the telesales_rep set_value — so every order in the
+    default mode silently ended up unassigned.
 
     Fix 3: round_robin_index increment removed — field no longer used for selection.
     """
     closer_name = closer["name"]
+    now = now_datetime()
 
+    # ── Primary: the assignment itself (atomic, committed) ───────────────
     try:
         # Acquire row-level DB lock on this closer
         frappe.db.sql(
             "SELECT name FROM `tabTelesales Closer` WHERE name = %s FOR UPDATE",
             (closer_name,)
         )
-
-        now = now_datetime()
-
-        # Update last_assigned_at only (Fix 3: round_robin_index removed)
-        frappe.db.set_value("Telesales Closer", closer_name, {
-            "last_assigned_at": now,
-        })
-
-        # Assign order to closer
+        frappe.db.set_value("Telesales Closer", closer_name, {"last_assigned_at": now})
         frappe.db.set_value("VV Order", order_name, "telesales_rep", closer_name)
+        # Commit releases the FOR UPDATE lock and persists the assignment
+        frappe.db.commit()
+    except Exception as e:
+        frappe.log_error(
+            f"M10 atomic assignment failed: closer={closer_name} "
+            f"order={order_name}: {str(e)}",
+            "M10 Atomic Lock Error"
+        )
+        frappe.db.rollback()
+        return  # assignment did not persist — skip downstream artifacts
 
-        # Create Assignment Log
+    # ── Secondary: audit log (best-effort, never rolls back assignment) ──
+    try:
         frappe.get_doc({
             "doctype": "Telesales Assignment Log",
             "order": order_name,
@@ -380,10 +395,18 @@ def _do_assignment(order_name, closer, mode, pool):
             "assignment_mode": mode,
             "pool": pool,
         }).insert(ignore_permissions=True)
+        frappe.db.commit()
+    except Exception as e:
+        frappe.log_error(
+            f"M10 assignment log failed (assignment kept): closer={closer_name} "
+            f"order={order_name}: {str(e)}",
+            "M10 Assignment Log Error"
+        )
 
-        # Create ToDo for closer's user account
-        closer_user = closer.get("user")
-        if closer_user:
+    # ── Secondary: ToDo for the closer's user (best-effort) ──────────────
+    closer_user = closer.get("user")
+    if closer_user:
+        try:
             frappe.get_doc({
                 "doctype": "ToDo",
                 "description": f"Call customer for Order {order_name}",
@@ -392,20 +415,16 @@ def _do_assignment(order_name, closer, mode, pool):
                 "reference_type": "VV Order",
                 "reference_name": order_name,
             }).insert(ignore_permissions=True)
+            frappe.db.commit()
+        except Exception as e:
+            frappe.log_error(
+                f"M10 ToDo creation failed (assignment kept): closer={closer_name} "
+                f"order={order_name}: {str(e)}",
+                "M10 ToDo Error"
+            )
 
-        # Commit releases the FOR UPDATE lock
-        frappe.db.commit()
-
-        # Fire WhatsApp notification to closer
-        _notify_closer(order_name, closer_name)
-
-    except Exception as e:
-        frappe.log_error(
-            f"M10 atomic assignment failed: closer={closer_name} "
-            f"order={order_name}: {str(e)}",
-            "M10 Atomic Lock Error"
-        )
-        frappe.db.rollback()
+    # ── Secondary: WhatsApp notification (already guarded internally) ────
+    _notify_closer(order_name, closer_name)
 
 
 # ═══════════════════════════════════════════════════════════

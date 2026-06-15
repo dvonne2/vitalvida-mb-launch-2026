@@ -114,6 +114,7 @@ class VVOrder(Document):
         """Run all auto-computations before saving."""
         self._normalize_phone()
         self._compute_delivery_fee()
+        self._compute_product_amount()
         self._compute_total_payable()
         self._compute_customer_tier()
         self._auto_fill_package_contents()
@@ -275,64 +276,11 @@ class VVOrder(Document):
             )
 
     def _on_cancelled_or_returned(self):
-        """
-        FIX BUG 2: Cancel/Return stock flow (Decision A from bug-fix decisions).
-
-        When an order is cancelled or returned after being Paid (which deducted
-        stock from the DA's warehouse), restore the stock to the DA. DA keeps
-        the bottle; HQ may request a separate return if they want it back.
-
-        Idempotent: if a Return entry for this order already exists, skip.
-        No-op: if no Deduction entry exists (order never reached Paid), do nothing.
-        """
-        frappe.logger().info(
-            f"VV Order {self.name} moved to {self.order_status}. "
-            f"Note: {self.reschedule_note}"
+        """On → Cancelled/Returned: log for now (M6 will handle engine rows)."""
+        frappe.log_error(
+            f"Order {self.name} moved to {self.order_status}. Note: {self.reschedule_note}",
+            "Order Cancelled/Returned"
         )
-
-        # Find original Deduction entries for this order
-        deduction_entries = frappe.get_all(
-            "DA Stock Entry",
-            filters={
-                "reference_order": self.name,
-                "entry_type": "Deduction",
-            },
-            fields=["name", "delivery_agent", "product", "quantity"],
-        )
-        if not deduction_entries:
-            return  # Order never had stock deducted
-
-        # Idempotency: skip if a Return was already processed
-        already_returned = frappe.db.exists("DA Stock Entry", {
-            "reference_order": self.name,
-            "entry_type": "Return",
-        })
-        if already_returned:
-            return
-
-        # Restore each deducted quantity via a Return entry
-        from vitalvida.stock import _create_stock_entry
-        for entry in deduction_entries:
-            try:
-                _create_stock_entry(
-                    delivery_agent=entry.delivery_agent,
-                    product=entry.product,
-                    entry_type="Return",
-                    direction="In",
-                    quantity=float(entry.quantity),
-                    reference_order=self.name,
-                    notes=(
-                        f"Stock returned to DA — order {self.name} "
-                        f"{self.order_status.lower()}. Original deduction: "
-                        f"{entry.name}. DA retains stock for next order."
-                    ),
-                )
-            except Exception as e:
-                frappe.log_error(
-                    f"Cancel/Return stock restore failed for order {self.name}, "
-                    f"DA={entry.delivery_agent}, product={entry.product}: {str(e)}",
-                    "Cancel/Return Stock Error"
-                )
 
     # ─── Validations ───────────────────────────────────────────────────
 
@@ -469,6 +417,32 @@ class VVOrder(Document):
                     self.delivery_fee = 4000.0
         except Exception:
             frappe.log_error(frappe.get_traceback(), "Delivery Fee Computation Failed")
+
+    def _compute_product_amount(self):
+        """
+        Ensure product_amount reflects the package's catalogue price.
+
+        BUG FIX: the order intake (webhook → normalise.py → _create_vv_order)
+        sources the product price solely from the incoming payload. When the
+        payload omits the amount or sends it under an unrecognised key, the
+        amount fell through to 0, leaving product_amount empty so total_payable
+        equalled just the delivery fee — the "product amount is skipped" bug.
+
+        Price is owned by the catalogue, not the client. When product_amount is
+        missing or zero, backfill it from the linked Package's price so the
+        customer is always charged product + delivery. Runs on every save path
+        (webhook, desk, API), not just the webhook.
+        """
+        if self.product_amount and float(self.product_amount) > 0:
+            return  # an explicit, non-zero amount was supplied — trust it
+        if not self.package_name:
+            return
+        try:
+            price = frappe.db.get_value("Package", self.package_name, "price")
+            if price:
+                self.product_amount = float(price)
+        except Exception:
+            frappe.log_error(frappe.get_traceback(), "Product Amount Computation Failed")
 
     def _compute_total_payable(self):
         """Auto-compute total_payable = product_amount + delivery_fee."""
