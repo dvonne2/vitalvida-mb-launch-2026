@@ -17,6 +17,8 @@
   "payment_date",
   "column_break_2",
   "payer_name",
+  "payer_phone",
+  "entered_order_number",
   "narration",
   "section_break_match",
   "matched_payment_intent",
@@ -102,6 +104,13 @@
    "fieldtype": "Data",
    "label": "Payer Phone",
    "in_list_view": 0,
+   "search_index": 1
+  },
+  {
+   "fieldname": "entered_order_number",
+   "fieldtype": "Data",
+   "label": "Entered Order Number",
+   "read_only": 1,
    "search_index": 1
   },
   {

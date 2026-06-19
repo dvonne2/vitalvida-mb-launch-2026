@@ -134,6 +134,11 @@ def _process_webhook(webhook):
         return
 
     try:
+        # Tier 0: Exact order-number + phone match (most reliable)
+        order = _tier0_order_number_match(webhook)
+        if order:
+            _auto_confirm(webhook, order, "Tier 0 - Order# + Phone", 1.0)
+            return
         # Tier 1: Exact Match
         order = _tier1_match(webhook)
         if order:
@@ -161,6 +166,30 @@ def _process_webhook(webhook):
     except Exception as e:
         frappe.log_error(f"M11 cascade failed for {webhook_name}: {str(e)}", "M11 Cascade Error")
         frappe.db.rollback()
+
+def _tier0_order_number_match(webhook):
+	"""
+	Most reliable match: the cashier-entered order number identifies the exact order, and the entered phone must also that order's
+	customer_phone. Both must agree, because repeat customers share a phone across orders.
+	"""
+	order_no = (webhook.get("entered_order_number") or "").strip()
+	phone = (webhook.get("payer_phone") or "").strip()
+	if not order_no or not phone:
+		return None
+	if not frappe.db.exists("VV Order", order_no):
+		return None
+	order = frappe.db.get_value("VV Order", order_no, ["name", "customer_phone", "total_payable", "order_status", "creation"], as_dict = True)
+	if not order:
+		return None
+	if order.get("order_status") in TERMINAL_STATUSES:
+		return None
+
+	# phone must match the order's customer phone (last 10 digits)
+	if _last10(order.get("customer_phone") or "") != _last10(phone):
+		# order number given but phone mismatch -> don't auto-confirm, flag it
+		_flag_for_review(webhook, order, "Tier 0 - Order#(phone mismatch)", 0.5)
+		return None
+	return order
 
 
 def _tier1_match(webhook):

@@ -3,9 +3,10 @@ import hashlib
 import hmac
 import json
 import uuid
+import base64
 
 import frappe
-from frappe.utils import now_datetime
+from frappe.utils import now_datetime, get_datetime
 
 
 @frappe.whitelist(allow_guest=True)
@@ -36,13 +37,36 @@ def webhook():
 	except Exception:
 		frappe.response.http_status_code = 400
 		return {"status": "invalid_json"}
+	
+	# transaction_id = payload.get("transaction_id") or payload.get("transactionId") or ""
+	# amount = payload.get("amount") or 0
+	# narration = payload.get("narration") or ""
+	# payer_name  = payload.get("payer_name")  or payload.get("payerName")  or ""
+	# payer_phone = payload.get("payer_phone")  or payload.get("payerPhone")  or ""
+	# payment_date = payload.get("payment_date") or payload.get("paymentDate") or now_datetime()
+	
+	# Moniepoint nests the real transaction under "data"; the cashier-entered 
+	# phone/order number live in data.customFields. Fall back to top level for safety
+	data = payload.get("data") or {}
+	custom = data.get("customFields") or {}
 
-	transaction_id = payload.get("transaction_id") or payload.get("transactionId") or ""
-	amount = payload.get("amount") or 0
-	narration = payload.get("narration") or ""
-	payer_name  = payload.get("payer_name")  or payload.get("payerName")  or ""
-	payer_phone = payload.get("payer_phone")  or payload.get("payerPhone")  or ""
-	payment_date = payload.get("payment_date") or payload.get("paymentDate") or now_datetime()
+	# metaData is a JSON string inside the payload
+	meta = {}
+	try:
+		if data.get("metaData"):
+			meta = json.loads(data["metaData"])
+	except Exception:
+		meta = {}
+
+	transaction_id = data.get("transactionReference") or payload.get("transaction_id") or payload.get("transactionId") or ""
+	# amount arrives in KOBO (e.g 6975000 = 69,750) -> divide by 100
+	amount = float(str(data.get("amount") or payload.get("amount") or 0).replace(",", "")) / 100.0
+	narration = meta.get("narration") or payload.get("narration") or ""
+	payer_name = meta.get("customerName") or payload.get("payer_name") or payload.get("payerName") or ""
+	payer_phone = custom.get("Phone Number") or meta.get("customerPhone") or payload.get("payer_phone") or payload.get("payerPhone") or ""
+	entered_order_number = custom.get("Order number") or ""
+	_raw_date = data.get("transactionTime") or payload.get("payment_date") or payload.get("paymentDate")
+	payment_date = get_datetime(_raw_date).replace(tzinfo=None) if _raw_date else now_datetime()
 
 	# ── 6. Duplicate check ───────────────────────────────────────────
 	# FIX BUG 10: Handle missing transaction_id with payload fingerprint.
@@ -75,6 +99,8 @@ def webhook():
 		"amount": amount,
 		"narration": narration,
 		"payer_name": payer_name,
+		# Added the new field "order_number" here
+		"entered_order_number": entered_order_number,
 		"payer_phone": payer_phone,
 		"payment_date": payment_date,
 		"raw_payload": raw_body,
@@ -102,7 +128,7 @@ def _check_ip_whitelist():
 	request IP is not in the list.
 	"""
 	try:
-		settings = frappe.get_single("Vitalvida Settings")
+		settings = frappe.get_single("VitalVida Settings")
 		whitelist_raw = getattr(settings, "moniepoint_ip_whitelist", None)
 		if not whitelist_raw:
 			return  # No whitelist configured — allow all
@@ -133,8 +159,8 @@ def _validate_hmac(raw_body: str) -> bool:
 	Secret stored in Vitalvida Settings.moniepoint_webhook_secret.
 	"""
 	try:
-		settings = frappe.get_single("Vitalvida Settings")
-		secret = getattr(settings, "moniepoint_webhook_secret", None)
+		settings = frappe.get_single("VitalVida Settings")
+		secret = getattr(settings, "webhook_secret", None)
 
 		if not secret:
 			# FIX BUG 1: Fail closed if no secret configured.
@@ -148,26 +174,19 @@ def _validate_hmac(raw_body: str) -> bool:
 			)
 			return False
 
-		signature_header = (
-			frappe.request.headers.get("X-Moniepoint-Signature")
-			or frappe.request.headers.get("X-Hub-Signature-256")
-			or ""
-		)
+                # Fix 1: Getting the moniepoint headers (by Goodluck)
+		webhook_id = frappe.request.headers.get('moniepoint-webhook-id', '')
+		timestamp = frappe.request.headers.get('moniepoint-webhook-timestamp', '')
+		new_signature_header = frappe.request.headers.get('moniepoint-webhook-signature', '')
 
-		if not signature_header:
+		if not webhook_id or not timestamp or not new_signature_header:
 			return False
 
-		# Strip sha256= prefix if present
-		if signature_header.startswith("sha256="):
-			signature_header = signature_header[7:]
+                # Fix 1: Creating the dynamic string and comparing against the new header (by  Goodluck)
+		signed_string = f"{webhook_id}__{timestamp}__{raw_body}"
+		new_expected = base64.b64encode(hmac.new(secret.encode('utf-8'), signed_string.encode('utf-8'), hashlib.sha256).digest()).decode('utf-8')
 
-		expected = hmac.new(
-			secret.encode("utf-8"),
-			raw_body.encode("utf-8"),
-			hashlib.sha256
-		).hexdigest()
-
-		return hmac.compare_digest(expected, signature_header)
+		return hmac.compare_digest(new_expected, new_signature_header)
 
 	except Exception as e:
 		frappe.log_error(str(e), "M6 HMAC Validation Error")
@@ -183,7 +202,7 @@ def _match_payment(log_id: str):
             "Moniepoint Webhook Log",
             {"log_id": log_id},
             ["name", "transaction_id", "amount", "narration",
-             "payer_name", "payer_phone", "payment_date",
+             "payer_name", "payer_phone", "payment_date", "entered_order_number",
              "matched_payment_intent", "matched_order"],
             as_dict=True
         )
