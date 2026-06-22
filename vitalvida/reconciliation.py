@@ -293,6 +293,8 @@ def _auto_confirm(webhook, order, tier, confidence):
     order_name = order["name"]
     amount_received = float(webhook.get("amount") or 0)
     amount_expected = float(order.get("total_payable") or 0)
+    if amount_received < amount_expected - 100:  # underpaid beyond ₦100 tolerance
+        return _flag_for_review(webhook, order, tier, confidence)
     now = now_datetime()
 
     frappe.get_doc({

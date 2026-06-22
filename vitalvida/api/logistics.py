@@ -532,7 +532,7 @@ def get_form_options():
                           "Isale-Eko Motor Park", "Mile 2 Motor Park", "Other"]
         parks = FALLBACK_PARKS
         try:
-            settings = frappe.get_single("Vitalvida Settings")
+            settings = frappe.get_single("VitalVida Settings")
             raw = getattr(settings, "motor_parks", None) or ""
             if raw and raw.strip():
                 parks = [p.strip() for p in raw.strip().splitlines() if p.strip()]
@@ -542,7 +542,7 @@ def get_form_options():
         # Cost limits from settings
         cost_limits = {"max_storekeeper_fee": 1000, "max_da_pickup_transport": 1000}
         try:
-            s = frappe.get_single("Vitalvida Settings")
+            s = frappe.get_single("VitalVida Settings")
             if s.get("max_storekeeper_fee"):
                 cost_limits["max_storekeeper_fee"] = flt(s.max_storekeeper_fee)
             if s.get("max_da_pickup_transport"):
@@ -613,7 +613,7 @@ def create_dispatch(da_id, driver_phone, motor_park, eta_date, items,
         max_store  = 1000
         max_pickup = 1000
         try:
-            s = frappe.get_single("Vitalvida Settings")
+            s = frappe.get_single("VitalVida Settings")
             if s.get("max_storekeeper_fee"):
                 max_store = flt(s.max_storekeeper_fee)
             if s.get("max_da_pickup_transport"):

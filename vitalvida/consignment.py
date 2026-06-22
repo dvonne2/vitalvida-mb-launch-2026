@@ -149,7 +149,7 @@ def check_overdue_consignments() -> None:
     """
     from vitalvida.notifications import send_notification
 
-    settings = frappe.get_single("Vitalvida Settings")
+    settings = frappe.get_single("VitalVida Settings")
     sla_hours = int(getattr(settings, "stock_movement_sla_hours", None) or 24)
 
     overdue_threshold = add_to_date(now_datetime(), hours=-sla_hours)
@@ -312,7 +312,7 @@ def check_delayed_movements() -> None:
     where completed_at is null and (now - started_at) > stock_movement_sla_hours.
     """
     try:
-        settings = frappe.get_single("Vitalvida Settings")
+        settings = frappe.get_single("VitalVida Settings")
         sla_hours = int(getattr(settings, "stock_movement_sla_hours", None) or 24)
 
         logs = frappe.db.sql("""

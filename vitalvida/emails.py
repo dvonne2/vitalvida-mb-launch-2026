@@ -146,7 +146,7 @@ def _send(recipients, subject, html, reference_doctype=None, reference_name=None
 def _ops_emails():
     """Return list of operations/admin emails from Vitalvida Settings."""
     try:
-        settings = frappe.get_single("Vitalvida Settings")
+        settings = frappe.get_single("VitalVida Settings")
         raw = getattr(settings, "ops_alert_emails", "") or ""
         emails = [e.strip() for e in raw.replace(",", "\n").splitlines() if "@" in e]
         return emails

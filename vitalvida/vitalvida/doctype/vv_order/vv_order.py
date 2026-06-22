@@ -108,7 +108,12 @@ class VVOrder(Document):
             self._create_cart_recovery()
 
     def autoname(self):
-        self.name = str(random.randint(10**9, 10**19))
+        # 10-digit random order number, unique-checked
+        while True:
+            candidate = str(random.randint(10**9, 10**10 - 1))
+            if not frappe.db.exists("VV Order", candidate):
+                self.name = candidate
+                break
 
     def before_save(self):
         """Run all auto-computations before saving."""
@@ -410,7 +415,7 @@ class VVOrder(Document):
             else:
                 # Fallback to max_delivery_fee from settings
                 try:
-                    settings = frappe.get_single("Vitalvida Settings")
+                    settings = frappe.get_single("VitalVida Settings")
                     fallback = float(settings.get("max_delivery_fee") or 4000)
                     self.delivery_fee = fallback
                 except Exception:
@@ -457,7 +462,7 @@ class VVOrder(Document):
         """
         total = float(self.total_payable or 0)
         try:
-            settings = frappe.get_single("Vitalvida Settings")
+            settings = frappe.get_single("VitalVida Settings")
             whale = float(settings.whale_threshold or 50000)
             mini = float(settings.mini_whale_threshold or 20000)
         except Exception:

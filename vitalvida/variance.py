@@ -34,7 +34,7 @@ def variance_check(stock_count_name: str) -> None:
         frappe.db.get_value("DA Warehouse", warehouse_name, "current_stock") or 0
     ) if warehouse_name else 0.0
 
-    settings = frappe.get_single("Vitalvida Settings")
+    settings = frappe.get_single("VitalVida Settings")
     variance, variance_percent, status = _calculate_variance(
         system_stock, counted_stock, settings
     )
