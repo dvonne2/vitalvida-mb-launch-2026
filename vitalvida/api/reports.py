@@ -115,6 +115,7 @@ def get_profit_first_wallets() -> dict:
             fields=["name", "wallet_type", "allocated_percentage",
                     "amount", "current_balance"],
             order_by="wallet_type asc",
+            ignore_permissions=True,
         )
 
         total_allocated = sum(flt(w.get("amount")) for w in wallets)
@@ -188,10 +189,10 @@ def get_telesales_leaderboard(limit: int = 10) -> dict:
 
         rows = frappe.db.sql(
             """
-            SELECT telesales_closer, total_payable, order_status
+            SELECT telesales_rep, total_payable, order_status
               FROM `tabVV Order`
-             WHERE telesales_closer IS NOT NULL
-               AND telesales_closer != ''
+             WHERE telesales_rep IS NOT NULL
+               AND telesales_rep != ''
                AND DATE(creation) >= %(week_start)s
             """,
             {"week_start": str(week_start)},
@@ -201,7 +202,7 @@ def get_telesales_leaderboard(limit: int = 10) -> dict:
         # --- aggregate per closer ---
         agg: dict[str, dict[str, Any]] = {}
         for r in rows:
-            closer = r.telesales_closer
+            closer = r.telesales_rep
             if closer not in agg:
                 agg[closer] = {"orders": 0, "delivered": 0, "revenue": 0.0}
             a = agg[closer]
@@ -327,6 +328,7 @@ def get_stock_positions() -> dict:
             "Product",
             fields=["name", "product_name", "unit_price"],
             limit_page_length=500,
+            ignore_permissions=True,
         )
 
         if not products:
