@@ -43,9 +43,8 @@ def assign_telesales_closer(order_name, brand):
         # Fallback to General pool if brand pool is empty
         if not closers and pool != "General":
             frappe.log_error(
-                f"No active closers in pool '{pool}' for order {order_name}. "
-                f"Falling back to General pool.",
-                "M10 Pool Fallback"
+                message=f"No active closers in pool '{pool}' for order {order_name}. Falling back to General pool.",
+                title="M10 Pool Fallback"
             )
             pool = "General"
             closers = _get_eligible_closers(pool)
@@ -53,15 +52,15 @@ def assign_telesales_closer(order_name, brand):
         # Fix 2: if all closers are at cap, stop — do not overflow
         if not closers:
             frappe.log_error(
-                f"M10: No eligible closers for order {order_name} in any pool. "
+                message=f"M10: No eligible closers for order {order_name} in any pool. "
                 f"All closers may be at pending cap or no active closers exist. "
                 f"A supervisor should review and manually assign.",
-                "M10 No Eligible Closers"
+                title="M10 No Eligible Closers"
             )
             return
 
         # Get assignment mode from Vitalvida Settings
-        settings = frappe.get_single("Vitalvida Settings")
+        settings = frappe.get_single("VitalVida Settings")
         mode = getattr(settings, "telesales_assignment_mode", None) or "Weighted Round Robin"
 
         # Select closer based on mode
@@ -76,8 +75,8 @@ def assign_telesales_closer(order_name, brand):
 
         if not closer:
             frappe.log_error(
-                f"M10: Closer selection returned None for order {order_name}.",
-                "M10 Selection Error"
+                message=f"M10: Closer selection returned None for order {order_name}.",
+                title="M10 Selection Error"
             )
             return
 
@@ -85,8 +84,8 @@ def assign_telesales_closer(order_name, brand):
 
     except Exception as e:
         frappe.log_error(
-            f"Telesales assignment failed for order {order_name}: {str(e)}",
-            "M10 Assignment Error"
+            message=f"Telesales assignment failed for order {order_name}: {str(e)}",
+            title="M10 Assignment Error"
         )
 
 
@@ -131,7 +130,7 @@ def _get_eligible_closers(pool):
 
     # Get default pending cap from settings
     try:
-        settings = frappe.get_single("Vitalvida Settings")
+        settings = frappe.get_single("VitalVida Settings")
         default_cap = int(getattr(settings, "max_pending_per_closer", None) or 20)
     except Exception:
         default_cap = 20
@@ -152,9 +151,9 @@ def _get_eligible_closers(pool):
     # Fix 2: All at cap → return [] and let caller escalate
     if not eligible:
         frappe.log_error(
-            f"M10: All active closers in pool '{pool}' are at their pending cap. "
+            message=f"M10: All active closers in pool '{pool}' are at their pending cap. "
             f"No assignment made. A supervisor should review unassigned orders.",
-            "M10 All At Cap"
+            title="M10 All At Cap"
         )
         return []
 
@@ -378,9 +377,9 @@ def _do_assignment(order_name, closer, mode, pool):
         frappe.db.commit()
     except Exception as e:
         frappe.log_error(
-            f"M10 atomic assignment failed: closer={closer_name} "
+            message=f"M10 atomic assignment failed: closer={closer_name} "
             f"order={order_name}: {str(e)}",
-            "M10 Atomic Lock Error"
+            title="M10 Atomic Lock Error"
         )
         frappe.db.rollback()
         return  # assignment did not persist — skip downstream artifacts
@@ -398,9 +397,9 @@ def _do_assignment(order_name, closer, mode, pool):
         frappe.db.commit()
     except Exception as e:
         frappe.log_error(
-            f"M10 assignment log failed (assignment kept): closer={closer_name} "
+            message=f"M10 assignment log failed (assignment kept): closer={closer_name} "
             f"order={order_name}: {str(e)}",
-            "M10 Assignment Log Error"
+            title="M10 Assignment Log Error"
         )
 
     # ── Secondary: ToDo for the closer's user (best-effort) ──────────────
@@ -418,9 +417,9 @@ def _do_assignment(order_name, closer, mode, pool):
             frappe.db.commit()
         except Exception as e:
             frappe.log_error(
-                f"M10 ToDo creation failed (assignment kept): closer={closer_name} "
+                message=f"M10 ToDo creation failed (assignment kept): closer={closer_name} "
                 f"order={order_name}: {str(e)}",
-                "M10 ToDo Error"
+                title="M10 ToDo Error"
             )
 
     # ── Secondary: WhatsApp notification (already guarded internally) ────
@@ -445,9 +444,9 @@ def _notify_closer(order_name, closer_name):
         )
     except Exception as e:
         frappe.log_error(
-            f"M10 notification failed: closer={closer_name} "
+            message=f"M10 notification failed: closer={closer_name} "
             f"order={order_name}: {str(e)}",
-            "M10 Notification Error"
+            title="M10 Notification Error"
         )
 
 
@@ -497,7 +496,7 @@ def get_assignment_preview():
     Shows exactly how orders will be distributed before going live.
     """
     try:
-        settings = frappe.get_single("Vitalvida Settings")
+        settings = frappe.get_single("VitalVida Settings")
         mode = getattr(settings, "telesales_assignment_mode", None) or "Weighted Round Robin"
         default_cap = int(getattr(settings, "max_pending_per_closer", None) or 20)
     except Exception:

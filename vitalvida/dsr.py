@@ -241,7 +241,7 @@ def run_nightly_dsr() -> None:
 
             # Create DSR Snapshot
             _create_snapshot(
-                entity_type="DA",
+                entity_type="Delivery Agent",
                 entity=da.name,
                 period_start=week_start,
                 period_end=week_end,
@@ -293,7 +293,7 @@ def run_nightly_dsr() -> None:
 
             # Create DSR Snapshot
             _create_snapshot(
-                entity_type="Telesales",
+                entity_type="Telesales Closer",
                 entity=closer.name,
                 period_start=week_start,
                 period_end=week_end,

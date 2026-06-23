@@ -196,7 +196,7 @@ def get_dashboard(period="w"):
         # Cash at bank (from Vitalvida Settings or hardcoded)
         cash_at_bank = 0
         try:
-            s = frappe.get_single("Vitalvida Settings")
+            s = frappe.get_single("VitalVida Settings")
             cash_at_bank = flt(s.get("cash_at_bank") or 0)
         except Exception: pass
 
@@ -505,7 +505,7 @@ def get_da_exposure():
         result.sort(key=lambda x: (-x["exposure_raw"]))
         cash_at_bank = 0
         try:
-            s = frappe.get_single("Vitalvida Settings")
+            s = frappe.get_single("VitalVida Settings")
             cash_at_bank = flt(s.get("cash_at_bank") or 0)
         except Exception: pass
 
@@ -1062,7 +1062,7 @@ def get_liabilities():
         # FIX 13: ₦1.2M payroll was hardcoded. Read from Vitalvida Settings instead.
         payroll_liability = 1_200_000  # fallback default
         try:
-            s = frappe.get_single("Vitalvida Settings")
+            s = frappe.get_single("VitalVida Settings")
             configured = flt(s.get("other_liabilities") or s.get("payroll_amount") or 0)
             if configured > 0:
                 payroll_liability = configured
@@ -1080,7 +1080,7 @@ def get_liabilities():
 
         cash_at_bank = 0
         try:
-            s = frappe.get_single("Vitalvida Settings")
+            s = frappe.get_single("VitalVida Settings")
             cash_at_bank = flt(s.get("cash_at_bank") or 0)
         except Exception: pass
 
@@ -1119,7 +1119,7 @@ def get_reports(period="w"):
 
         cash_at_bank = 0
         try:
-            s = frappe.get_single("Vitalvida Settings")
+            s = frappe.get_single("VitalVida Settings")
             cash_at_bank = flt(s.get("cash_at_bank") or 0)
         except Exception: pass
 
@@ -1129,7 +1129,7 @@ def get_reports(period="w"):
         # FIX 13: Read payroll liability from settings instead of hardcoding ₦1.2M
         payroll_liab = 1_200_000
         try:
-            _s = frappe.get_single("Vitalvida Settings")
+            _s = frappe.get_single("VitalVida Settings")
             _v = flt(_s.get("other_liabilities") or _s.get("payroll_amount") or 0)
             if _v > 0: payroll_liab = _v
         except Exception: pass
@@ -1425,7 +1425,7 @@ def action_pay_da_fee(request_id, transfer_reference="", proof_url=""):
             return {"success": False, "error": "Order payment not confirmed. Cannot pay DA fee."}
         # Check fee does not exceed max threshold — requires Owner approval if it does
         try:
-            settings = frappe.get_single("Vitalvida Settings")
+            settings = frappe.get_single("VitalVida Settings")
             max_fee = flt(settings.get("max_delivery_fee") or 4000)
             fee_amount = flt(doc.amount or 0)
             if fee_amount > max_fee:

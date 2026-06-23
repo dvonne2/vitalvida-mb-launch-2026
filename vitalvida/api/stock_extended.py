@@ -29,7 +29,7 @@ def dispatch_stock(dispatch_name=None, delivery_agent=None, items=None,
     if guard:
         return guard
     try:
-        settings = frappe.get_single("Vitalvida Settings")
+        settings = frappe.get_single("VitalVida Settings")
         
         # Validation
         if not approval_required:

@@ -15,7 +15,7 @@ def send_daily_inventory_report() -> None:
     Runs daily at 7:00 AM WAT via cron: 0 7 * * *
     Generates stock health report and emails to configured recipient.
     """
-    settings = frappe.get_single("Vitalvida Settings")
+    settings = frappe.get_single("VitalVida Settings")
     recipient = getattr(settings, "inventory_report_email", None)
 
     if not recipient:

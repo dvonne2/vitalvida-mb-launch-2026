@@ -27,7 +27,7 @@ def _get_da_id():
 def _get_settings():
     """Load Vitalvida Settings safely."""
     try:
-        return frappe.get_single("Vitalvida Settings")
+        return frappe.get_single("VitalVida Settings")
     except Exception:
         return frappe._dict({})
 

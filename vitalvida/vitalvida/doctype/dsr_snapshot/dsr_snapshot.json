@@ -34,7 +34,7 @@
    "in_create": 0,
    "in_list_view": 1,
    "label": "Entity Type",
-   "options": "DA\nTelesales",
+   "options": "Delivery Agent\nTelesales Closer",
    "reqd": 1
   },
   {

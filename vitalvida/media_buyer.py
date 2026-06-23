@@ -458,7 +458,7 @@ def _create_weekly_report(buyer, week_start, week_end, tiers):
         zero = int(buyer.get("consecutive_zero_weeks") or 0) + 1
         update["consecutive_zero_weeks"] = zero
         try:
-            settings = frappe.get_single("Vitalvida Settings")
+            settings = frappe.get_single("VitalVida Settings")
             threshold = int(getattr(settings, "zero_weeks_suspend_threshold", 4) or 4)
             if zero >= threshold:
                 update["is_suspended"] = 1
@@ -689,7 +689,7 @@ def validate_commission_coverage():
 
 def check_commitment_refunds():
     try:
-        settings = frappe.get_single("Vitalvida Settings")
+        settings = frappe.get_single("VitalVida Settings")
         threshold = int(getattr(settings, "commitment_refund_orders", 10) or 10)
     except Exception:
         threshold = 10

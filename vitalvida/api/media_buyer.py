@@ -619,7 +619,7 @@ def get_mb_links(mb_id=None):
 
         base_url = "https://fulanihairsecrets.com/order"
         try:
-            s = frappe.get_single("Vitalvida Settings")
+            s = frappe.get_single("VitalVida Settings")
             base_url = s.get("landing_page_url") or base_url
         except Exception:
             pass

@@ -15,7 +15,7 @@ def check_whale_sla_breaches() -> None:
     Runs every 15 minutes via cron: */15 * * * *
     Checks for Whale and Mini Whale orders stuck in Pending beyond SLA.
     """
-    settings = frappe.get_single("Vitalvida Settings")
+    settings = frappe.get_single("VitalVida Settings")
     whale_sla = int(getattr(settings, "whale_sla_hours", None) or 2)
     mini_whale_sla = int(getattr(settings, "mini_whale_sla_hours", None) or 4)
 
