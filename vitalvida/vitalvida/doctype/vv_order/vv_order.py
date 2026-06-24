@@ -400,28 +400,24 @@ class VVOrder(Document):
 
     def _compute_delivery_fee(self):
         """
-        Delivery fee comes from DA's agreed rate on their profile.
-        Falls back to Vitalvida Settings max_delivery_fee if DA has no rate set.
-        Fee only populates when a DA is assigned — not on order creation.
+        CUSTOMER delivery fee is based on delivery SPEED, computed at order creation.
+        This is what the CUSTOMER pays us:
+            Same Day -> 5000
+            Standard (48hr) -> 3000
+        The DA's delivery_fee_rate is what WE PAY the DA (our cost, varies by DA/distance)
+        and is handled separately in the fee-payout logic. It must NOT set the customer fee.
         """
-        if not self.delivery_agent:
-            return
-        try:
-            fee = frappe.db.get_value(
-                "Delivery Agent", self.delivery_agent, "delivery_fee_rate"
+        speed = (self.delivery_type or "").strip()
+        if speed == "Same Day":
+            self.delivery_fee = 5000.0
+        elif speed == "Standard":
+            self.delivery_fee = 3000.0
+        else:
+            # Unknown/blank delivery_type -> default to Standard rate, log for visibility
+            self.delivery_fee = 3000.0
+            frappe.logger("vv_order").warning(
+                f"Unrecognised delivery_type {speed!r} on {self.name or 'new order'} - defaulted to Standard 3000"
             )
-            if fee:
-                self.delivery_fee = float(fee)
-            else:
-                # Fallback to max_delivery_fee from settings
-                try:
-                    settings = frappe.get_single("VitalVida Settings")
-                    fallback = float(settings.get("max_delivery_fee") or 4000)
-                    self.delivery_fee = fallback
-                except Exception:
-                    self.delivery_fee = 4000.0
-        except Exception:
-            frappe.log_error(frappe.get_traceback(), "Delivery Fee Computation Failed")
 
     def _compute_product_amount(self):
         """

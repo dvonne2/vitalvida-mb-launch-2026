@@ -885,7 +885,7 @@ def get_escalations():
         # Stock variances
         if _tbl("Stock Variance"):
             variances = frappe.get_all("Stock Variance",
-                filters={"status": "Open"},
+                filters={"variance_status": "Open"},
                 fields=_safe("Stock Variance", ["name","delivery_agent","product","da_count","manager_count","system_count","variance","creation"]),
                 limit=5)
             for v in variances:
