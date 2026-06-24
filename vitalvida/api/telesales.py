@@ -93,7 +93,7 @@ def get_my_closer(user=None):
     closers = frappe.get_all(
         'Telesales Closer',
         filters={'user': user},
-        fields=['name', 'closer_name', 'phone'],
+        fields=['name', 'closer_name', 'phone', 'base_salary'],
         limit=1
     )
     return closers[0] if closers else None
