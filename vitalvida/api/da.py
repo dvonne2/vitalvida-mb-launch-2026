@@ -554,6 +554,29 @@ def mark_delivered(order_id, da_id=None, photo_base64=None, delivery_note=""):
                 "error": f"Order is {doc.order_status} — cannot mark as Delivered from this state"
             }
 
+        # Loop 1: after-hours release branch.
+        if not doc.payment_confirmed:
+            from vitalvida.release_verification import require_payment_proof
+            if not require_payment_proof(order_id):
+                return {"success": False, "error": "Proof of payment is required to release this order before payment is confirmed."}
+            _rel_now = now_datetime()
+            _old_status = doc.order_status
+            doc.db_set("order_status", "Released - Payment Evidence")
+            doc.db_set("released_at", _rel_now)
+            if _field_exists("VV Order", "released_by"):
+                doc.db_set("released_by", da_id)
+            frappe.db.commit()
+            try:
+                _log_status_change_da(order_id, _old_status, "Released - Payment Evidence", da_id)
+            except Exception:
+                pass
+            return {
+                "success": True,
+                "order_id": order_id,
+                "status": "Released - Payment Evidence",
+                "message": "Released under customer payment evidence. Awaiting company verification.",
+            }
+
         now = now_datetime()
 
         # Upload delivery photo if provided
@@ -828,6 +851,9 @@ def _create_fee_request(da_id, order_ids, total_amount):
             # Skip if already requested for this order
             if frappe.db.exists("Fee Payment Request", {"order": order_id, "delivery_agent": da_id}):
                 continue
+            # Loop 1: do not create a fee request before company payment confirmation.
+            if not frappe.db.get_value("VV Order", order_id, "payment_confirmed"):
+                continue
             fee = flt(frappe.db.get_value("VV Order", order_id, "da_fee_amount") or 0)
             frappe.get_doc({
                 "doctype":        "Fee Payment Request",
@@ -858,6 +884,9 @@ def da_confirm_payment_received(order_id, da_id=None):
 
         if doc.delivery_agent != da_id:
             return {"success": False, "error": "Not your order"}
+        # Loop 1: never release the delivery fee before company payment confirmation.
+        if not doc.payment_confirmed:
+            return {"success": False, "error": "Company payment not yet confirmed — delivery fee cannot be released."}
         if doc.da_fee_paid:
             return {"success": True, "message": "Already confirmed"}
 
