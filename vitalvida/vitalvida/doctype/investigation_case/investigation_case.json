@@ -1,0 +1,35 @@
+{
+ "actions": [],
+ "creation": "2026-06-26 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "module": "Vitalvida",
+ "name": "Investigation Case",
+ "naming_rule": "Expression (old style)",
+ "autoname": "INV-.#####",
+ "sort_field": "opened_at",
+ "sort_order": "DESC",
+ "track_changes": 1,
+ "field_order": [
+  "opened_from",
+  "order",
+  "column_break_1",
+  "resolution",
+  "opened_at",
+  "responsibility",
+  "cause"
+ ],
+ "fields": [
+  {"fieldname": "opened_from", "fieldtype": "Link", "label": "Opened From (Recovery Case)", "options": "Recovery Case", "in_list_view": 1},
+  {"fieldname": "order", "fieldtype": "Link", "label": "Order", "options": "VV Order", "in_list_view": 1},
+  {"fieldname": "column_break_1", "fieldtype": "Column Break"},
+  {"fieldname": "resolution", "fieldtype": "Select", "label": "Resolution", "options": "Open\nStrike\nWrite-off\nCleared", "default": "Open", "in_list_view": 1},
+  {"fieldname": "opened_at", "fieldtype": "Datetime", "label": "Opened At"},
+  {"fieldname": "responsibility", "fieldtype": "Data", "label": "Responsibility"},
+  {"fieldname": "cause", "fieldtype": "Text", "label": "Cause"}
+ ],
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1},
+  {"role": "Finance User", "read": 1, "write": 1, "create": 1, "report": 1}
+ ]
+}
