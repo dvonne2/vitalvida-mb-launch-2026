@@ -74,11 +74,12 @@ def variance_check(stock_count_name: str) -> None:
 
 
 def _calculate_variance(system_stock: float, counted_stock: float, settings) -> tuple:
-    """Dynamic tolerance from Settings. Any variance above tolerance = Critical."""
+    """Zero tolerance (Loop 2.1 / Step 13): ANY non-zero variance is Critical.
+    Tolerance is NOT configurable. The settings parameter is retained for
+    signature compatibility but is no longer read."""
     variance = system_stock - counted_stock
     variance_percent = (abs(variance) / system_stock * 100) if system_stock > 0 else 0.0
-    tolerance = float(getattr(settings, "variance_tolerance_percent", None) or 0.0)
-    status = "Critical" if variance_percent > tolerance else "Clean"
+    status = "Critical" if variance != 0 else "Clean"
     return variance, variance_percent, status
 
 
