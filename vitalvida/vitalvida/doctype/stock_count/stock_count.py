@@ -67,7 +67,7 @@ class StockCount(Document):
             diff = abs(da_qty - mgr_qty)
             self.final_counted_quantity = round((da_qty + mgr_qty) / 2, 2)
 
-            if diff > 1:
+            if diff != 0:
                 self.count_status = "Disputed"
                 self._alert_disputed()
             else:
@@ -114,7 +114,7 @@ class StockCount(Document):
             variance = abs(system_qty - final)
             self.three_way_variance = round(variance, 2)
 
-            if variance <= 1:
+            if variance == 0:
                 self.three_way_match = "Match"
             else:
                 self.three_way_match = "Mismatch"
