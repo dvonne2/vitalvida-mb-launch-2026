@@ -112,7 +112,6 @@ def _create_stock_entry(delivery_agent, product, entry_type, direction,
     callers outside the standard payment-deduction flow:
       - DA Stock Return (end-of-cycle, damaged, expired)
       - Cancel/Return on VV Order
-      - Manual adjustments
       - Consignment audit trail (Bug 9)
       - confirm_consignment fix (Bug 17)
     """
@@ -123,7 +122,7 @@ def _create_stock_entry(delivery_agent, product, entry_type, direction,
         )
         return None
 
-    valid_types = {"Dispatch", "Deduction", "Return", "Adjustment"}
+    valid_types = {"Dispatch", "Deduction", "Return"}
     if entry_type not in valid_types:
         frappe.log_error(
             f"_create_stock_entry called with invalid entry_type={entry_type}. "
