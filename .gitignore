@@ -53,3 +53,9 @@ jspm_packages/
 
 # Aider AI Chat
 .aider*
+
+# Local backup files
+*.bak
+*.bak2
+*.bak3
+*.bak4
