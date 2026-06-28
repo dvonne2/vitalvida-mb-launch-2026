@@ -553,4 +553,11 @@ def can_hold_custody(delivery_agent: str) -> dict:
     if frozen:
         return {"allowed": False, "reason": f"DA '{delivery_agent}' has a frozen warehouse."}
 
+    # Loop 2.5: restock block (independent of freeze). A DA who has not reconciled
+    # (e.g. missed the Friday count) carries an active DA Restock Block and may not
+    # receive new stock until it is reversed. Distinct control from is_frozen.
+    restock_blocked = frappe.db.exists("DA Restock Block", {"delivery_agent": delivery_agent, "is_active": 1})
+    if restock_blocked:
+        return {"allowed": False, "reason": f"DA '{delivery_agent}' has an active restock block (reconciliation outstanding)."}
+
     return {"allowed": True, "reason": ""}
