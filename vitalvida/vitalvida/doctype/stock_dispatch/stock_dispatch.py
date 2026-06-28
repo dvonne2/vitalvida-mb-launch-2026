@@ -38,8 +38,12 @@ class StockDispatch(Document):
 
 	def on_submit(self):
 		"""
-		On submit: for each item, create DA Stock Entry (Dispatch/In).
-		DA Stock Entry after_insert automatically updates DA Warehouse.
+		Loop 2.2 (Law 4 / Step 7): custody is NOT created by Stock Dispatch submit.
+		Custody transfers only through the Consignment confirmation flow
+		(Logistics accepts the transport leg, then the DA independently confirms
+		receipt). Submitting a dispatch must never be a single-party custody shortcut.
 		"""
-		from vitalvida.stock import dispatch_stock
-		dispatch_stock(self.name)
+		frappe.throw(
+			"Custody cannot be created by Stock Dispatch submit. "
+			"Use the Consignment custody confirmation flow."
+		)
