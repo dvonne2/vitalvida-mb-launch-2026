@@ -299,6 +299,32 @@ def _handle_discrepancy(consignment, discrepancies: list) -> None:
         for wh in warehouses:
             frappe.db.set_value("DA Warehouse", wh.name, "is_frozen", 1)
 
+        # Loop 2.4: open a formal inventory Recovery Case for the shortfall (Law 5 - no
+        # silent loss). Idempotent on the source consignment (Law 22). The freeze + strike
+        # above stay; this adds tracked recovery instead of an alert-only dead end.
+        try:
+            from vitalvida.recovery import open_inventory_recovery_case
+            _short_qty = sum(
+                max(0.0, float(d.get("qty_sent") or 0) - float(d.get("qty_received") or 0))
+                for d in discrepancies
+            )
+            _detail = "; ".join(
+                f"{d.get('product')}: sent {d.get('qty_sent')}, received {d.get('qty_received')}"
+                for d in discrepancies
+            )
+            open_inventory_recovery_case(
+                consignment_name=consignment.name,
+                delivery_agent=consignment.to_location,
+                shortfall_qty=_short_qty,
+                shortfall_value=0,
+                detail=_detail,
+            )
+        except Exception as _rec_err:
+            frappe.log_error(
+                f"Inventory Recovery open failed for {consignment.name}: {_rec_err}",
+                "Consignment Discrepancy Recovery",
+            )
+
         frappe.db.commit()
 
     except Exception as e:
@@ -445,6 +471,33 @@ def logistics_accept_consignment(consignment_name: str, counted_items: list) -> 
         except Exception as e:
             frappe.log_error(f"Logistics mismatch alert failed for {consignment.name}: {e}",
                             "Logistics Accept Mismatch")
+
+        # Loop 2.4: open a formal inventory Recovery Case for the Logistics-count
+        # mismatch (Law 5 - no silent loss). Idempotent on the source consignment
+        # (Law 22). Custody still does NOT move; this records the discrepancy formally.
+        try:
+            from vitalvida.recovery import open_inventory_recovery_case
+            _short_qty = sum(
+                max(0.0, float(m.get("qty_sent") or 0) - float(m.get("qty_counted") or 0))
+                for m in mismatches
+            )
+            _detail = "; ".join(
+                f"{m.get('product')}: sent {m.get('qty_sent')}, counted {m.get('qty_counted')} ({m.get('reason')})"
+                for m in mismatches
+            )
+            open_inventory_recovery_case(
+                consignment_name=consignment.name,
+                delivery_agent=consignment.to_location,
+                shortfall_qty=_short_qty,
+                shortfall_value=0,
+                detail=_detail,
+            )
+        except Exception as _rec_err:
+            frappe.log_error(
+                f"Inventory Recovery open failed (logistics mismatch) for {consignment.name}: {_rec_err}",
+                "Logistics Mismatch Recovery",
+            )
+
         return {"status": "mismatch", "items": mismatches}
 
     # All match — Logistics accepts custody of the transport leg
