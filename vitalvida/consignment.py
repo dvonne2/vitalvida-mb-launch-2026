@@ -366,3 +366,93 @@ def _summarise_items(items) -> str:
         product = item.product or ""
         parts.append(f"{qty} {product}")
     return " + ".join(parts) if parts else "N/A"
+
+
+@frappe.whitelist()
+def logistics_accept_consignment(consignment_name: str, counted_items: list) -> dict:
+    """
+    Loop 2.2 Step 3 — Inventory -> Logistics custody handoff.
+
+    The Logistics Officer independently counts what they are taking custody of
+    for the transport leg, BEFORE goods move. This is the first party of the
+    two-party custody gate (the DA confirmation is the second party).
+
+    counted_items: list of {product, qty_counted}
+
+    Constitutional rules (Law 4 / Step 7):
+      - Logistics role required.
+      - If every line's counted qty matches qty_sent: Logistics accepts custody
+        of the transport leg. Records the count + who/when, sets status to
+        "Logistics Accepted", writes a Stock Movement Log entry. NO DA Stock
+        Entry is created — transport-leg custody is state + movement log only
+        (the DA warehouse is credited later, on DA confirmation).
+      - If any line mismatches: flag/alert only. No status change, no custody
+        movement, no DA Stock Entry. (Formal Recovery is Loop 2.4.)
+    """
+    import json as _json
+    if isinstance(counted_items, str):
+        counted_items = _json.loads(counted_items)
+
+    # Logistics role guard (mirrors _require_logistics pattern)
+    roles = frappe.get_roles(frappe.session.user)
+    allowed = ["Logistics Manager", "Logistics User", "Operations Manager", "System Manager"]
+    if not any(r in roles for r in allowed):
+        return {"status": "error", "message": "Access denied. Logistics role required."}
+
+    consignment = frappe.get_doc("Consignment", consignment_name)
+
+    if consignment.status not in ("Pending", ""):
+        frappe.throw(
+            f"Consignment is in status '{consignment.status}'. "
+            "Logistics can only accept a Pending consignment."
+        )
+
+    mismatches = []
+    counts = {c.get("product"): float(c.get("qty_counted", 0)) for c in counted_items}
+
+    for item in consignment.items:
+        counted = counts.get(item.product)
+        if counted is None:
+            mismatches.append({"product": item.product, "qty_sent": float(item.qty_sent or 0),
+                               "qty_counted": None, "reason": "not counted"})
+            continue
+        if counted != float(item.qty_sent or 0):
+            mismatches.append({"product": item.product, "qty_sent": float(item.qty_sent or 0),
+                               "qty_counted": counted, "reason": "mismatch"})
+
+    if mismatches:
+        # flag/alert only — no custody movement, no status change
+        try:
+            from vitalvida.notifications import send_notification
+            stub = frappe._dict({
+                "name": consignment.name,
+                "product": ", ".join(str(m["product"]) for m in mismatches),
+                "total_payable": 0,
+            })
+            send_notification(stub, event="ConsignmentLogisticsMismatch",
+                              recipient_type="Owner", sender_channel="Transactional")
+        except Exception as e:
+            frappe.log_error(f"Logistics mismatch alert failed for {consignment.name}: {e}",
+                            "Logistics Accept Mismatch")
+        return {"status": "mismatch", "items": mismatches}
+
+    # All match — Logistics accepts custody of the transport leg
+    from frappe.utils import now_datetime as _now
+    for item in consignment.items:
+        frappe.db.set_value("Consignment Item", item.name, "qty_logistics_counted",
+                            counts.get(item.product), update_modified=False)
+    frappe.db.set_value("Consignment", consignment_name, {
+        "logistics_accepted_by": frappe.session.user,
+        "logistics_accepted_at": _now(),
+        "status": "Logistics Accepted",
+    }, update_modified=False)
+
+    # Stock Movement Log for the transport-leg custody (state + log, no DA Stock Entry)
+    try:
+        _create_stock_movement_log(consignment, "HQ to Logistics")
+    except Exception as e:
+        frappe.log_error(f"Logistics accept movement log failed for {consignment.name}: {e}",
+                        "Logistics Accept Log")
+
+    frappe.db.commit()
+    return {"status": "ok", "consignment": consignment_name}

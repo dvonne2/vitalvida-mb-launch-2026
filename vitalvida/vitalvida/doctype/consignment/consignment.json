@@ -20,7 +20,9 @@
   "eta_date",
   "linked_dispatch",
   "confirmed_at",
-  "confirmed_by"
+  "confirmed_by",
+  "logistics_accepted_by",
+  "logistics_accepted_at"
  ],
  "fields": [
   {
@@ -38,7 +40,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "\nPending\nIn Transit\nDelivered\nCancelled\nConfirmed"
+   "options": "\nPending\nLogistics Accepted\nIn Transit\nDelivered\nCancelled\nConfirmed"
   },
   {
    "fieldname": "column_break_1",
@@ -118,6 +120,19 @@
    "fieldtype": "Link",
    "label": "Confirmed By",
    "options": "User"
+  },
+  {
+   "fieldname": "logistics_accepted_by",
+   "fieldtype": "Link",
+   "label": "Logistics Accepted By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "logistics_accepted_at",
+   "fieldtype": "Datetime",
+   "label": "Logistics Accepted At",
+   "read_only": 1
   }
  ],
  "links": [],

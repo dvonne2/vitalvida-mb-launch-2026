@@ -14,7 +14,7 @@
   {
    "fieldname": "movement_type",
    "fieldtype": "Select",
-   "options": "\nHQ to DA\nDA to DA\nReturn to HQ",
+   "options": "\nHQ to DA\nHQ to Logistics\nDA to DA\nReturn to HQ",
    "label": "Movement Type",
    "in_list_view": 1,
    "in_create": 0

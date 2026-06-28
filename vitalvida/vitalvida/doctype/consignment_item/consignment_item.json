@@ -22,6 +22,12 @@
    "in_create": 0
   },
   {
+   "fieldname": "qty_logistics_counted",
+   "fieldtype": "Float",
+   "label": "Qty Logistics Counted",
+   "in_list_view": 1
+  },
+  {
    "fieldname": "qty_received",
    "fieldtype": "Float",
    "label": "Qty Received",
