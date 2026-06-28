@@ -104,6 +104,7 @@ def _update_warehouse_stock(entry):
 
 def _create_stock_entry(delivery_agent, product, entry_type, direction,
                        quantity, reference_order=None, reference_dispatch=None,
+                       reference_consignment=None,
                        notes=None):
     """
     Generic DA Stock Entry creator.
@@ -150,6 +151,7 @@ def _create_stock_entry(delivery_agent, product, entry_type, direction,
             "quantity": float(quantity),
             "reference_order": reference_order,
             "reference_dispatch": reference_dispatch,
+            "reference_consignment": reference_consignment,
             "notes": notes,
             "entry_date": now_datetime(),
         }).insert(ignore_permissions=True)

@@ -130,7 +130,7 @@ def da_confirm_consignment(consignment_name: str, confirmed_items: list) -> dict
             })
         else:
             # ── Update DA Warehouse UPWARD ONLY ───────────────────────────
-            _update_da_stock_on_arrival(consignment.to_location, product, qty_received)
+            _update_da_stock_on_arrival(consignment.to_location, product, qty_received, consignment.name)
 
     if discrepancies:
         _handle_discrepancy(consignment, discrepancies)
@@ -188,7 +188,7 @@ def check_overdue_consignments() -> None:
 
 # ─── Internal Helpers ─────────────────────────────────────────────────────────
 
-def _update_da_stock_on_arrival(delivery_agent: str, product: str, qty: float) -> None:
+def _update_da_stock_on_arrival(delivery_agent: str, product: str, qty: float, consignment_name: str = None) -> None:
     """
     FIX BUG 9: Full audit trail (Decision B from bug-fix decisions doc).
 
@@ -220,12 +220,29 @@ def _update_da_stock_on_arrival(delivery_agent: str, product: str, qty: float) -
         warehouse_name = doc.name
 
     # Create the audit ledger entry — single writer for warehouse balance
+    # Law 22 idempotency: skip if this consignment line was already credited
+    if consignment_name:
+        already = frappe.db.exists("DA Stock Entry", {
+            "delivery_agent": delivery_agent,
+            "product": product,
+            "entry_type": "Dispatch",
+            "direction": "In",
+            "reference_consignment": consignment_name,
+        })
+        if already:
+            frappe.log_error(
+                f"Law 22: {consignment_name}/{product} already credited ({already}); skipping.",
+                "Idempotent Arrival Credit"
+            )
+            return
+
     _create_stock_entry(
         delivery_agent=delivery_agent,
         product=product,
         entry_type="Dispatch",
         direction="In",
         quantity=qty,
+        reference_consignment=consignment_name,
         notes=f"Consignment arrival — {qty} units credited to DA stock",
     )
 

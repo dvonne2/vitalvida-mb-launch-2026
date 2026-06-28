@@ -18,6 +18,7 @@
   "section_break_refs",
   "reference_order",
   "reference_dispatch",
+  "reference_consignment",
   "section_break_notes",
   "notes"
  ],
@@ -108,6 +109,12 @@
    "fieldtype": "Link",
    "label": "Reference Dispatch",
    "options": "Stock Dispatch"
+  },
+  {
+   "fieldname": "reference_consignment",
+   "fieldtype": "Link",
+   "label": "Reference Consignment",
+   "options": "Consignment"
   },
   {
    "fieldname": "section_break_notes",
