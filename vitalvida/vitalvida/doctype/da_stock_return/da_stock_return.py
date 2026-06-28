@@ -72,18 +72,10 @@ class DAStockReturn(Document):
             disposition = item.disposition_decision or "Restock"
 
             if disposition == "Restock":
-                # Decrement DA buffer
-                wh = frappe.db.exists("DA Warehouse", {
-                    "delivery_agent": self.delivery_agent, "product": item.product
-                })
-                if wh:
-                    current = float(frappe.db.get_value("DA Warehouse", wh, "current_stock") or 0)
-                    new_stock = max(current - qty, 0)
-                    frappe.db.set_value("DA Warehouse", wh, {
-                        "current_stock": new_stock, "last_updated": now_datetime()
-                    })
-
-                # Create Out stock entry for DA
+                # Loop 2.1 C5: balance changes ONLY through the immutable ledger
+                # (DA Stock Entry -> after_insert -> _update_warehouse_stock).
+                # The previous direct set_value on DA Warehouse caused a
+                # double-decrement (proven) and violated Law 20. Removed.
                 from vitalvida.stock import _create_stock_entry
                 _create_stock_entry(
                     delivery_agent=self.delivery_agent,
