@@ -14,8 +14,31 @@ class BonusApprovalRequest(Document):
         if self.status == "Rejected" and not (self.rejection_reason or "").strip():
             frappe.throw("Rejection reason is mandatory when rejecting a bonus.")
         if self.status == "Approved":
+            # Loop 2.7: separation of duties. The approver (the acting session
+            # user, who is stamped as approved_by) may not be the human who
+            # created this request. System-created requests are exempt.
+            _enforce_bonus_separation_of_duties(self.owner, frappe.session.user)
             self.approved_by = frappe.session.user
             self.approved_at = now_datetime()
 
     def on_trash(self):
         frappe.throw("Bonus Approval Requests cannot be deleted.", frappe.PermissionError)
+
+
+SYSTEM_OWNERS = {"Administrator", "Guest"}
+
+
+def _enforce_bonus_separation_of_duties(creator, approver):
+    """
+    Loop 2.7 - separation of duties for bonus approvals. A human who created the
+    bonus request may not approve it. System-created requests (owner is
+    Administrator/Guest) are exempt so automation is never blocked.
+    """
+    if creator in SYSTEM_OWNERS:
+        return
+    if approver and approver == creator:
+        frappe.throw(
+            f"Separation of duties: '{creator}' created this bonus request and "
+            f"may not also approve it. A different user must approve.",
+            frappe.PermissionError,
+        )
