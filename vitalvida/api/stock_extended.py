@@ -38,10 +38,12 @@ def dispatch_stock(dispatch_name=None, delivery_agent=None, items=None,
             if float(da_pickup_transport) > settings.max_da_pickup_transport:
                 frappe.throw(_("DA transport fee exceeds limit"))
         
-        # Check DA is not frozen
-        da_warehouse = frappe.get_doc("DA Warehouse", delivery_agent)
-        if da_warehouse.is_frozen:
-            frappe.throw(_("Cannot dispatch to frozen DA warehouse"))
+        # Loop 2.3: custodian authorization gate — replaces the frozen-only check.
+        # A DA may receive a dispatch only if active, not suspended, not frozen.
+        from vitalvida.consignment import can_hold_custody
+        _auth = can_hold_custody(delivery_agent)
+        if not _auth["allowed"]:
+            frappe.throw(_("Cannot dispatch: ") + _auth["reason"])
         
         # Create dispatch
         if not dispatch_name:

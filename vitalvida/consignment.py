@@ -98,6 +98,11 @@ def da_confirm_consignment(consignment_name: str, confirmed_items: list) -> dict
     """
     consignment = frappe.get_doc("Consignment", consignment_name)
 
+    # Loop 2.3: custodian authorization gate — DA must be allowed to hold custody
+    _auth = can_hold_custody(consignment.to_location)
+    if not _auth["allowed"]:
+        frappe.throw(f"Cannot confirm receipt: {_auth['reason']}")
+
     if consignment.status != "Delivered":
         frappe.throw("Consignment is not in Delivered status. Cannot confirm.")
 
@@ -399,6 +404,12 @@ def logistics_accept_consignment(consignment_name: str, counted_items: list) -> 
     if not any(r in roles for r in allowed):
         return {"status": "error", "message": "Access denied. Logistics role required."}
 
+    # Loop 2.3: custodian authorization gate — DA must be allowed to hold custody
+    consignment = frappe.get_doc("Consignment", consignment_name)
+    _auth = can_hold_custody(consignment.to_location)
+    if not _auth["allowed"]:
+        return {"status": "error", "message": f"Cannot accept: {_auth['reason']}"}
+
     consignment = frappe.get_doc("Consignment", consignment_name)
 
     if consignment.status not in ("Pending", ""):
@@ -456,3 +467,37 @@ def logistics_accept_consignment(consignment_name: str, counted_items: list) -> 
 
     frappe.db.commit()
     return {"status": "ok", "consignment": consignment_name}
+
+
+def can_hold_custody(delivery_agent: str) -> dict:
+    """
+    Loop 2.3 — single authoritative custodian-authorization check.
+
+    Constitutional question: may this DA hold custody right now?
+    Custody is allowed ONLY if ALL THREE existing state sources agree:
+      1. Delivery Agent.active == 1          (on the roster)
+      2. Delivery Agent.strike_status != "Suspended"  (not disciplinarily suspended)
+      3. no DA Warehouse row for this DA has is_frozen == 1  (not operationally frozen)
+
+    Returns {"allowed": bool, "reason": str}. This reads the three existing
+    fields; it does not introduce a new lifecycle field (Inactive/Archived are
+    deferred to the Law 21 archive lifecycle in 2.7/2.8).
+    """
+    da = frappe.db.get_value(
+        "Delivery Agent", delivery_agent,
+        ["active", "strike_status"], as_dict=True
+    )
+    if not da:
+        return {"allowed": False, "reason": f"Delivery Agent '{delivery_agent}' not found."}
+
+    if not da.active:
+        return {"allowed": False, "reason": f"DA '{delivery_agent}' is not active (off the roster)."}
+
+    if da.strike_status == "Suspended":
+        return {"allowed": False, "reason": f"DA '{delivery_agent}' is suspended (strike status)."}
+
+    frozen = frappe.db.exists("DA Warehouse", {"delivery_agent": delivery_agent, "is_frozen": 1})
+    if frozen:
+        return {"allowed": False, "reason": f"DA '{delivery_agent}' has a frozen warehouse."}
+
+    return {"allowed": True, "reason": ""}
