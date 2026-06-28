@@ -144,6 +144,18 @@ def confirm_consignment(consignment_id):
     guard = _require_logistics()
     if guard:
         return guard
+
+    # Loop 2.2.5: legacy parallel custody path DECOMMISSIONED.
+    # This endpoint directly mutated DA Warehouse and created DA Stock Entries
+    # outside the constitutional Consignment custody chain, bypassing the
+    # two-party gate (Law 4), the ledger-as-single-writer rule (Law 20), and
+    # idempotency (Law 22). It is disabled. Custody is created only through:
+    #   logistics_accept_consignment  ->  da_confirm_consignment
+    frappe.throw(
+        "Legacy confirm_consignment is disabled. Use the constitutional "
+        "Consignment custody flow: logistics_accept_consignment followed by "
+        "da_confirm_consignment."
+    )
     """
     Mark consignment as confirmed/delivered and add stock to DA Warehouse.
 
