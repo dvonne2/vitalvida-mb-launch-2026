@@ -43,7 +43,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Entry Type",
-   "options": "Dispatch\nDeduction\nReturn\nAdjustment",
+   "options": "Dispatch\nDeduction\nReturn",
    "reqd": 1
   },
   {

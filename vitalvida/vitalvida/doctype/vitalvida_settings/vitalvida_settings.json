@@ -18,9 +18,6 @@
   "performance_weight_top_percent",
   "performance_weight_lead_share",
   "section_break_variance",
-  "variance_warning_percent",
-  "variance_critical_percent",
-  "variance_tolerance_percent",
   "stock_movement_sla_hours",
   "section_break_inventory_report",
   "inventory_report_email",
@@ -118,26 +115,6 @@
    "fieldname": "section_break_variance",
    "fieldtype": "Section Break",
    "label": "Stock Variance Thresholds"
-  },
-  {
-   "default": "5.0",
-   "description": "Warn if variance percent >= this value",
-   "fieldname": "variance_warning_percent",
-   "fieldtype": "Float",
-   "label": "Variance Warning %"
-  },
-  {
-   "default": "15.0",
-   "description": "Critical if variance percent >= this value",
-   "fieldname": "variance_critical_percent",
-   "fieldtype": "Float",
-   "label": "Variance Critical %"
-  },
-  {
-   "default": "0.0",
-   "fieldname": "variance_tolerance_percent",
-   "fieldtype": "Float",
-   "label": "Variance Tolerance %"
   },
   {
    "default": "24",
