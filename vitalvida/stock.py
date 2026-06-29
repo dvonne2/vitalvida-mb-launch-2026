@@ -92,7 +92,14 @@ def _update_warehouse_stock(entry):
     # balance_after is exact post-update.
     new_stock = current
 
-    # 4. Stamp ledger trail on the entry
+    # 4. Stamp ledger trail on the entry.
+    # Loop 2.8 NOTE: this is the ONE SANCTIONED raw write to a DA Stock Entry after
+    # insert. The DA Stock Entry controller's before_save blocks all document-API
+    # edits and on_trash blocks deletion, making the ledger immutable; this single
+    # set_value stamps the running balance the controller cannot compute itself.
+    # Do NOT add any other set_value / db.set / .save() against DA Stock Entry
+    # anywhere. Corrections are made only via reverse_stock_entry() (a new entry),
+    # never by mutating an existing one.
     frappe.db.set_value("DA Stock Entry", entry.name, {
         "balance_before": current - qty if direction == "In" else current + qty,
         "balance_after": new_stock,
@@ -189,6 +196,8 @@ def write_off_damaged_stock(damage_assessment_name, escalation_request_name):
         frappe.throw(f"Escalation Request '{escalation_request_name}' does not exist.")
     esc_status = frappe.db.get_value("Escalation Request", escalation_request_name, "status")
     if esc_status != "Approved":
+        from vitalvida.audit import record_denied_action
+        record_denied_action("Write-off", damage_assessment_name, f"Escalation {escalation_request_name} status is '{esc_status}', not Approved")
         frappe.throw(
             f"Write-off refused: Escalation Request '{escalation_request_name}' is "
             f"'{esc_status}', not 'Approved'. A damaged-stock write-off requires a "
@@ -271,4 +280,75 @@ def write_off_damaged_stock(damage_assessment_name, escalation_request_name):
     except Exception:
         pass
 
+    return entry
+
+
+@frappe.whitelist()
+def reverse_stock_entry(original_entry_name, reason):
+    """
+    Loop 2.8 - issue a reversing entry for a DA Stock Entry.
+
+    The ledger is immutable (DA Stock Entry blocks edits and deletion). A
+    correction is therefore never an edit or a delete - it is a NEW entry that
+    cancels the original. The reversal keeps the ORIGINAL entry_type (a reversed
+    Deduction is still a Deduction) and flips only the direction (In <-> Out), so
+    the audit trail records what kind of movement is being undone.
+
+    Idempotent (Law 22): at most one reversal per original entry. The reversal is
+    linked to the original through its notes; a second call returns the existing
+    reversal rather than posting another.
+    """
+    if not reason or not str(reason).strip():
+        frappe.throw("A reason is required to reverse a stock entry.")
+
+    if not frappe.db.exists("DA Stock Entry", original_entry_name):
+        frappe.throw(f"DA Stock Entry '{original_entry_name}' does not exist.")
+    original = frappe.get_doc("DA Stock Entry", original_entry_name)
+
+    # Guard: do not reverse a reversal (avoid chains); and do not reverse twice.
+    reversal_marker = f"REVERSAL of {original_entry_name}"
+    existing = frappe.db.get_value(
+        "DA Stock Entry",
+        {"delivery_agent": original.delivery_agent, "product": original.product,
+         "notes": ("like", f"%{reversal_marker}%")},
+        "name",
+    )
+    if existing:
+        return frappe.get_doc("DA Stock Entry", existing)
+
+    if (original.notes or "").startswith("REVERSAL of "):
+        frappe.throw(
+            f"DA Stock Entry '{original_entry_name}' is itself a reversal and "
+            f"cannot be reversed again."
+        )
+
+    opposite = "Out" if original.direction == "In" else "In"
+
+    entry = _create_stock_entry(
+        original.delivery_agent,
+        original.product,
+        entry_type=original.entry_type,   # keep original type; flip direction only
+        direction=opposite,
+        quantity=float(original.quantity),
+        reference_order=original.reference_order,
+        reference_dispatch=original.reference_dispatch,
+        reference_consignment=original.reference_consignment,
+        reference_writeoff_approval=original.reference_writeoff_approval,
+        notes=f"{reversal_marker}. Reason: {reason}",
+    )
+    if entry is None:
+        frappe.throw(
+            "Reversal failed to post a ledger entry; see Stock Entry Creation Error logs."
+        )
+
+    frappe.db.commit()
+    try:
+        frappe.publish_realtime("stock_entry_reversed", {
+            "original": original_entry_name,
+            "reversal": entry.name,
+            "delivery_agent": original.delivery_agent,
+            "product": original.product,
+        })
+    except Exception:
+        pass
     return entry

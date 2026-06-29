@@ -37,6 +37,8 @@ def _enforce_bonus_separation_of_duties(creator, approver):
     if creator in SYSTEM_OWNERS:
         return
     if approver and approver == creator:
+        from vitalvida.audit import record_denied_action
+        record_denied_action("Self-approval", creator, "Self-approval blocked on bonus request")
         frappe.throw(
             f"Separation of duties: '{creator}' created this bonus request and "
             f"may not also approve it. A different user must approve.",

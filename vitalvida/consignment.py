@@ -101,6 +101,8 @@ def da_confirm_consignment(consignment_name: str, confirmed_items: list) -> dict
     # Loop 2.3: custodian authorization gate — DA must be allowed to hold custody
     _auth = can_hold_custody(consignment.to_location)
     if not _auth["allowed"]:
+        from vitalvida.audit import record_denied_action
+        record_denied_action("Custody", consignment.to_location, f"Confirm receipt refused: {_auth['reason']}")
         frappe.throw(f"Cannot confirm receipt: {_auth['reason']}")
 
     if consignment.status != "Delivered":
@@ -434,6 +436,8 @@ def logistics_accept_consignment(consignment_name: str, counted_items: list) -> 
     consignment = frappe.get_doc("Consignment", consignment_name)
     _auth = can_hold_custody(consignment.to_location)
     if not _auth["allowed"]:
+        from vitalvida.audit import record_denied_action
+        record_denied_action("Custody", consignment.to_location, f"Logistics accept refused: {_auth['reason']}")
         return {"status": "error", "message": f"Cannot accept: {_auth['reason']}"}
 
     consignment = frappe.get_doc("Consignment", consignment_name)

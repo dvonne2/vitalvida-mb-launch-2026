@@ -43,6 +43,8 @@ def dispatch_stock(dispatch_name=None, delivery_agent=None, items=None,
         from vitalvida.consignment import can_hold_custody
         _auth = can_hold_custody(delivery_agent)
         if not _auth["allowed"]:
+            from vitalvida.audit import record_denied_action
+            record_denied_action("Custody", delivery_agent, "Dispatch refused: " + _auth["reason"])
             frappe.throw(_("Cannot dispatch: ") + _auth["reason"])
         
         # Create dispatch

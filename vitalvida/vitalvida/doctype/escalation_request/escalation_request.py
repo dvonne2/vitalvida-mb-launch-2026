@@ -52,6 +52,8 @@ def _enforce_separation_of_duties(creator, approver_candidates, label):
         return
     for approver in approver_candidates:
         if approver and approver == creator:
+            from vitalvida.audit import record_denied_action
+            record_denied_action("Self-approval", creator, f"Self-approval blocked on {label}")
             frappe.throw(
                 f"Separation of duties: '{creator}' created this {label} and may "
                 f"not also approve it. A different user must approve.",
