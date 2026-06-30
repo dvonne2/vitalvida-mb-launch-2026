@@ -1,0 +1,158 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-06-29 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "exception_type",
+  "severity",
+  "delivery_agent",
+  "product",
+  "territory",
+  "consignment",
+  "stock_request",
+  "recommendation",
+  "description",
+  "owner_role",
+  "due_date",
+  "status",
+  "idempotency_key",
+  "resolved_by",
+  "resolved_at"
+ ],
+ "fields": [
+  {
+   "fieldname": "exception_type",
+   "fieldtype": "Select",
+   "label": "Exception Type",
+   "options": "Stockout Risk\nBundle Broken\nWarehouse Short\nSupplier Delay\nTransport Delay\nDA Refusal\nEmergency Replenishment\nCoverage Risk",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "severity",
+   "fieldtype": "Select",
+   "label": "Severity",
+   "options": "Low\nMedium\nHigh\nCritical",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "delivery_agent",
+   "fieldtype": "Link",
+   "label": "Delivery Agent",
+   "options": "Delivery Agent"
+  },
+  {
+   "fieldname": "product",
+   "fieldtype": "Link",
+   "label": "Product",
+   "options": "Item"
+  },
+  {
+   "fieldname": "territory",
+   "fieldtype": "Data",
+   "label": "Territory / State"
+  },
+  {
+   "fieldname": "consignment",
+   "fieldtype": "Link",
+   "label": "Consignment",
+   "options": "Consignment"
+  },
+  {
+   "fieldname": "stock_request",
+   "fieldtype": "Link",
+   "label": "Stock Request",
+   "options": "Stock Request"
+  },
+  {
+   "fieldname": "recommendation",
+   "fieldtype": "Link",
+   "label": "Recommendation",
+   "options": "Supply Recommendation"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  },
+  {
+   "fieldname": "owner_role",
+   "fieldtype": "Data",
+   "label": "Owner"
+  },
+  {
+   "fieldname": "due_date",
+   "fieldtype": "Date",
+   "label": "Due Date"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Detected\nAssigned\nIn Progress\nResolved\nClosed\nEscalated\nCancelled",
+   "reqd": 1,
+   "in_list_view": 1,
+   "default": "Detected"
+  },
+  {
+   "fieldname": "idempotency_key",
+   "fieldtype": "Data",
+   "label": "Idempotency Key",
+   "read_only": 1
+  },
+  {
+   "fieldname": "resolved_by",
+   "fieldtype": "Link",
+   "label": "Resolved By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "resolved_at",
+   "fieldtype": "Datetime",
+   "label": "Resolved At",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-06-29 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Vitalvida",
+ "name": "Supply Exception",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Inventory Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0,
+ "autoname": "format:EXC-{exception_type}-{idempotency_key}"
+}

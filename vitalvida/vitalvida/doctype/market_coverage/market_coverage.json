@@ -1,0 +1,126 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-06-29 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "scan_date",
+  "state",
+  "lga",
+  "delivery_agent",
+  "active_da_count",
+  "eligible_da_count",
+  "coverage_status",
+  "minimum_service_stock_met",
+  "replacement_needed",
+  "risk_level"
+ ],
+ "fields": [
+  {
+   "fieldname": "scan_date",
+   "fieldtype": "Date",
+   "label": "Scan Date",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "state",
+   "fieldtype": "Data",
+   "label": "State",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "lga",
+   "fieldtype": "Data",
+   "label": "LGA",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "delivery_agent",
+   "fieldtype": "Link",
+   "label": "Representative DA",
+   "options": "Delivery Agent"
+  },
+  {
+   "fieldname": "active_da_count",
+   "fieldtype": "Int",
+   "label": "Active DA Count",
+   "read_only": 1
+  },
+  {
+   "fieldname": "eligible_da_count",
+   "fieldtype": "Int",
+   "label": "Eligible DA Count",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "coverage_status",
+   "fieldtype": "Select",
+   "label": "Coverage Status",
+   "options": "Covered\nThinly Covered\nAt Risk\nUncovered",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "minimum_service_stock_met",
+   "fieldtype": "Check",
+   "label": "Minimum Service Stock Met",
+   "read_only": 1
+  },
+  {
+   "fieldname": "replacement_needed",
+   "fieldtype": "Check",
+   "label": "Replacement Needed",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "risk_level",
+   "fieldtype": "Select",
+   "label": "Risk Level",
+   "options": "Low\nMedium\nHigh\nCritical",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-06-29 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Vitalvida",
+ "name": "Market Coverage",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Inventory Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0,
+ "autoname": "format:COV-{scan_date}-{state}-{lga}"
+}

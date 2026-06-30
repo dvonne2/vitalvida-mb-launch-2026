@@ -1,0 +1,81 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-06-29 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "bundle_name",
+  "bundle_price",
+  "is_active",
+  "products"
+ ],
+ "fields": [
+  {
+   "fieldname": "bundle_name",
+   "fieldtype": "Data",
+   "label": "Bundle Name",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "bundle_price",
+   "fieldtype": "Currency",
+   "label": "Bundle Price",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "label": "Is Active",
+   "in_list_view": 1,
+   "default": "1"
+  },
+  {
+   "fieldname": "products",
+   "fieldtype": "Table",
+   "label": "Bundle Products",
+   "options": "Bundle Definition Item"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-06-29 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Vitalvida",
+ "name": "Bundle Definition",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Inventory Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0,
+ "autoname": "field:bundle_name",
+ "title_field": "bundle_name"
+}

@@ -59,3 +59,8 @@ jspm_packages/
 *.bak2
 *.bak3
 *.bak4
+
+# local safety backups (not application code)
+*.bak*
+*.pre_loop3
+*.pre_loop31
