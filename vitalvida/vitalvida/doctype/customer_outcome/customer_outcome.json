@@ -1,0 +1,124 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-06-30 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "customer",
+  "product_category",
+  "desired_outcome",
+  "col1",
+  "outcome_status",
+  "measured_via",
+  "measured_at",
+  "sec",
+  "evidence",
+  "influences_trust"
+ ],
+ "fields": [
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer Profile",
+   "options": "Customer Profile",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "product_category",
+   "fieldtype": "Select",
+   "label": "Product Category",
+   "options": "\nHaircare\nJewellery\nSupplements\nGeneral\nOther",
+   "in_list_view": 1,
+   "description": "What 'success' means differs by category (haircare=fuller hair, etc.)."
+  },
+  {
+   "fieldname": "desired_outcome",
+   "fieldtype": "Small Text",
+   "label": "Desired Outcome",
+   "description": "The reason the customer bought \u2014 the outcome they want."
+  },
+  {
+   "fieldname": "col1",
+   "fieldtype": "Column Break",
+   "label": "Col1"
+  },
+  {
+   "fieldname": "outcome_status",
+   "fieldtype": "Select",
+   "label": "Outcome Status",
+   "options": "Unknown\nWorking Toward\nPartially Achieved\nAchieved\nExceeded\nNot Achieved\nInsufficient Data",
+   "reqd": 1,
+   "in_list_view": 1,
+   "default": "Unknown"
+  },
+  {
+   "fieldname": "measured_via",
+   "fieldtype": "Select",
+   "label": "Measured Via",
+   "options": "\nReview\nFollow-up Call\nRepeat Purchase\nEducation Completion\nSurvey\nInferred",
+   "description": "How the outcome was determined."
+  },
+  {
+   "fieldname": "measured_at",
+   "fieldtype": "Datetime",
+   "label": "Measured At"
+  },
+  {
+   "fieldname": "sec",
+   "fieldtype": "Section Break",
+   "label": "Sec"
+  },
+  {
+   "fieldname": "evidence",
+   "fieldtype": "Small Text",
+   "label": "Evidence / Notes"
+  },
+  {
+   "fieldname": "influences_trust",
+   "fieldtype": "Check",
+   "label": "Influences Trust",
+   "read_only": 1,
+   "default": "1"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-06-30 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Vitalvida",
+ "name": "Customer Outcome",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Customer Success Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "hash",
+ "title_field": "desired_outcome"
+}

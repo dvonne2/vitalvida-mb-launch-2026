@@ -1,0 +1,218 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-06-30 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "ignored_days_threshold",
+  "dormant_days_threshold",
+  "min_orders_for_health",
+  "trust_provisional_start",
+  "referral_trust_threshold",
+  "col1",
+  "reorder_cycle_days",
+  "ai_enabled",
+  "ai_provider",
+  "ai_api_key",
+  "sec_trust",
+  "trust_delivered",
+  "trust_on_time",
+  "trust_payment",
+  "trust_repeat",
+  "trust_referral",
+  "trust_outcome",
+  "trust_review_pos",
+  "col_trust",
+  "trust_complaint",
+  "trust_delivery_failed",
+  "trust_cancelled",
+  "trust_sla_breach",
+  "trust_review_neg"
+ ],
+ "fields": [
+  {
+   "fieldname": "ignored_days_threshold",
+   "fieldtype": "Int",
+   "label": "Ignored-Customer Threshold (days)",
+   "default": "30",
+   "description": "Law 6: flag a customer 'ignored' after this many days with no contact."
+  },
+  {
+   "fieldname": "dormant_days_threshold",
+   "fieldtype": "Int",
+   "label": "Dormant Threshold (days)",
+   "default": "45"
+  },
+  {
+   "fieldname": "min_orders_for_health",
+   "fieldtype": "Int",
+   "label": "Min Orders For Health Score",
+   "default": "2",
+   "description": "Below this, Health = Insufficient Data (bootstrap mode)."
+  },
+  {
+   "fieldname": "trust_provisional_start",
+   "fieldtype": "Int",
+   "label": "Provisional Trust Start",
+   "default": "50"
+  },
+  {
+   "fieldname": "referral_trust_threshold",
+   "fieldtype": "Int",
+   "label": "Referral Trust Threshold",
+   "default": "70",
+   "description": "Law 7: minimum trust before a customer may be asked for a referral."
+  },
+  {
+   "fieldname": "col1",
+   "fieldtype": "Column Break",
+   "label": "Col1"
+  },
+  {
+   "fieldname": "reorder_cycle_days",
+   "fieldtype": "Int",
+   "label": "Default Reorder Cycle (days)",
+   "default": "45",
+   "description": "Relationship-readiness hint only; Loop 5 owns reorder CONVERSION."
+  },
+  {
+   "fieldname": "ai_enabled",
+   "fieldtype": "Check",
+   "label": "AI Enabled",
+   "default": "0",
+   "description": "Master switch. When off, AI engines return dormant rule-based output."
+  },
+  {
+   "fieldname": "ai_provider",
+   "fieldtype": "Select",
+   "label": "AI Provider",
+   "options": "\nanthropic\nopenai",
+   "description": "Pluggable. No external calls until a key is configured AND ai_enabled=1."
+  },
+  {
+   "fieldname": "ai_api_key",
+   "fieldtype": "Password",
+   "label": "AI API Key",
+   "description": "Blank by default; AI stays dormant."
+  },
+  {
+   "fieldname": "sec_trust",
+   "fieldtype": "Section Break",
+   "label": "Trust Signal Deltas (configurable \u2014 Law 2)"
+  },
+  {
+   "fieldname": "trust_delivered",
+   "fieldtype": "Int",
+   "label": "Trust: Delivered",
+   "default": "5"
+  },
+  {
+   "fieldname": "trust_on_time",
+   "fieldtype": "Int",
+   "label": "Trust: On-Time Delivery",
+   "default": "3"
+  },
+  {
+   "fieldname": "trust_payment",
+   "fieldtype": "Int",
+   "label": "Trust: Payment Completed",
+   "default": "4"
+  },
+  {
+   "fieldname": "trust_repeat",
+   "fieldtype": "Int",
+   "label": "Trust: Repeat Purchase",
+   "default": "8"
+  },
+  {
+   "fieldname": "trust_referral",
+   "fieldtype": "Int",
+   "label": "Trust: Referral Made",
+   "default": "6"
+  },
+  {
+   "fieldname": "trust_outcome",
+   "fieldtype": "Int",
+   "label": "Trust: Outcome Achieved",
+   "default": "10"
+  },
+  {
+   "fieldname": "trust_review_pos",
+   "fieldtype": "Int",
+   "label": "Trust: Positive Review",
+   "default": "5"
+  },
+  {
+   "fieldname": "col_trust",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "trust_complaint",
+   "fieldtype": "Int",
+   "label": "Trust: Complaint Filed",
+   "default": "-6"
+  },
+  {
+   "fieldname": "trust_delivery_failed",
+   "fieldtype": "Int",
+   "label": "Trust: Delivery Failed",
+   "default": "-8"
+  },
+  {
+   "fieldname": "trust_cancelled",
+   "fieldtype": "Int",
+   "label": "Trust: Order Cancelled",
+   "default": "-4"
+  },
+  {
+   "fieldname": "trust_sla_breach",
+   "fieldtype": "Int",
+   "label": "Trust: SLA Breach",
+   "default": "-5"
+  },
+  {
+   "fieldname": "trust_review_neg",
+   "fieldtype": "Int",
+   "label": "Trust: Negative Review",
+   "default": "-7"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-06-30 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Vitalvida",
+ "name": "Loop 4 Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Customer Success Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "issingle": 1
+}
