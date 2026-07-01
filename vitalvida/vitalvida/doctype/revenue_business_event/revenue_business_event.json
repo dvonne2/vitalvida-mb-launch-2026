@@ -1,0 +1,33 @@
+{
+ "actions": [],
+ "creation": "2026-07-01 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": ["event_type","order","customer","telesales_rep","value","revenue_delta","source_ref","occurred_at","detail"],
+ "fields": [
+  {"fieldname":"event_type","fieldtype":"Select","label":"Event Type","options":"Delivered & Paid\nUpsell\nCustomer Revival\nAbandoned Cart Recovered\nDPSR Milestone\nReversal","reqd":1,"in_list_view":1,"in_standard_filter":1},
+  {"fieldname":"order","fieldtype":"Link","label":"Order","options":"VV Order","in_standard_filter":1},
+  {"fieldname":"customer","fieldtype":"Data","label":"Customer (phone)"},
+  {"fieldname":"telesales_rep","fieldtype":"Link","label":"Telesales Rep","options":"Telesales Closer","in_standard_filter":1},
+  {"fieldname":"value","fieldtype":"Currency","label":"Value"},
+  {"fieldname":"revenue_delta","fieldtype":"Currency","label":"Revenue Delta"},
+  {"fieldname":"source_ref","fieldtype":"Data","label":"Source Ref"},
+  {"fieldname":"occurred_at","fieldtype":"Datetime","label":"Occurred At","in_list_view":1},
+  {"fieldname":"detail","fieldtype":"Small Text","label":"Detail (JSON)"}
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-07-01 00:00:00",
+ "module": "Vitalvida",
+ "name": "Revenue Business Event",
+ "naming_rule": "Autoincrement",
+ "autoname": "autoincrement",
+ "owner": "Administrator",
+ "permissions": [
+  {"role":"System Manager","read":1,"create":1,"report":1,"export":1},
+  {"role":"Sales Manager","read":1,"report":1,"export":1}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 0
+}

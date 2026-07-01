@@ -42,6 +42,7 @@ doc_events = {
         "on_update": [
             "vitalvida.reconciliation.on_vv_order_update",
             "vitalvida.emails.dispatch_vv_order_email",
+            "vitalvida.loop5.order_hooks.on_vv_order_update",
         ],
     },
     "Stock Dispatch": {
@@ -84,6 +85,10 @@ scheduler_events = {
         "vitalvida.orders.process_webhook_queue"
     ],
     "cron": {
+        # Loop 5: weekly DPSR champion evaluation, Monday 1:30 AM
+        "30 1 * * 1": [
+            "vitalvida.loop5.dpsr_champion.run_dpsr_champion"
+        ],
         # Loop 1: hourly — open Recovery Cases for releases past their verification deadline
         "0 * * * *": [
             "vitalvida.release_verification.check_release_verification"

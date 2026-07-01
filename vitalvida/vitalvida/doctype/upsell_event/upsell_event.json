@@ -1,0 +1,33 @@
+{
+ "actions": [],
+ "creation": "2026-07-01 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": ["order","customer","telesales_rep","original_package","new_package","original_value","new_value","revenue_added","commission_status","occurred_at"],
+ "fields": [
+  {"fieldname":"order","fieldtype":"Link","label":"Order","options":"VV Order","reqd":1,"in_standard_filter":1,"in_list_view":1},
+  {"fieldname":"customer","fieldtype":"Data","label":"Customer (phone)"},
+  {"fieldname":"telesales_rep","fieldtype":"Link","label":"Telesales Rep","options":"Telesales Closer","in_standard_filter":1},
+  {"fieldname":"original_package","fieldtype":"Data","label":"Original Package"},
+  {"fieldname":"new_package","fieldtype":"Data","label":"New Package"},
+  {"fieldname":"original_value","fieldtype":"Currency","label":"Original Value"},
+  {"fieldname":"new_value","fieldtype":"Currency","label":"New Value"},
+  {"fieldname":"revenue_added","fieldtype":"Currency","label":"Revenue Added","in_list_view":1},
+  {"fieldname":"commission_status","fieldtype":"Select","label":"Commission Status","options":"Pending\nEarned\nEarned-NoCommission\nEarned-Blocked\nVoided","default":"Pending","in_list_view":1,"in_standard_filter":1},
+  {"fieldname":"occurred_at","fieldtype":"Datetime","label":"Occurred At"}
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-07-01 00:00:00",
+ "module": "Vitalvida",
+ "name": "Upsell Event",
+ "naming_rule": "Expression (old style)",
+ "autoname": "format:UPS-{YYYY}-{#####}",
+ "owner": "Administrator",
+ "permissions": [
+  {"role":"System Manager","read":1,"create":1,"write":1,"report":1,"export":1},
+  {"role":"Sales Manager","read":1,"report":1,"export":1}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}

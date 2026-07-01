@@ -8,3 +8,5 @@ vitalvida.patches.v1_0.mb_program_phase1
 vitalvida.patches.v1_0.loop01_release_recovery
 vitalvida.patches.loop3_seed_mss_and_bundle
 vitalvida.patches.loop4_backfill_customer_profiles
+vitalvida.patches.v5_0.add_loop5_custom_fields
+vitalvida.patches.v5_0.seed_loop5_settings

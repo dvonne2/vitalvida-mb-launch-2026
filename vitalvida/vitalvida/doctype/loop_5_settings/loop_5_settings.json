@@ -1,0 +1,22 @@
+{
+ "actions": [],
+ "creation": "2026-07-01 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "issingle": 1,
+ "field_order": ["enabled","ai_coach_enabled","notes"],
+ "fields": [
+  {"fieldname":"enabled","fieldtype":"Check","label":"Loop 5 Enabled","default":"1"},
+  {"fieldname":"ai_coach_enabled","fieldtype":"Check","label":"AI Coach Enabled","default":"1"},
+  {"fieldname":"notes","fieldtype":"Small Text","label":"Notes"}
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-07-01 00:00:00",
+ "module": "Vitalvida",
+ "name": "Loop 5 Settings",
+ "owner": "Administrator",
+ "permissions": [{"role":"System Manager","read":1,"write":1,"create":1}],
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}

@@ -1,0 +1,30 @@
+{
+ "actions": [],
+ "creation": "2026-07-01 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": ["order","change_type","field_before","field_after","changed_by","reason","occurred_at"],
+ "fields": [
+  {"fieldname":"order","fieldtype":"Link","label":"Order","options":"VV Order","reqd":1,"in_standard_filter":1,"in_list_view":1},
+  {"fieldname":"change_type","fieldtype":"Select","label":"Change Type","options":"Upsell\nDowngrade\nBundle Swap\nQuantity Increase\nQuantity Decrease\nDiscount\nManual Price Override","reqd":1,"in_list_view":1,"in_standard_filter":1},
+  {"fieldname":"field_before","fieldtype":"Data","label":"Before"},
+  {"fieldname":"field_after","fieldtype":"Data","label":"After"},
+  {"fieldname":"changed_by","fieldtype":"Link","label":"Changed By","options":"User"},
+  {"fieldname":"reason","fieldtype":"Small Text","label":"Reason"},
+  {"fieldname":"occurred_at","fieldtype":"Datetime","label":"Occurred At","in_list_view":1}
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-07-01 00:00:00",
+ "module": "Vitalvida",
+ "name": "Commercial Change Log",
+ "naming_rule": "Autoincrement",
+ "autoname": "autoincrement",
+ "owner": "Administrator",
+ "permissions": [
+  {"role":"System Manager","read":1,"create":1,"report":1,"export":1},
+  {"role":"Sales Manager","read":1,"report":1,"export":1}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}
