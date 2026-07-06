@@ -393,3 +393,46 @@ def assign_da_to_order(order, da):
         frappe.log_error(frappe.get_traceback(), 'assign_da_to_order')
         return {'success': False, 'error': str(e)}
 
+
+
+@frappe.whitelist()
+def get_packages():
+    """Live package list for the upsell picker.
+    Reads whichever package doctype actually holds data (Package / VV Package)."""
+    if frappe.session.user == "Guest":
+        frappe.throw("Not authenticated", frappe.AuthenticationError)
+
+    from frappe.utils import flt
+
+    doctype = None
+    for dt in ("Package", "VV Package"):
+        if frappe.db.exists("DocType", dt) and frappe.db.count(dt) > 0:
+            doctype = dt
+            break
+    if not doctype:
+        return []
+
+    meta_fields = {f.fieldname for f in frappe.get_meta(doctype).fields}
+
+    filters = {}
+    for flag in ("active", "is_active", "enabled", "disabled"):
+        if flag in meta_fields:
+            filters = {flag: 0} if flag == "disabled" else {flag: 1}
+            break
+
+    wanted = ("package_name", "title", "price", "package_price", "amount",
+              "contents", "package_contents", "description", "brand")
+    fields = ["name"] + [f for f in wanted if f in meta_fields]
+    rows = frappe.get_all(doctype, filters=filters, fields=fields, order_by="modified desc")
+
+    out = []
+    for r in rows:
+        out.append({
+            "id": r.name,
+            "name": r.get("package_name") or r.get("title") or r.name,
+            "price": flt(r.get("price") or r.get("package_price") or r.get("amount")),
+            "contents": r.get("contents") or r.get("package_contents") or r.get("description") or "",
+            "brand": r.get("brand") or "",
+        })
+    out.sort(key=lambda x: x["price"])
+    return out

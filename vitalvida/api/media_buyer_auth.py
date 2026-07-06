@@ -2,43 +2,77 @@
 vitalvida/api/media_buyer_auth.py
 
 Magic link authentication for VV Media Buyer portal.
-Visitors click a one-time link in their email, get logged into Frappe
-as a session-cookie user, and land in the media buyer portal.
+GET shows a confirm page (safe for link-preview bots); POST consumes
+the token and logs the user in.
 """
 
 import frappe
 from frappe import _
 from frappe.utils import now_datetime, get_url
 
+DEFAULT_PORTAL_URL = "https://vitalvida.systemforce.ng/media-buyer"
 
-@frappe.whitelist(allow_guest=True)
+
+@frappe.whitelist(allow_guest=True, methods=["GET"])
 def consume_magic_link(token=None, redirect_url=None):
     """
-    Validates a magic link token and logs the user in.
-
-    Flow:
-    1. Look up VV Media Buyer by magic_link_token
-    2. Check token isn't expired
-    3. Resolve to a Frappe User (create if doesn't exist)
-    4. Log them in (set session cookie)
-    5. Redirect to media buyer portal
-
-    Called via GET: /api/method/vitalvida.api.media_buyer_auth.consume_magic_link?token=...
+    Step 1 of magic-link login (GET - safe for email scanners / chat preview bots).
+    Does NOT consume the token or log anyone in. Renders a confirmation page
+    whose button POSTs to complete_magic_login.
     """
-    portal_url = redirect_url if redirect_url else "https://fulanihairsecrets.com/media-buyer"
+    portal_url = redirect_url if redirect_url else DEFAULT_PORTAL_URL
 
     if not token:
         frappe.local.response["type"] = "redirect"
         frappe.local.response["location"] = f"{portal_url}?error=token_required"
         return
 
-    # 1. Find the affiliate
-    mb_name = frappe.db.get_value(
-        "VV Media Buyer",
-        {"magic_link_token": token},
-        "name"
+    mb_name = frappe.db.get_value("VV Media Buyer", {"magic_link_token": token}, "name")
+    if not mb_name:
+        frappe.local.response["type"] = "redirect"
+        frappe.local.response["location"] = f"{portal_url}?error=invalid_or_expired_link"
+        return
+
+    action = f"{get_url()}/api/method/vitalvida.api.media_buyer_auth.complete_magic_login"
+    safe_token = frappe.utils.escape_html(token)
+    safe_redirect = frappe.utils.escape_html(redirect_url or "")
+
+    html = f"""
+    <div style="max-width:420px;margin:0 auto;text-align:center;">
+      <p style="color:#555;font-size:14px;line-height:1.6;">
+        Click below to securely sign in to your VitalVida affiliate dashboard.
+      </p>
+      <form method="GET" action="{action}">
+        <input type="hidden" name="token" value="{safe_token}">
+        <input type="hidden" name="redirect_url" value="{safe_redirect}">
+        <button type="submit" class="btn btn-primary btn-lg" style="margin-top:16px;background:linear-gradient(135deg,#b8860b,#d4af37,#f0d060);color:#000;border:0;padding:14px 40px;border-radius:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;">
+          Continue to Dashboard
+        </button>
+      </form>
+    </div>
+    """
+    frappe.respond_as_web_page(
+        title=_("Confirm Login - VitalVida"),
+        html=html,
+        http_status_code=200,
+        indicator_color="green",
     )
 
+
+@frappe.whitelist(allow_guest=True, methods=["GET", "POST"])
+def complete_magic_login(token=None, redirect_url=None):
+    """
+    Step 2 - consumes the token, logs the user in (sets sid cookie),
+    and redirects to the portal.
+    """
+    portal_url = redirect_url if redirect_url else DEFAULT_PORTAL_URL
+
+    if not token:
+        frappe.local.response["type"] = "redirect"
+        frappe.local.response["location"] = f"{portal_url}?error=token_required"
+        return
+
+    mb_name = frappe.db.get_value("VV Media Buyer", {"magic_link_token": token}, "name")
     if not mb_name:
         frappe.local.response["type"] = "redirect"
         frappe.local.response["location"] = f"{portal_url}?error=invalid_or_expired_link"
@@ -46,7 +80,6 @@ def consume_magic_link(token=None, redirect_url=None):
 
     mb = frappe.get_doc("VV Media Buyer", mb_name)
 
-    # 2. Check expiry
     if not mb.magic_link_expires_at:
         frappe.local.response["type"] = "redirect"
         frappe.local.response["location"] = f"{portal_url}?error=no_expiry_set"
@@ -57,20 +90,25 @@ def consume_magic_link(token=None, redirect_url=None):
         frappe.local.response["location"] = f"{portal_url}?error=link_expired"
         return
 
-    # 3. Check affiliate is Active (or Pending review)
     if mb.is_suspended:
         frappe.local.response["http_status_code"] = 403
         return {"error": "Your account is suspended. Contact support."}
 
-    # 4. Resolve or create Frappe User
     user_email = mb.email
     if not user_email:
         frappe.local.response["http_status_code"] = 500
         return {"error": "No email on file. Contact support."}
 
+    # Ensure the portal role exists before we try to assign it
+    if not frappe.db.exists("Role", "Media Buyer Portal"):
+        frappe.get_doc({
+            "doctype": "Role",
+            "role_name": "Media Buyer Portal",
+            "desk_access": 0,
+        }).insert(ignore_permissions=True)
+
     user_exists = frappe.db.exists("User", user_email)
     if not user_exists:
-        # Create user with Media Buyer role
         user_doc = frappe.get_doc({
             "doctype": "User",
             "email": user_email,
@@ -83,27 +121,20 @@ def consume_magic_link(token=None, redirect_url=None):
         })
         user_doc.flags.ignore_permissions = True
         user_doc.insert()
-        # Link User back to VV Media Buyer
         frappe.db.set_value("VV Media Buyer", mb.name, "user", user_email, update_modified=False)
         frappe.db.commit()
 
-    # 5. Log the user in via LoginManager
     from frappe.auth import LoginManager
     login_manager = LoginManager()
     login_manager.user = user_email
     login_manager.post_login()
 
-    # 6. Invalidate the token (single-use)
     frappe.db.set_value("VV Media Buyer", mb.name, {
         "magic_link_token": None,
         "magic_link_expires_at": None,
     }, update_modified=False)
     frappe.db.commit()
 
-    # 7. Redirect to media buyer portal landing page (animated checkmark)
-    # Get base URL dynamically or fallback to production
-    # Vercel env or origin should be passed, but we use the known frontend URL
-    portal_url = redirect_url if redirect_url else "https://fulanihairsecrets.com/media-buyer"
     frappe.local.response["type"] = "redirect"
     frappe.local.response["location"] = portal_url
 
@@ -111,22 +142,16 @@ def consume_magic_link(token=None, redirect_url=None):
 @frappe.whitelist(allow_guest=True)
 def request_new_magic_link(email=None, redirect_url=None):
     """
-    Public endpoint to request a fresh magic link if the previous one expired.
-
+    Public endpoint to request a fresh magic link.
     Called via POST with email in body.
     """
     if not email:
         frappe.local.response["http_status_code"] = 400
         return {"error": "Email required"}
 
-    mb_name = frappe.db.get_value(
-        "VV Media Buyer",
-        {"email": email},
-        "name"
-    )
+    mb_name = frappe.db.get_value("VV Media Buyer", {"email": email}, "name")
 
     if not mb_name:
-        # Don't reveal whether email is registered — prevent enumeration
         return {"success": True, "message": "If this email is registered, a magic link has been sent."}
 
     mb = frappe.get_doc("VV Media Buyer", mb_name)
@@ -134,13 +159,11 @@ def request_new_magic_link(email=None, redirect_url=None):
     if mb.is_suspended:
         return {"success": True, "message": "If this email is registered, a magic link has been sent."}
 
-    # Generate new token
     import secrets
     from datetime import timedelta
-    # Use 24 bytes (32 chars) so the full URL fits in the 140-char limit of a Data field
     token = secrets.token_urlsafe(24)
     expires_at = now_datetime() + timedelta(days=7)
-    
+
     import urllib.parse
     base_magic_link = f"{get_url()}/api/method/vitalvida.api.media_buyer_auth.consume_magic_link?token={token}"
     magic_link = f"{base_magic_link}&redirect_url={urllib.parse.quote(redirect_url)}" if redirect_url else base_magic_link
@@ -152,7 +175,6 @@ def request_new_magic_link(email=None, redirect_url=None):
     }, update_modified=False)
     frappe.db.commit()
 
-    # Send magic link email with inline HTML (no template dependency)
     email_html = f"""
     <div style="font-family: 'Montserrat', Arial, sans-serif; max-width: 560px; margin: 0 auto; background: #0a0a0a; border: 1px solid rgba(212,175,55,0.3); border-radius: 16px; overflow: hidden;">
         <div style="background: linear-gradient(135deg, #1a1500 0%, #0a0a0a 100%); padding: 40px 32px; text-align: center; border-bottom: 1px solid rgba(212,175,55,0.2);">
@@ -185,7 +207,6 @@ def request_new_magic_link(email=None, redirect_url=None):
             now=True,
         )
     except Exception as e:
-        # Log the error AND the magic link URL so it's always retrievable
         frappe.log_error(
             f"Failed to send magic link to {mb.email}. Link: {magic_link}\nError: {str(e)}",
             "Magic Link Email Failed"

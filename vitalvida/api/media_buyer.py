@@ -84,7 +84,7 @@ def _get_mb_row(mb_id):
 # ROLE GUARD
 # ═══════════════════════════════════════════════════════════
 
-@frappe.whitelist()
+@frappe.whitelist(allow_guest=True)
 def check_session():
     """
     Returns the logged-in user's role and portal access.
