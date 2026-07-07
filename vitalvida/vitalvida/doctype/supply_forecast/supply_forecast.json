@@ -1,0 +1,136 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-06-29 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "forecast_type",
+  "product",
+  "delivery_agent",
+  "territory",
+  "forecast_quantity",
+  "forecast_revenue",
+  "confidence",
+  "start_date",
+  "end_date",
+  "status",
+  "approved_by",
+  "lines"
+ ],
+ "fields": [
+  {
+   "fieldname": "forecast_type",
+   "fieldtype": "Select",
+   "label": "Forecast Type",
+   "options": "Daily\nWeekly\nMonthly\nSeasonal\nCampaign",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "product",
+   "fieldtype": "Link",
+   "label": "Product",
+   "options": "Item",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "delivery_agent",
+   "fieldtype": "Link",
+   "label": "Delivery Agent",
+   "options": "Delivery Agent"
+  },
+  {
+   "fieldname": "territory",
+   "fieldtype": "Data",
+   "label": "Territory / State"
+  },
+  {
+   "fieldname": "forecast_quantity",
+   "fieldtype": "Float",
+   "label": "Forecast Quantity"
+  },
+  {
+   "fieldname": "forecast_revenue",
+   "fieldtype": "Currency",
+   "label": "Forecast Revenue"
+  },
+  {
+   "fieldname": "confidence",
+   "fieldtype": "Percent",
+   "label": "Confidence"
+  },
+  {
+   "fieldname": "start_date",
+   "fieldtype": "Date",
+   "label": "Start Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "end_date",
+   "fieldtype": "Date",
+   "label": "End Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Generated\nReviewed\nAdjusted\nLocked\nUsed for Planning\nMeasured\nArchived",
+   "reqd": 1,
+   "in_list_view": 1,
+   "default": "Generated"
+  },
+  {
+   "fieldname": "approved_by",
+   "fieldtype": "Link",
+   "label": "Approved By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "lines",
+   "fieldtype": "Table",
+   "label": "Forecast Lines",
+   "options": "Supply Forecast Line"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-06-29 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Vitalvida",
+ "name": "Supply Forecast",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Inventory Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0,
+ "autoname": "format:FC-{forecast_type}-{start_date}"
+}

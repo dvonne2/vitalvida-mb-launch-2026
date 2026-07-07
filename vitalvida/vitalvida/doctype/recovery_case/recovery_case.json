@@ -1,0 +1,149 @@
+{
+ "actions": [],
+ "creation": "2026-06-26 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "module": "Vitalvida",
+ "name": "Recovery Case",
+ "naming_rule": "Expression (old style)",
+ "autoname": "RC-.#####",
+ "sort_field": "opened_at",
+ "sort_order": "DESC",
+ "track_changes": 1,
+ "field_order": [
+  "order",
+  "asset_type",
+  "amount",
+  "column_break_1",
+  "state",
+  "opened_at",
+  "closed_at",
+  "recovery_method",
+  "section_custody",
+  "last_known_custodian",
+  "expected_custodian",
+  "evidence",
+  "section_organs",
+  "assigned_organ",
+  "supporting_organs"
+ ],
+ "fields": [
+  {
+   "fieldname": "order",
+   "fieldtype": "Link",
+   "label": "Order",
+   "options": "VV Order",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "asset_type",
+   "fieldtype": "Select",
+   "label": "Asset Type",
+   "options": "Cash\nInventory\nProof\nReconciliation",
+   "default": "Cash",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "label": "Amount",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "state",
+   "fieldtype": "Select",
+   "label": "State",
+   "options": "OPEN\nACTIVE RECOVERY\nRECOVERED\nRECOVERY EXHAUSTED",
+   "default": "OPEN",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "opened_at",
+   "fieldtype": "Datetime",
+   "label": "Opened At"
+  },
+  {
+   "fieldname": "closed_at",
+   "fieldtype": "Datetime",
+   "label": "Closed At"
+  },
+  {
+   "fieldname": "recovery_method",
+   "fieldtype": "Data",
+   "label": "Recovery Method"
+  },
+  {
+   "fieldname": "section_custody",
+   "fieldtype": "Section Break",
+   "label": "Custody & Evidence"
+  },
+  {
+   "fieldname": "last_known_custodian",
+   "fieldtype": "Link",
+   "label": "Last Known Custodian",
+   "options": "Delivery Agent"
+  },
+  {
+   "fieldname": "source_consignment",
+   "fieldtype": "Link",
+   "label": "Source Consignment",
+   "options": "Consignment"
+  },
+  {
+   "fieldname": "expected_custodian",
+   "fieldtype": "Data",
+   "label": "Expected Custodian",
+   "default": "Company"
+  },
+  {
+   "fieldname": "evidence",
+   "fieldtype": "Link",
+   "label": "Evidence (Payment Proof)",
+   "options": "Payment Proof"
+  },
+  {
+   "fieldname": "section_organs",
+   "fieldtype": "Section Break",
+   "label": "Ownership"
+  },
+  {
+   "fieldname": "assigned_organ",
+   "fieldtype": "Data",
+   "label": "Assigned Organ",
+   "default": "Finance"
+  },
+  {
+   "fieldname": "supporting_organs",
+   "fieldtype": "Small Text",
+   "label": "Supporting Organs",
+   "default": "Logistics, Telesales"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  },
+  {
+   "role": "Finance User",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1
+  },
+  {
+   "role": "Logistics User",
+   "read": 1,
+   "report": 1
+  }
+ ]
+}

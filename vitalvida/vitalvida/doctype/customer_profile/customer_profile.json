@@ -1,0 +1,347 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-06-30 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "phone",
+  "customer_name",
+  "primary_email",
+  "alt_phones",
+  "col1",
+  "lifecycle_stage",
+  "relationship_status",
+  "customer_tier",
+  "primary_product_category",
+  "sec_rel",
+  "first_order_date",
+  "last_order_date",
+  "last_contact_date",
+  "relationship_started",
+  "last_meaningful_interaction",
+  "total_orders",
+  "delivered_paid_orders",
+  "col2",
+  "trust_score",
+  "trust_band",
+  "health_score",
+  "health_band",
+  "outcome_status",
+  "sec_success",
+  "customer_success_state",
+  "customer_success_score",
+  "col_success",
+  "success_last_evaluated_at",
+  "success_reason",
+  "success_confidence",
+  "next_success_check",
+  "sec_flags",
+  "referral_eligible",
+  "advocacy_eligible",
+  "next_best_action",
+  "nba_reason",
+  "col3",
+  "do_not_contact",
+  "deletion_requested",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "phone",
+   "fieldtype": "Data",
+   "label": "Phone (canonical 234...)",
+   "reqd": 1,
+   "in_list_view": 1,
+   "read_only": 1,
+   "description": "Canonical 234XXXXXXXXXX. This IS the record name. Mirrors normalise.py/_format_phone."
+  },
+  {
+   "fieldname": "customer_name",
+   "fieldtype": "Data",
+   "label": "Customer Name",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "primary_email",
+   "fieldtype": "Data",
+   "label": "Primary Email"
+  },
+  {
+   "fieldname": "alt_phones",
+   "fieldtype": "Small Text",
+   "label": "Alternate Phones",
+   "description": "Other raw phone forms merged into this identity."
+  },
+  {
+   "fieldname": "col1",
+   "fieldtype": "Column Break",
+   "label": "Col1"
+  },
+  {
+   "fieldname": "lifecycle_stage",
+   "fieldtype": "Select",
+   "label": "Lifecycle Stage",
+   "options": "Prospect\nFirst-Time Buyer\nRepeat Customer\nLoyal\nAdvocate\nAmbassador\nDormant\nLost",
+   "in_list_view": 1,
+   "default": "Prospect",
+   "description": "Law 5: Prospect -> Ambassador journey."
+  },
+  {
+   "fieldname": "relationship_status",
+   "fieldtype": "Select",
+   "label": "Relationship Status",
+   "options": "Active\nAt Risk\nDormant\nLost\nDeleted",
+   "in_list_view": 1,
+   "default": "Active"
+  },
+  {
+   "fieldname": "customer_tier",
+   "fieldtype": "Select",
+   "label": "Customer Tier",
+   "options": "\nWhale\nMini Whale\nRegular",
+   "description": "Mirrors VV Order.customer_tier vocabulary (rolled up from orders)."
+  },
+  {
+   "fieldname": "primary_product_category",
+   "fieldtype": "Select",
+   "label": "Primary Product Category",
+   "options": "\nHaircare\nJewellery\nWatches\nSupplements\nGeneral\nOther",
+   "description": "The product category that defines this relationship. Many engines key off this."
+  },
+  {
+   "fieldname": "sec_rel",
+   "fieldtype": "Section Break",
+   "label": "Relationship Memory (computed)"
+  },
+  {
+   "fieldname": "first_order_date",
+   "fieldtype": "Datetime",
+   "label": "First Order Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_order_date",
+   "fieldtype": "Datetime",
+   "label": "Last Order Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_contact_date",
+   "fieldtype": "Datetime",
+   "label": "Last Contact Date",
+   "read_only": 1,
+   "description": "Law 6: drives the 'no customer ignored' clock."
+  },
+  {
+   "fieldname": "relationship_started",
+   "fieldtype": "Datetime",
+   "label": "Relationship Started",
+   "read_only": 1,
+   "description": "Law 1: when this person first identified themselves (first order or first contact)."
+  },
+  {
+   "fieldname": "last_meaningful_interaction",
+   "fieldtype": "Datetime",
+   "label": "Last Meaningful Interaction",
+   "read_only": 1,
+   "description": "Last non-automated, relationship-significant touch (order, call, complaint, review, referral)."
+  },
+  {
+   "fieldname": "total_orders",
+   "fieldtype": "Int",
+   "label": "Total Orders",
+   "read_only": 1
+  },
+  {
+   "fieldname": "delivered_paid_orders",
+   "fieldtype": "Int",
+   "label": "Delivered & Paid Orders",
+   "read_only": 1,
+   "description": "Relationship successes (delivered AND paid). Never redefines DPSR."
+  },
+  {
+   "fieldname": "col2",
+   "fieldtype": "Column Break",
+   "label": "Col2"
+  },
+  {
+   "fieldname": "trust_score",
+   "fieldtype": "Int",
+   "label": "Trust Score (0-100)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "trust_band",
+   "fieldtype": "Select",
+   "label": "Trust Band",
+   "options": "\nProvisional\nLow\nMedium\nHigh\nVery High",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "health_score",
+   "fieldtype": "Int",
+   "label": "Health Score (0-100)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "health_band",
+   "fieldtype": "Select",
+   "label": "Health Band",
+   "options": "\nInsufficient Data\nHealthy\nWatch\nAt Risk\nCritical",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "outcome_status",
+   "fieldtype": "Select",
+   "label": "Outcome Status",
+   "options": "\nUnknown\nWorking Toward\nPartially Achieved\nAchieved\nExceeded\nNot Achieved\nInsufficient Data",
+   "read_only": 1,
+   "description": "Did the customer achieve WHY they bought (Customer Outcome Engine)."
+  },
+  {
+   "fieldname": "sec_success",
+   "fieldtype": "Section Break",
+   "label": "Customer Success (computed)"
+  },
+  {
+   "fieldname": "customer_success_state",
+   "fieldtype": "Select",
+   "label": "Customer Success State",
+   "options": "\nOn Track\nNeeds Attention\nAt Risk\nSucceeded\nChurned",
+   "read_only": 1,
+   "in_list_view": 1,
+   "description": "Derived from Outcome + Health + Trust + open complaints + education + NBA."
+  },
+  {
+   "fieldname": "customer_success_score",
+   "fieldtype": "Int",
+   "label": "Customer Success Score",
+   "read_only": 1
+  },
+  {
+   "fieldname": "col_success",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "success_last_evaluated_at",
+   "fieldtype": "Datetime",
+   "label": "Success Last Evaluated At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "success_reason",
+   "fieldtype": "Small Text",
+   "label": "Success Reason",
+   "read_only": 1
+  },
+  {
+   "fieldname": "success_confidence",
+   "fieldtype": "Select",
+   "label": "Success Confidence",
+   "options": "\nLow\nMedium\nHigh",
+   "read_only": 1,
+   "description": "Confidence in the success-state assessment (grows with evidence)."
+  },
+  {
+   "fieldname": "next_success_check",
+   "fieldtype": "Datetime",
+   "label": "Next Success Check",
+   "read_only": 1,
+   "description": "When to re-evaluate this customer's success (used later by AI/scheduler)."
+  },
+  {
+   "fieldname": "sec_flags",
+   "fieldtype": "Section Break",
+   "label": "Eligibility (computed)"
+  },
+  {
+   "fieldname": "referral_eligible",
+   "fieldtype": "Check",
+   "label": "Referral Eligible",
+   "read_only": 1,
+   "description": "Law 7: referrals only after trust earned, never merely after time."
+  },
+  {
+   "fieldname": "advocacy_eligible",
+   "fieldtype": "Check",
+   "label": "Advocacy Eligible",
+   "read_only": 1
+  },
+  {
+   "fieldname": "next_best_action",
+   "fieldtype": "Data",
+   "label": "Relationship Next Best Action",
+   "read_only": 1,
+   "description": "Law 3: every customer has a next best action (relationship, not sales)."
+  },
+  {
+   "fieldname": "nba_reason",
+   "fieldtype": "Small Text",
+   "label": "NBA Reason",
+   "read_only": 1
+  },
+  {
+   "fieldname": "col3",
+   "fieldtype": "Column Break",
+   "label": "Col3"
+  },
+  {
+   "fieldname": "do_not_contact",
+   "fieldtype": "Check",
+   "label": "Do Not Contact",
+   "description": "Honours opt-out; suppresses all journeys."
+  },
+  {
+   "fieldname": "deletion_requested",
+   "fieldtype": "Check",
+   "label": "Deletion Requested",
+   "description": "Law 1: relationship ends only on explicit request or legal requirement."
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Text",
+   "label": "Internal Notes"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-06-30 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Vitalvida",
+ "name": "Customer Profile",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Customer Success Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "field:phone",
+ "title_field": "customer_name"
+}

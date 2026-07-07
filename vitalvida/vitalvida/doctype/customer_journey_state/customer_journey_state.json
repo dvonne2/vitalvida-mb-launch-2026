@@ -1,0 +1,102 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-06-30 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "customer",
+  "anchor_order",
+  "customer_phone",
+  "current_step",
+  "next_run_at",
+  "last_sent_at",
+  "kill_switch",
+  "killed_reason"
+ ],
+ "fields": [
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer Profile",
+   "options": "Customer Profile",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "anchor_order",
+   "fieldtype": "Link",
+   "label": "Anchor VV Order",
+   "options": "VV Order"
+  },
+  {
+   "fieldname": "customer_phone",
+   "fieldtype": "Data",
+   "label": "Customer Phone"
+  },
+  {
+   "fieldname": "current_step",
+   "fieldtype": "Int",
+   "label": "Current Step",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "next_run_at",
+   "fieldtype": "Datetime",
+   "label": "Next Run At",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "last_sent_at",
+   "fieldtype": "Datetime",
+   "label": "Last Sent At"
+  },
+  {
+   "fieldname": "kill_switch",
+   "fieldtype": "Check",
+   "label": "Kill Switch"
+  },
+  {
+   "fieldname": "killed_reason",
+   "fieldtype": "Select",
+   "label": "Killed Reason",
+   "options": "\nCompleted\nManually Stopped\nExpired"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-06-30 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Vitalvida",
+ "name": "Customer Journey State",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Customer Success Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

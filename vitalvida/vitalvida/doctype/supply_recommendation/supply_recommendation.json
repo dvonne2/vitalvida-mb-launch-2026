@@ -1,0 +1,220 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-06-29 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "recommendation_date",
+  "delivery_agent",
+  "product",
+  "current_stock",
+  "minimum_service_stock",
+  "average_daily_sales",
+  "target_stock",
+  "days_of_cover",
+  "bundle_bottleneck",
+  "recommended_quantity",
+  "revenue_unlocked",
+  "lofr_risk",
+  "priority_score",
+  "recommendation_type",
+  "status",
+  "reason",
+  "reasons",
+  "idempotency_key",
+  "approved_by",
+  "approved_at",
+  "converted_to_consignment",
+  "converted_to_stock_request"
+ ],
+ "fields": [
+  {
+   "fieldname": "recommendation_date",
+   "fieldtype": "Date",
+   "label": "Recommendation Date",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "delivery_agent",
+   "fieldtype": "Link",
+   "label": "Delivery Agent",
+   "options": "Delivery Agent",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "product",
+   "fieldtype": "Link",
+   "label": "Product",
+   "options": "Item",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "current_stock",
+   "fieldtype": "Float",
+   "label": "Current Stock",
+   "read_only": 1
+  },
+  {
+   "fieldname": "minimum_service_stock",
+   "fieldtype": "Int",
+   "label": "Minimum Service Stock",
+   "read_only": 1
+  },
+  {
+   "fieldname": "average_daily_sales",
+   "fieldtype": "Float",
+   "label": "Average Daily Sales",
+   "read_only": 1
+  },
+  {
+   "fieldname": "target_stock",
+   "fieldtype": "Float",
+   "label": "14-Day Target Stock",
+   "read_only": 1
+  },
+  {
+   "fieldname": "days_of_cover",
+   "fieldtype": "Float",
+   "label": "Days of Cover",
+   "read_only": 1
+  },
+  {
+   "fieldname": "bundle_bottleneck",
+   "fieldtype": "Data",
+   "label": "Bundle Bottleneck Product",
+   "read_only": 1
+  },
+  {
+   "fieldname": "recommended_quantity",
+   "fieldtype": "Float",
+   "label": "Recommended Quantity",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "revenue_unlocked",
+   "fieldtype": "Currency",
+   "label": "Potential Revenue Capacity",
+   "read_only": 1,
+   "description": "Prioritisation metric only (where to send stock first). Bundle selling price \u00d7 fulfilment capacity created. NOT accounting revenue \u2014 actual revenue is recognised in Loop 1 after Delivered + Paid."
+  },
+  {
+   "fieldname": "lofr_risk",
+   "fieldtype": "Select",
+   "label": "LOFR Risk",
+   "options": "Green\nAmber\nRed\nCritical",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "priority_score",
+   "fieldtype": "Float",
+   "label": "Priority Score",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "recommendation_type",
+   "fieldtype": "Select",
+   "label": "Recommendation Type",
+   "options": "Send Stock to DA\nRaise Stock Request\nMaintain Buffer Only\nDo Not Replenish\nEmergency Replenishment\nReplace / Add DA",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Generated\nReviewed\nApproved\nConverted\nExecuted\nMeasured\nClosed\nRejected\nExpired\nCancelled",
+   "reqd": 1,
+   "in_list_view": 1,
+   "default": "Generated"
+  },
+  {
+   "fieldname": "reason",
+   "fieldtype": "Small Text",
+   "label": "Reason"
+  },
+  {
+   "fieldname": "reasons",
+   "fieldtype": "Table",
+   "label": "Reason Detail",
+   "options": "Supply Recommendation Reason"
+  },
+  {
+   "fieldname": "idempotency_key",
+   "fieldtype": "Data",
+   "label": "Idempotency Key",
+   "read_only": 1,
+   "description": "da|product|date \u2014 one open recommendation per key"
+  },
+  {
+   "fieldname": "approved_by",
+   "fieldtype": "Link",
+   "label": "Approved By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "approved_at",
+   "fieldtype": "Datetime",
+   "label": "Approved At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "converted_to_consignment",
+   "fieldtype": "Link",
+   "label": "Converted To Consignment",
+   "options": "Consignment",
+   "read_only": 1
+  },
+  {
+   "fieldname": "converted_to_stock_request",
+   "fieldtype": "Link",
+   "label": "Converted To Stock Request",
+   "options": "Stock Request",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-06-29 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Vitalvida",
+ "name": "Supply Recommendation",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Inventory Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0,
+ "autoname": "hash"
+}

@@ -1,0 +1,29 @@
+{
+ "actions": [],
+ "creation": "2026-07-01 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": ["customer","telesales_rep","last_dp_date","dormant_days","revived_order","revived_flag"],
+ "fields": [
+  {"fieldname":"customer","fieldtype":"Data","label":"Customer (phone)","reqd":1,"in_standard_filter":1,"in_list_view":1},
+  {"fieldname":"telesales_rep","fieldtype":"Link","label":"Telesales Rep","options":"Telesales Closer","in_standard_filter":1},
+  {"fieldname":"last_dp_date","fieldtype":"Datetime","label":"Last Delivered & Paid"},
+  {"fieldname":"dormant_days","fieldtype":"Int","label":"Dormant Days","in_list_view":1},
+  {"fieldname":"revived_order","fieldtype":"Link","label":"Revived Order","options":"VV Order","in_list_view":1},
+  {"fieldname":"revived_flag","fieldtype":"Check","label":"Revived","default":"0"}
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-07-01 00:00:00",
+ "module": "Vitalvida",
+ "name": "Customer Revival State",
+ "naming_rule": "Autoincrement",
+ "autoname": "autoincrement",
+ "owner": "Administrator",
+ "permissions": [
+  {"role":"System Manager","read":1,"create":1,"write":1,"report":1,"export":1},
+  {"role":"Sales Manager","read":1,"report":1,"export":1}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}

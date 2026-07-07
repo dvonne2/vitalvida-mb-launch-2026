@@ -1,0 +1,118 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-06-30 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "customer",
+  "generated_at",
+  "action",
+  "col1",
+  "priority",
+  "status",
+  "sec",
+  "reason",
+  "idempotency_key"
+ ],
+ "fields": [
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer Profile",
+   "options": "Customer Profile",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "generated_at",
+   "fieldtype": "Datetime",
+   "label": "Generated At",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "action",
+   "fieldtype": "Select",
+   "label": "Recommended Action",
+   "options": "Welcome New Customer\nFollow Up Delivery\nThank For Payment\nCheck Outcome\nResolve Open Complaint\nRe-Engage (Ignored)\nEducation Step\nInvite Review\nAsk For Referral\nNurture Dormant\nCelebrate Milestone\nNo Action Needed\nInsufficient Data",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "col1",
+   "fieldtype": "Column Break",
+   "label": "Col1"
+  },
+  {
+   "fieldname": "priority",
+   "fieldtype": "Select",
+   "label": "Priority",
+   "options": "Critical\nHigh\nMedium\nLow\nNone",
+   "in_list_view": 1,
+   "default": "Medium"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Suggested\nActioned\nDismissed\nExpired",
+   "in_list_view": 1,
+   "default": "Suggested"
+  },
+  {
+   "fieldname": "sec",
+   "fieldtype": "Section Break",
+   "label": "Sec"
+  },
+  {
+   "fieldname": "reason",
+   "fieldtype": "Small Text",
+   "label": "Reason"
+  },
+  {
+   "fieldname": "idempotency_key",
+   "fieldtype": "Data",
+   "label": "Idempotency Key",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-06-30 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Vitalvida",
+ "name": "Relationship NBA Log",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Customer Success Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "hash",
+ "title_field": "action"
+}

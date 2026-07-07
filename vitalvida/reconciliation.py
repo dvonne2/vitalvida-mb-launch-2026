@@ -369,7 +369,7 @@ def _mark_order_paid(order_name):
     })
     frappe.db.commit()
 
-    if order_status == "Delivered":
+    if order_status in ("Delivered", "Released - Payment Evidence", "Payment Recovery", "Payment Investigation"):
         _finalize_paid_order(order_name)
     else:
         try:
@@ -403,6 +403,13 @@ def _finalize_paid_order(order_name):
     # 1. Update status to Paid
     frappe.db.set_value("VV Order", order_name, {"order_status": "Paid"})
     frappe.db.commit()
+
+    # Loop 1: a late payment that finalizes a recovered order closes its Recovery Case.
+    try:
+        from vitalvida.recovery import close_recovery_recovered
+        close_recovery_recovered(order_name, method="Moniepoint")
+    except Exception:
+        frappe.log_error(frappe.get_traceback(), "Loop1 Recovery Close Error")
 
     # 2. M13: Deduct stock (all bundle components)
     try:

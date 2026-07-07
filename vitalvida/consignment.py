@@ -98,6 +98,13 @@ def da_confirm_consignment(consignment_name: str, confirmed_items: list) -> dict
     """
     consignment = frappe.get_doc("Consignment", consignment_name)
 
+    # Loop 2.3: custodian authorization gate — DA must be allowed to hold custody
+    _auth = can_hold_custody(consignment.to_location)
+    if not _auth["allowed"]:
+        from vitalvida.audit import record_denied_action
+        record_denied_action("Custody", consignment.to_location, f"Confirm receipt refused: {_auth['reason']}")
+        frappe.throw(f"Cannot confirm receipt: {_auth['reason']}")
+
     if consignment.status != "Delivered":
         frappe.throw("Consignment is not in Delivered status. Cannot confirm.")
 
@@ -130,7 +137,7 @@ def da_confirm_consignment(consignment_name: str, confirmed_items: list) -> dict
             })
         else:
             # ── Update DA Warehouse UPWARD ONLY ───────────────────────────
-            _update_da_stock_on_arrival(consignment.to_location, product, qty_received)
+            _update_da_stock_on_arrival(consignment.to_location, product, qty_received, consignment.name)
 
     if discrepancies:
         _handle_discrepancy(consignment, discrepancies)
@@ -188,7 +195,7 @@ def check_overdue_consignments() -> None:
 
 # ─── Internal Helpers ─────────────────────────────────────────────────────────
 
-def _update_da_stock_on_arrival(delivery_agent: str, product: str, qty: float) -> None:
+def _update_da_stock_on_arrival(delivery_agent: str, product: str, qty: float, consignment_name: str = None) -> None:
     """
     FIX BUG 9: Full audit trail (Decision B from bug-fix decisions doc).
 
@@ -220,12 +227,29 @@ def _update_da_stock_on_arrival(delivery_agent: str, product: str, qty: float) -
         warehouse_name = doc.name
 
     # Create the audit ledger entry — single writer for warehouse balance
+    # Law 22 idempotency: skip if this consignment line was already credited
+    if consignment_name:
+        already = frappe.db.exists("DA Stock Entry", {
+            "delivery_agent": delivery_agent,
+            "product": product,
+            "entry_type": "Dispatch",
+            "direction": "In",
+            "reference_consignment": consignment_name,
+        })
+        if already:
+            frappe.log_error(
+                f"Law 22: {consignment_name}/{product} already credited ({already}); skipping.",
+                "Idempotent Arrival Credit"
+            )
+            return
+
     _create_stock_entry(
         delivery_agent=delivery_agent,
         product=product,
         entry_type="Dispatch",
         direction="In",
         quantity=qty,
+        reference_consignment=consignment_name,
         notes=f"Consignment arrival — {qty} units credited to DA stock",
     )
 
@@ -276,6 +300,32 @@ def _handle_discrepancy(consignment, discrepancies: list) -> None:
                                     fields=["name"])
         for wh in warehouses:
             frappe.db.set_value("DA Warehouse", wh.name, "is_frozen", 1)
+
+        # Loop 2.4: open a formal inventory Recovery Case for the shortfall (Law 5 - no
+        # silent loss). Idempotent on the source consignment (Law 22). The freeze + strike
+        # above stay; this adds tracked recovery instead of an alert-only dead end.
+        try:
+            from vitalvida.recovery import open_inventory_recovery_case
+            _short_qty = sum(
+                max(0.0, float(d.get("qty_sent") or 0) - float(d.get("qty_received") or 0))
+                for d in discrepancies
+            )
+            _detail = "; ".join(
+                f"{d.get('product')}: sent {d.get('qty_sent')}, received {d.get('qty_received')}"
+                for d in discrepancies
+            )
+            open_inventory_recovery_case(
+                consignment_name=consignment.name,
+                delivery_agent=consignment.to_location,
+                shortfall_qty=_short_qty,
+                shortfall_value=0,
+                detail=_detail,
+            )
+        except Exception as _rec_err:
+            frappe.log_error(
+                f"Inventory Recovery open failed for {consignment.name}: {_rec_err}",
+                "Consignment Discrepancy Recovery",
+            )
 
         frappe.db.commit()
 
@@ -349,3 +399,169 @@ def _summarise_items(items) -> str:
         product = item.product or ""
         parts.append(f"{qty} {product}")
     return " + ".join(parts) if parts else "N/A"
+
+
+@frappe.whitelist()
+def logistics_accept_consignment(consignment_name: str, counted_items: list) -> dict:
+    """
+    Loop 2.2 Step 3 — Inventory -> Logistics custody handoff.
+
+    The Logistics Officer independently counts what they are taking custody of
+    for the transport leg, BEFORE goods move. This is the first party of the
+    two-party custody gate (the DA confirmation is the second party).
+
+    counted_items: list of {product, qty_counted}
+
+    Constitutional rules (Law 4 / Step 7):
+      - Logistics role required.
+      - If every line's counted qty matches qty_sent: Logistics accepts custody
+        of the transport leg. Records the count + who/when, sets status to
+        "Logistics Accepted", writes a Stock Movement Log entry. NO DA Stock
+        Entry is created — transport-leg custody is state + movement log only
+        (the DA warehouse is credited later, on DA confirmation).
+      - If any line mismatches: flag/alert only. No status change, no custody
+        movement, no DA Stock Entry. (Formal Recovery is Loop 2.4.)
+    """
+    import json as _json
+    if isinstance(counted_items, str):
+        counted_items = _json.loads(counted_items)
+
+    # Logistics role guard (mirrors _require_logistics pattern)
+    roles = frappe.get_roles(frappe.session.user)
+    allowed = ["Logistics Manager", "Logistics User", "Operations Manager", "System Manager"]
+    if not any(r in roles for r in allowed):
+        return {"status": "error", "message": "Access denied. Logistics role required."}
+
+    # Loop 2.3: custodian authorization gate — DA must be allowed to hold custody
+    consignment = frappe.get_doc("Consignment", consignment_name)
+    _auth = can_hold_custody(consignment.to_location)
+    if not _auth["allowed"]:
+        from vitalvida.audit import record_denied_action
+        record_denied_action("Custody", consignment.to_location, f"Logistics accept refused: {_auth['reason']}")
+        return {"status": "error", "message": f"Cannot accept: {_auth['reason']}"}
+
+    consignment = frappe.get_doc("Consignment", consignment_name)
+
+    if consignment.status not in ("Pending", ""):
+        frappe.throw(
+            f"Consignment is in status '{consignment.status}'. "
+            "Logistics can only accept a Pending consignment."
+        )
+
+    mismatches = []
+    counts = {c.get("product"): float(c.get("qty_counted", 0)) for c in counted_items}
+
+    for item in consignment.items:
+        counted = counts.get(item.product)
+        if counted is None:
+            mismatches.append({"product": item.product, "qty_sent": float(item.qty_sent or 0),
+                               "qty_counted": None, "reason": "not counted"})
+            continue
+        if counted != float(item.qty_sent or 0):
+            mismatches.append({"product": item.product, "qty_sent": float(item.qty_sent or 0),
+                               "qty_counted": counted, "reason": "mismatch"})
+
+    if mismatches:
+        # flag/alert only — no custody movement, no status change
+        try:
+            from vitalvida.notifications import send_notification
+            stub = frappe._dict({
+                "name": consignment.name,
+                "product": ", ".join(str(m["product"]) for m in mismatches),
+                "total_payable": 0,
+            })
+            send_notification(stub, event="ConsignmentLogisticsMismatch",
+                              recipient_type="Owner", sender_channel="Transactional")
+        except Exception as e:
+            frappe.log_error(f"Logistics mismatch alert failed for {consignment.name}: {e}",
+                            "Logistics Accept Mismatch")
+
+        # Loop 2.4: open a formal inventory Recovery Case for the Logistics-count
+        # mismatch (Law 5 - no silent loss). Idempotent on the source consignment
+        # (Law 22). Custody still does NOT move; this records the discrepancy formally.
+        try:
+            from vitalvida.recovery import open_inventory_recovery_case
+            _short_qty = sum(
+                max(0.0, float(m.get("qty_sent") or 0) - float(m.get("qty_counted") or 0))
+                for m in mismatches
+            )
+            _detail = "; ".join(
+                f"{m.get('product')}: sent {m.get('qty_sent')}, counted {m.get('qty_counted')} ({m.get('reason')})"
+                for m in mismatches
+            )
+            open_inventory_recovery_case(
+                consignment_name=consignment.name,
+                delivery_agent=consignment.to_location,
+                shortfall_qty=_short_qty,
+                shortfall_value=0,
+                detail=_detail,
+            )
+        except Exception as _rec_err:
+            frappe.log_error(
+                f"Inventory Recovery open failed (logistics mismatch) for {consignment.name}: {_rec_err}",
+                "Logistics Mismatch Recovery",
+            )
+
+        return {"status": "mismatch", "items": mismatches}
+
+    # All match — Logistics accepts custody of the transport leg
+    from frappe.utils import now_datetime as _now
+    for item in consignment.items:
+        frappe.db.set_value("Consignment Item", item.name, "qty_logistics_counted",
+                            counts.get(item.product), update_modified=False)
+    frappe.db.set_value("Consignment", consignment_name, {
+        "logistics_accepted_by": frappe.session.user,
+        "logistics_accepted_at": _now(),
+        "status": "Logistics Accepted",
+    }, update_modified=False)
+
+    # Stock Movement Log for the transport-leg custody (state + log, no DA Stock Entry)
+    try:
+        _create_stock_movement_log(consignment, "HQ to Logistics")
+    except Exception as e:
+        frappe.log_error(f"Logistics accept movement log failed for {consignment.name}: {e}",
+                        "Logistics Accept Log")
+
+    frappe.db.commit()
+    return {"status": "ok", "consignment": consignment_name}
+
+
+def can_hold_custody(delivery_agent: str) -> dict:
+    """
+    Loop 2.3 — single authoritative custodian-authorization check.
+
+    Constitutional question: may this DA hold custody right now?
+    Custody is allowed ONLY if ALL THREE existing state sources agree:
+      1. Delivery Agent.active == 1          (on the roster)
+      2. Delivery Agent.strike_status != "Suspended"  (not disciplinarily suspended)
+      3. no DA Warehouse row for this DA has is_frozen == 1  (not operationally frozen)
+
+    Returns {"allowed": bool, "reason": str}. This reads the three existing
+    fields; it does not introduce a new lifecycle field (Inactive/Archived are
+    deferred to the Law 21 archive lifecycle in 2.7/2.8).
+    """
+    da = frappe.db.get_value(
+        "Delivery Agent", delivery_agent,
+        ["active", "strike_status"], as_dict=True
+    )
+    if not da:
+        return {"allowed": False, "reason": f"Delivery Agent '{delivery_agent}' not found."}
+
+    if not da.active:
+        return {"allowed": False, "reason": f"DA '{delivery_agent}' is not active (off the roster)."}
+
+    if da.strike_status == "Suspended":
+        return {"allowed": False, "reason": f"DA '{delivery_agent}' is suspended (strike status)."}
+
+    frozen = frappe.db.exists("DA Warehouse", {"delivery_agent": delivery_agent, "is_frozen": 1})
+    if frozen:
+        return {"allowed": False, "reason": f"DA '{delivery_agent}' has a frozen warehouse."}
+
+    # Loop 2.5: restock block (independent of freeze). A DA who has not reconciled
+    # (e.g. missed the Friday count) carries an active DA Restock Block and may not
+    # receive new stock until it is reversed. Distinct control from is_frozen.
+    restock_blocked = frappe.db.exists("DA Restock Block", {"delivery_agent": delivery_agent, "is_active": 1})
+    if restock_blocked:
+        return {"allowed": False, "reason": f"DA '{delivery_agent}' has an active restock block (reconciliation outstanding)."}
+
+    return {"allowed": True, "reason": ""}

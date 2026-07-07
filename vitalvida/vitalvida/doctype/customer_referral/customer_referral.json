@@ -1,0 +1,138 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-06-30 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "referrer",
+  "created_at",
+  "referral_code",
+  "col1",
+  "referred_phone",
+  "referred_name",
+  "referred_customer",
+  "status",
+  "sec",
+  "converted_order",
+  "converted_at",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "referrer",
+   "fieldtype": "Link",
+   "label": "Referrer (Customer)",
+   "options": "Customer Profile",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "created_at",
+   "fieldtype": "Datetime",
+   "label": "Created At",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "referral_code",
+   "fieldtype": "Data",
+   "label": "Referral Code",
+   "in_list_view": 1,
+   "read_only": 1,
+   "description": "Customer-referral code (distinct from affiliate aff_id system)."
+  },
+  {
+   "fieldname": "col1",
+   "fieldtype": "Column Break",
+   "label": "Col1"
+  },
+  {
+   "fieldname": "referred_phone",
+   "fieldtype": "Data",
+   "label": "Referred Phone (canonical)"
+  },
+  {
+   "fieldname": "referred_name",
+   "fieldtype": "Data",
+   "label": "Referred Name"
+  },
+  {
+   "fieldname": "referred_customer",
+   "fieldtype": "Link",
+   "label": "Referred Customer Profile",
+   "options": "Customer Profile",
+   "description": "Set once the referred person becomes a customer."
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Invited\nSigned Up\nFirst Order\nConverted\nExpired",
+   "reqd": 1,
+   "in_list_view": 1,
+   "default": "Invited"
+  },
+  {
+   "fieldname": "sec",
+   "fieldtype": "Section Break",
+   "label": "Sec"
+  },
+  {
+   "fieldname": "converted_order",
+   "fieldtype": "Data",
+   "label": "Converting VV Order",
+   "read_only": 1,
+   "description": "The referred person's first Delivered & Paid order."
+  },
+  {
+   "fieldname": "converted_at",
+   "fieldtype": "Datetime",
+   "label": "Converted At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-06-30 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Vitalvida",
+ "name": "Customer Referral",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Customer Success Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "hash",
+ "title_field": "referral_code"
+}

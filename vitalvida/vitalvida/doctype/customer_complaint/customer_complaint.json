@@ -1,0 +1,155 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-06-30 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "customer",
+  "opened_at",
+  "category",
+  "severity",
+  "col1",
+  "status",
+  "escalation_request",
+  "source_order",
+  "sec",
+  "description",
+  "resolution",
+  "resolved_at",
+  "resolution_hours",
+  "service_recovery_done"
+ ],
+ "fields": [
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer Profile",
+   "options": "Customer Profile",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "opened_at",
+   "fieldtype": "Datetime",
+   "label": "Opened At",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "category",
+   "fieldtype": "Select",
+   "label": "Category",
+   "options": "Delivery\nProduct Quality\nPayment\nService\nDamage\nWrong Item\nOther",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "severity",
+   "fieldtype": "Select",
+   "label": "Severity",
+   "options": "Low\nMedium\nHigh\nCritical",
+   "in_list_view": 1,
+   "default": "Medium"
+  },
+  {
+   "fieldname": "col1",
+   "fieldtype": "Column Break",
+   "label": "Col1"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Open\nAcknowledged\nIn Progress\nResolved\nClosed\nReopened",
+   "reqd": 1,
+   "in_list_view": 1,
+   "default": "Open"
+  },
+  {
+   "fieldname": "escalation_request",
+   "fieldtype": "Link",
+   "label": "Linked Escalation Request",
+   "options": "Escalation Request",
+   "description": "Loop 4 EXTENDS the existing Escalation Request; does not duplicate it."
+  },
+  {
+   "fieldname": "source_order",
+   "fieldtype": "Link",
+   "label": "Source VV Order",
+   "description": "VV Order name if complaint is order-specific.",
+   "options": "VV Order"
+  },
+  {
+   "fieldname": "sec",
+   "fieldtype": "Section Break",
+   "label": "Sec"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Text",
+   "label": "Description"
+  },
+  {
+   "fieldname": "resolution",
+   "fieldtype": "Text",
+   "label": "Resolution"
+  },
+  {
+   "fieldname": "resolved_at",
+   "fieldtype": "Datetime",
+   "label": "Resolved At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "resolution_hours",
+   "fieldtype": "Float",
+   "label": "Resolution Hours",
+   "read_only": 1,
+   "description": "Complaint Resolution Time KPI."
+  },
+  {
+   "fieldname": "service_recovery_done",
+   "fieldtype": "Check",
+   "label": "Service Recovery Gesture Done",
+   "description": "Did we make it right beyond just closing?"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-06-30 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Vitalvida",
+ "name": "Customer Complaint",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Customer Success Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "hash",
+ "title_field": "category"
+}

@@ -1,0 +1,15 @@
+VitalVida Loop 4 — Customer Relationship Engine v1.0.1 (folder-name fix)
+==========================================================================
+v1.0.1 fixes ONE packaging bug found during the live migrate:
+  - The "Loop 4 Settings" doctype folder was shipped as 'loop4_settings'.
+  - Frappe derives the module path via scrub() -> 'loop_4_settings'.
+  - Mismatch caused: ImportError: No module named
+      'vitalvida.vitalvida.doctype.loop_4_settings'  -> migrate rolled back.
+  - FIX: folder + files renamed loop4_settings -> loop_4_settings.
+         Doctype name stays "Loop 4 Settings"; class stays Loop4Settings;
+         all engine code reads it by NAME ("Loop 4 Settings"), unaffected.
+  - Verified: all 12 doctype folders now == frappe.scrub(declared name).
+
+No other change from v1.0. All engine logic, rules, fields identical.
+Re-migrate is safe: the failed v1.0 migrate rolled back cleanly (no partial
+schema), so this installs onto the same pre-Loop-4 state.

@@ -1,0 +1,143 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-06-29 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "plan_date",
+  "delivery_agent",
+  "product",
+  "current_stock",
+  "average_daily_sales",
+  "target_14_day_stock",
+  "minimum_service_stock",
+  "days_of_cover",
+  "recommended_quantity",
+  "bundle_bottleneck",
+  "lofr_risk",
+  "status"
+ ],
+ "fields": [
+  {
+   "fieldname": "plan_date",
+   "fieldtype": "Date",
+   "label": "Plan Date",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "delivery_agent",
+   "fieldtype": "Link",
+   "label": "Delivery Agent",
+   "options": "Delivery Agent",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "product",
+   "fieldtype": "Link",
+   "label": "Product",
+   "options": "Item",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "current_stock",
+   "fieldtype": "Float",
+   "label": "Current Stock",
+   "read_only": 1
+  },
+  {
+   "fieldname": "average_daily_sales",
+   "fieldtype": "Float",
+   "label": "Average Daily Sales",
+   "read_only": 1
+  },
+  {
+   "fieldname": "target_14_day_stock",
+   "fieldtype": "Float",
+   "label": "14-Day Target Stock",
+   "read_only": 1
+  },
+  {
+   "fieldname": "minimum_service_stock",
+   "fieldtype": "Int",
+   "label": "Minimum Service Stock",
+   "read_only": 1
+  },
+  {
+   "fieldname": "days_of_cover",
+   "fieldtype": "Float",
+   "label": "Days of Cover",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "recommended_quantity",
+   "fieldtype": "Float",
+   "label": "Recommended Quantity",
+   "read_only": 1
+  },
+  {
+   "fieldname": "bundle_bottleneck",
+   "fieldtype": "Data",
+   "label": "Bundle Bottleneck",
+   "read_only": 1
+  },
+  {
+   "fieldname": "lofr_risk",
+   "fieldtype": "Select",
+   "label": "LOFR Risk",
+   "options": "Green\nAmber\nRed\nCritical",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Healthy\nBelow 14-Day Target\nBelow Minimum Service Stock\nBundle Broken\nStockout Risk\nStocked Out",
+   "in_list_view": 1,
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-06-29 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Vitalvida",
+ "name": "DA Replenishment Plan",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Inventory Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0,
+ "autoname": "format:REPL-{plan_date}-{delivery_agent}-{product}"
+}

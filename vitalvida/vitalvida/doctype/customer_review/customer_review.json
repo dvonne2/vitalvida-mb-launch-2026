@@ -1,0 +1,123 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-06-30 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "customer",
+  "received_at",
+  "rating",
+  "sentiment",
+  "col1",
+  "channel",
+  "source_order",
+  "sec",
+  "review_text",
+  "influences_trust"
+ ],
+ "fields": [
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer Profile",
+   "options": "Customer Profile",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "received_at",
+   "fieldtype": "Datetime",
+   "label": "Received At",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "rating",
+   "fieldtype": "Select",
+   "label": "Rating",
+   "options": "1\n2\n3\n4\n5",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "sentiment",
+   "fieldtype": "Select",
+   "label": "Sentiment",
+   "options": "\nPositive\nNeutral\nNegative",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "col1",
+   "fieldtype": "Column Break",
+   "label": "Col1"
+  },
+  {
+   "fieldname": "channel",
+   "fieldtype": "Select",
+   "label": "Channel",
+   "options": "\nWhatsApp\nCall\nEmail\nSurvey\nOther"
+  },
+  {
+   "fieldname": "source_order",
+   "fieldtype": "Link",
+   "label": "Source VV Order",
+   "options": "VV Order"
+  },
+  {
+   "fieldname": "sec",
+   "fieldtype": "Section Break",
+   "label": "Sec"
+  },
+  {
+   "fieldname": "review_text",
+   "fieldtype": "Text",
+   "label": "Review Text"
+  },
+  {
+   "fieldname": "influences_trust",
+   "fieldtype": "Check",
+   "label": "Influences Trust",
+   "read_only": 1,
+   "default": "1"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-06-30 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Vitalvida",
+ "name": "Customer Review",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Customer Success Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "hash",
+ "title_field": "review_text"
+}

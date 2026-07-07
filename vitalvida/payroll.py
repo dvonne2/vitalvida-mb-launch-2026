@@ -102,6 +102,12 @@ def run_monthly_payroll(payroll_month: str, dry_run: bool = False) -> dict:
 
         result["payroll_run"] = run.name
 
+        # Loop 5: settle champion bonuses — only reached on a successful real run.
+        from vitalvida.loop5.payroll_seam import settle_champion_bonuses
+        for s in payslips:
+            settle_champion_bonuses(s["employee"])
+        frappe.db.commit()
+
     except Exception as e:
         frappe.log_error(
             f"M28: Payroll run failed for {month_start}: {str(e)}",
@@ -117,7 +123,9 @@ def _compute_payslip(emp: dict, month_start: str, month_end: str,
     """Compute a single employee's payslip."""
     base_salary = float(emp.base_salary or 0)
     commission = 0.0
-    bonuses = 0.0
+    # Loop 5: read-only preview of approved, unpaid, unvoided champion bonuses.
+    from vitalvida.loop5.payroll_seam import preview_amount
+    bonuses = preview_amount(emp["name"] if isinstance(emp, dict) else emp)
 
     # Telesales commission
     if emp.commission_eligible and emp.linked_closer and settings:

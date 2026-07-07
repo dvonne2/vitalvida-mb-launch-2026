@@ -112,6 +112,21 @@ def escalate_missing_counts() -> None:
                 reason=f"No Friday stock count submitted by 12:00 noon on {this_friday}"
             )
 
+            # 2b. Loop 2.5: create a DA Restock Block (idempotent - one active block
+            # per DA). Independent of the warehouse freeze above: the freeze is an
+            # operational hold; the restock block means "no new stock until the DA
+            # reconciles". Enforced at dispatch via can_hold_custody.
+            try:
+                _ensure_restock_block(
+                    da.name,
+                    reason=f"No Friday stock count submitted by 12:00 noon on {this_friday}"
+                )
+            except Exception as _rb_err:
+                frappe.log_error(
+                    f"M15: Restock block create failed for DA={da.name}: {_rb_err}",
+                    "M15 Restock Block Error"
+                )
+
             # 3. Create Critical Stock Variance
             _create_missing_count_variance(da.name, this_friday)
 
@@ -254,3 +269,22 @@ def _create_missing_count_variance(delivery_agent: str, count_date: str) -> None
             f"M15: Failed to create missing count variance for DA={delivery_agent}: {str(e)}",
             "M15 Variance Error"
         )
+
+
+def _ensure_restock_block(delivery_agent: str, reason: str) -> None:
+    """
+    Loop 2.5 - idempotently create an active DA Restock Block for a DA.
+    If an active block already exists for this DA, do nothing (Law 22).
+    The DA Restock Block controller's before_insert sets blocked_by/blocked_at/
+    is_active; after_insert zeroes reorder points. Enforced at dispatch via
+    can_hold_custody.
+    """
+    existing = frappe.db.exists("DA Restock Block", {"delivery_agent": delivery_agent, "is_active": 1})
+    if existing:
+        return
+    frappe.get_doc({
+        "doctype": "DA Restock Block",
+        "delivery_agent": delivery_agent,
+        "reason": reason,
+    }).insert(ignore_permissions=True)
+    frappe.db.commit()

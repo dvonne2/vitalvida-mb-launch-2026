@@ -8,20 +8,6 @@ class DARestockBlock(Document):
         self.blocked_at = now_datetime()
         self.is_active = 1
 
-    def after_insert(self):
-        """Set all DA Warehouse reorder_point and min_stock_level to 0."""
-        warehouses = frappe.get_all(
-            "DA Warehouse",
-            filters={"delivery_agent": self.delivery_agent},
-            fields=["name"]
-        )
-        for wh in warehouses:
-            frappe.db.set_value("DA Warehouse", wh.name, {
-                "reorder_point": 0,
-                "min_stock_level": 0,
-            })
-        frappe.db.commit()
-
     def on_trash(self):
         frappe.throw("DA Restock Block records cannot be deleted.", frappe.PermissionError)
 
