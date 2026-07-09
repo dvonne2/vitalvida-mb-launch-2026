@@ -731,6 +731,10 @@ def submit_stock_audit(da_id=None, product=None, count=0, expected=0, photo_base
             "photo_url":      photo_url,
             "match":          1 if cint(count) == cint(expected) else 0,
         }).insert(ignore_permissions=True)
+
+        # Bridge: surface this submission in the IM verification queue
+        _bridge_to_stock_count(da_id, product, count, photo_url, server_time)
+
         frappe.db.commit()
 
         return {
@@ -1231,3 +1235,59 @@ def confirm_dispatch_receipt(dispatch_id=None, da_id=None):
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "confirm_dispatch_receipt Error")
         return {"success": False, "error": str(e)}
+
+
+def _bridge_to_stock_count(da_id, product, count, photo_url, server_time):
+    """Upsert the day's Stock Count row so the IM verification queue sees
+    this submission.
+
+    Two-step on insert: StockCount.before_insert() unconditionally stamps
+    count_status="DA Pending", and before_save() early-returns while
+    is_new() -- so a fresh row cannot be born "DA Submitted". Insert first,
+    then save again to drive the DA Pending -> DA Submitted transition,
+    which is where the controller validates photo, photo date, and qty.
+    """
+    try:
+        if not _doctype_exists("Stock Count"):
+            return
+        from frappe.utils import today
+
+        name = frappe.db.exists("Stock Count", {
+            "delivery_agent": da_id,
+            "product": product,
+            "count_date": today(),
+        })
+
+        if name:
+            doc = frappe.get_doc("Stock Count", name)
+            # The controller throws on any save of a Confirmed/Disputed row.
+            # A late re-submission must not crash the DA's upload.
+            if doc.count_status in ("Confirmed", "Disputed"):
+                return
+        else:
+            doc = frappe.get_doc({
+                "doctype": "Stock Count",
+                "delivery_agent": da_id,
+                "product": product,
+                "count_date": today(),
+            })
+            doc.insert(ignore_permissions=True)   # lands as "DA Pending"
+            doc.reload()
+
+        doc.da_counted_quantity = cint(count)
+        if photo_url:
+            doc.stock_photo = photo_url
+            doc.photo_timestamp = server_time
+
+        # Only ever advance. Never regress a manager-reviewed row.
+        if doc.count_status in ("DA Pending", "", None):
+            doc.count_status = "DA Submitted"
+
+        doc.save(ignore_permissions=True)
+
+    except Exception:
+        # Non-blocking: the DA's submission must not fail because of the
+        # bridge. But a silent failure here means the DA shows as "Missing"
+        # and escalate_missing_counts strikes them at noon for a submission
+        # they actually made.
+        frappe.log_error(frappe.get_traceback(), "Stock Count Bridge Error")

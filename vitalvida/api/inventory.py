@@ -1207,3 +1207,253 @@ def escalate_count(da_id, product, reason=""):
         return {"success": True}
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+
+# ═══════════════════════════════════════════════════════════
+# Friday Photo Verification
+#
+# Deadline: 12:00 noon (the "Late" pill). Auto-freeze stays at 12:30
+# per hooks.py — the 30 minutes between them are a grace window.
+# ═══════════════════════════════════════════════════════════
+
+def _da_warehouse_stock_map():
+    """Book stock per (delivery_agent, product) — the same source
+    StockCount._compute_three_way_match() reads."""
+    books = {}
+    if not _tbl("DA Warehouse"):
+        return books
+    for w in frappe.get_all("DA Warehouse",
+                            fields=["delivery_agent", "product", "current_stock"],
+                            limit_page_length=0):
+        books[(w.delivery_agent, w.product)] = flt(w.current_stock)
+    return books
+
+
+@frappe.whitelist()
+def get_photo_verification_queue(count_date=None):
+    guard = _guard()
+    if guard:
+        return guard
+
+    try:
+        if not _tbl("Stock Count"):
+            return {"queue": [], "kpis": {}}
+
+        from frappe.utils import today
+        count_date = count_date or today()
+        deadline  = get_datetime(f"{count_date} 12:00:00")
+        freeze_at = get_datetime(f"{count_date} 12:30:00")
+
+        rows = frappe.get_all("Stock Count",
+            filters={"count_date": count_date},
+            fields=_safe("Stock Count", [
+                "name", "delivery_agent", "product", "count_status",
+                "stock_photo", "photo_timestamp", "system_stock",
+                "da_counted_quantity", "manager_counted_quantity",
+                "three_way_variance", "escalation_note",
+            ]),
+            order_by="delivery_agent asc, product asc",
+            limit_page_length=0)
+
+        # system_stock is written ONLY on the Confirmed branch, so it is
+        # empty on every row awaiting review. Read the book directly.
+        books = _da_warehouse_stock_map()
+
+        agents = {}
+        da_ids = sorted({r.delivery_agent for r in rows if r.delivery_agent})
+        if da_ids and _tbl("Delivery Agent"):
+            for a in frappe.get_all("Delivery Agent",
+                                    filters={"name": ["in", da_ids]},
+                                    fields=_safe("Delivery Agent",
+                                                 ["name", "agent_name", "state"]),
+                                    limit_page_length=0):
+                agents[a.name] = a
+
+        das = {}
+        for r in rows:
+            da = r.delivery_agent or "—"
+            if da not in das:
+                a = agents.get(da)
+                das[da] = {"da_id": da,
+                           "da": (a.agent_name if a and a.agent_name else da),
+                           "state": (a.state if a else ""),
+                           "status": "Missing",
+                           "products_total": 0, "photos_submitted": 0,
+                           "products": [], "_statuses": set()}
+            entry = das[da]
+            entry["products_total"] += 1
+            entry["_statuses"].add(r.count_status)
+
+            ts = get_datetime(r.photo_timestamp) if r.photo_timestamp else None
+            if r.stock_photo:
+                entry["photos_submitted"] += 1
+
+            expected = books.get((r.delivery_agent, r.product), 0.0)
+            mgr = flt(r.manager_counted_quantity) if r.manager_counted_quantity is not None else None
+            # Signed. three_way_variance on the row is abs() and is empty
+            # before a verdict, so it cannot drive the UI.
+            variance = (mgr - expected) if mgr is not None else None
+
+            entry["products"].append({
+                "count_name": r.name,
+                "product": r.product,
+                "photo_url": r.stock_photo or None,
+                "submitted_at": ts.isoformat() if ts else None,
+                "late": bool(ts and (ts > deadline or ts.date() != deadline.date())),
+                "expected": expected,
+                "da_count": flt(r.da_counted_quantity) if r.da_counted_quantity is not None else None,
+                "manager_count": mgr,
+                "variance": variance,
+                "row_status": r.count_status,
+            })
+
+        for entry in das.values():
+            statuses = entry.pop("_statuses")
+            if entry["photos_submitted"] == 0:
+                entry["status"] = "Missing"
+            elif "Disputed" in statuses:
+                entry["status"] = "Variance flagged"
+            elif statuses and statuses <= {"Confirmed"}:
+                entry["status"] = "Verified"
+            elif entry["photos_submitted"] < entry["products_total"]:
+                entry["status"] = "Partial submission"
+            else:
+                entry["status"] = "Pending review"
+
+        order = {"Pending review": 0, "Partial submission": 1,
+                 "Variance flagged": 2, "Missing": 3, "Verified": 4}
+        queue = sorted(das.values(), key=lambda d: (order.get(d["status"], 9), d["da"]))
+        kpis = {
+            "das_total": len(queue),
+            "pending":   sum(1 for d in queue if d["status"] == "Pending review"),
+            "partial":   sum(1 for d in queue if d["status"] == "Partial submission"),
+            "verified":  sum(1 for d in queue if d["status"] == "Verified"),
+            "variances": sum(1 for d in queue if d["status"] == "Variance flagged"),
+            "missing":   sum(1 for d in queue if d["status"] == "Missing"),
+            "photos_submitted": sum(d["photos_submitted"] for d in queue),
+            "photos_expected":  sum(d["products_total"] for d in queue),
+        }
+        return {"queue": queue, "kpis": kpis, "count_date": count_date,
+                "deadline": deadline.isoformat(), "freeze_at": freeze_at.isoformat()}
+
+    except Exception:
+        frappe.log_error(frappe.get_traceback(), "get_photo_verification_queue Error")
+        return {"queue": [], "kpis": {}, "error": "Could not load verification queue"}
+
+
+@frappe.whitelist()
+def record_photo_verification(da_id, counts, verdict, note=""):
+    """Batch verdict for one DA's Friday photo set.
+
+    The verify gate checks BOTH legs of the three-way match:
+      - manager count != DA count      -> controller would auto-Dispute
+      - agreed count  != book stock    -> controller auto-CONFIRMS this,
+                                          marking three_way_match="Mismatch"
+    The second is the collusion case. It must not verify.
+
+    The gate runs BEFORE any save, because saving a mismatched row fires
+    StockCount._alert_disputed() -> send_notification(), which no rollback
+    can undo.
+    """
+    guard = _guard()
+    if guard:
+        return guard
+
+    try:
+        if isinstance(counts, str):
+            counts = json.loads(counts)
+        verdict = (verdict or "").strip().lower()
+
+        if verdict not in ("verify", "flag"):
+            return {"success": False, "error": "verdict must be 'verify' or 'flag'"}
+        if verdict == "flag" and not (note or "").strip():
+            return {"success": False, "error": "A note is required when flagging"}
+        if not counts:
+            return {"success": False, "error": "No counts submitted"}
+
+        # ── Load and validate. No writes.
+        loaded = []
+        for c in counts:
+            cname = (c or {}).get("count_name")
+            if not cname or not frappe.db.exists("Stock Count", cname):
+                return {"success": False, "error": f"Unknown count: {cname}"}
+            doc = frappe.get_doc("Stock Count", cname)
+            if doc.delivery_agent != da_id:
+                return {"success": False,
+                        "error": f"Count {doc.name} does not belong to DA {da_id}"}
+            if doc.count_status in ("Confirmed", "Disputed"):
+                return {"success": False,
+                        "error": (f"{doc.product} was already resolved "
+                                  f"({doc.count_status}). Reload the queue.")}
+            if doc.count_status != "DA Submitted":
+                return {"success": False,
+                        "error": (f"{doc.product} is {doc.count_status}; the DA has "
+                                  "not submitted a count for it yet.")}
+            loaded.append((doc, flt(c.get("manager_count"))))
+
+        # ── Dry-run the verify gate before touching anything.
+        if verdict == "verify":
+            books = _da_warehouse_stock_map()
+            offenders = []
+            for doc, mgr in loaded:
+                da_qty = flt(doc.da_counted_quantity)
+                if mgr != da_qty:
+                    offenders.append({"count_name": doc.name, "product": doc.product,
+                                      "why": f"your count {mgr} != DA count {da_qty}"})
+                    continue
+                book = books.get((doc.delivery_agent, doc.product), 0.0)
+                if book != mgr:
+                    offenders.append({"count_name": doc.name, "product": doc.product,
+                                      "why": f"agreed count {mgr} != book stock {book}"})
+            if offenders:
+                return {"success": False,
+                        "error": ("Cannot verify: %d row(s) disagree with the DA's count "
+                                  "or with book stock. Flag instead." % len(offenders)),
+                        "disputed": offenders}
+
+        # ── Pass 1: write manager counts. "Manager Reviewing" is what makes
+        # the controller stamp manager_reviewed_by/at; it then auto-resolves.
+        results, disputed_rows, docs = [], [], []
+        for doc, mgr in loaded:
+            doc.manager_counted_quantity = mgr
+            doc.count_status = "Manager Reviewing"
+            doc.save(ignore_permissions=True)
+            doc.reload()
+            docs.append(doc)
+            if doc.count_status == "Disputed":
+                disputed_rows.append(doc.name)
+            results.append({"count_name": doc.name, "product": doc.product,
+                            "status": doc.count_status,
+                            "three_way_match": doc.three_way_match,
+                            "three_way_variance": flt(doc.three_way_variance or 0)})
+
+        # ── Pass 2. NOTE: action_verify / action_escalate / add_strike each
+        # call frappe.db.commit(). From the first one on, this is not atomic.
+        if verdict == "verify":
+            bad = [d.name for d in docs
+                   if d.count_status == "Disputed" or flt(d.three_way_variance or 0) != 0]
+            if bad:
+                frappe.db.rollback()
+                return {"success": False,
+                        "error": "Refusing to verify: variance detected after save.",
+                        "disputed": bad}
+            for doc in docs:
+                if doc.count_status == "Confirmed" and not doc.verified_by:
+                    doc.action_verify()
+        else:
+            for doc in docs:
+                if doc.count_status == "Disputed" and not doc.fraud_escalated:
+                    doc.action_escalate(note)
+            # ONE strike, and only if something actually disputed.
+            if disputed_rows:
+                docs[0].action_strike(
+                    "Friday photo verification: %d product(s) disputed by %s. %s"
+                    % (len(disputed_rows), frappe.session.user, note))
+
+        return {"success": True, "verdict": verdict,
+                "disputed_count": len(disputed_rows), "results": results}
+
+    except Exception as e:
+        frappe.db.rollback()
+        frappe.log_error(frappe.get_traceback(), "record_photo_verification Error")
+        return {"success": False, "error": str(e)}
