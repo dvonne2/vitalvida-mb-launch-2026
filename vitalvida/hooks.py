@@ -80,6 +80,15 @@ doc_events = {
     },
 }
 
+# ── Inventory Portal (React SPA served same-origin) ───────────────
+# Deep links like /inventory-portal/photo-check must render the shell,
+# not 404. The SPA router takes over client-side from there.
+website_route_rules = [
+    {"from_route": "/inventory-portal", "to_route": "inventory_portal"},
+    {"from_route": "/inventory-portal/<path:app_path>", "to_route": "inventory_portal"},
+]
+
+
 scheduler_events = {
     "all": [
         "vitalvida.orders.process_webhook_queue"
