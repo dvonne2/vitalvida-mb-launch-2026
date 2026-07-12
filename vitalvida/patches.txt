@@ -11,3 +11,4 @@ vitalvida.patches.loop4_backfill_customer_profiles
 vitalvida.patches.v5_0.add_loop5_custom_fields
 vitalvida.patches.v5_0.seed_loop5_settings
 vitalvida.patches.v6_0.seed_event_ownership_register
+vitalvida.patches.v6_1.deprecate_custom_product
