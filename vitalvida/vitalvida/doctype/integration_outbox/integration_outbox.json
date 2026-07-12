@@ -1,0 +1,95 @@
+{
+ "actions": [],
+ "creation": "2026-07-11 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "event_key",
+  "source_doctype",
+  "source_name",
+  "consumer_method",
+  "status",
+  "attempts",
+  "next_retry_at",
+  "last_error"
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-07-11 00:00:00",
+ "module": "Vitalvida",
+ "name": "Integration Outbox",
+ "owner": "Administrator",
+ "fields": [
+  {
+   "fieldname": "event_key",
+   "fieldtype": "Data",
+   "label": "Event Key",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "source_doctype",
+   "fieldtype": "Data",
+   "label": "Source DocType",
+   "reqd": 1,
+   "in_list_view": 1,
+   "description": "Authoritative record type this delivery is about. Data lives there, not here."
+  },
+  {
+   "fieldname": "source_name",
+   "fieldtype": "Data",
+   "label": "Source Name",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "consumer_method",
+   "fieldtype": "Data",
+   "label": "Consumer Method",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Pending\nProcessing\nDone\nFailed",
+   "default": "Pending",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "attempts",
+   "fieldtype": "Int",
+   "label": "Attempts",
+   "default": "0"
+  },
+  {
+   "fieldname": "next_retry_at",
+   "fieldtype": "Datetime",
+   "label": "Next Retry At"
+  },
+  {
+   "fieldname": "last_error",
+   "fieldtype": "Small Text",
+   "label": "Last Error"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "create": 1,
+   "write": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1,
+ "autoname": "hash",
+ "unique": 0
+}

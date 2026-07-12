@@ -1,0 +1,117 @@
+{
+ "actions": [],
+ "creation": "2026-07-11 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "event_key",
+  "event_name",
+  "bucket",
+  "authoritative_doctype",
+  "source_key_field",
+  "producer_module",
+  "erpnext_consequence",
+  "policy_ref",
+  "is_active",
+  "notes",
+  "consumers"
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-07-11 00:00:00",
+ "module": "Vitalvida",
+ "name": "Event Definition",
+ "owner": "Administrator",
+ "fields": [
+  {
+   "fieldname": "event_key",
+   "fieldtype": "Data",
+   "label": "Event Key",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "description": "Stable machine key, e.g. E1_PAYMENT_CONFIRMED"
+  },
+  {
+   "fieldname": "event_name",
+   "fieldtype": "Data",
+   "label": "Event Name",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "bucket",
+   "fieldtype": "Select",
+   "label": "Bucket",
+   "options": "A\nB\nC",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "description": "A=ERPNext owns record; B=custom event + ERPNext consequence; C=custom workflow only"
+  },
+  {
+   "fieldname": "authoritative_doctype",
+   "fieldtype": "Data",
+   "label": "Authoritative Record (DocType)",
+   "in_list_view": 1,
+   "description": "The single record that owns this fact. For A the ERPNext doc; for B the domain record. Blank for pure C workflow."
+  },
+  {
+   "fieldname": "source_key_field",
+   "fieldtype": "Data",
+   "label": "Source Key Field",
+   "description": "Field on the authoritative record used for idempotency dedupe (e.g. source_event, reference_order)."
+  },
+  {
+   "fieldname": "producer_module",
+   "fieldtype": "Data",
+   "label": "Producer Module"
+  },
+  {
+   "fieldname": "erpnext_consequence",
+   "fieldtype": "Data",
+   "label": "ERPNext Consequence",
+   "description": "Standard ERPNext document the fact must produce, e.g. 'Payment Entry', 'Sales Invoice / GL', 'Additional Salary'."
+  },
+  {
+   "fieldname": "policy_ref",
+   "fieldtype": "Data",
+   "label": "Constitution Policy Ref",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "label": "Active",
+   "default": "1"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes / Law-1 verdict"
+  },
+  {
+   "fieldname": "consumers",
+   "fieldtype": "Table",
+   "label": "Consumers",
+   "options": "Event Consumer Map"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "create": 1,
+   "write": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1,
+ "autoname": "field:event_key",
+ "naming_rule": "By fieldname"
+}
