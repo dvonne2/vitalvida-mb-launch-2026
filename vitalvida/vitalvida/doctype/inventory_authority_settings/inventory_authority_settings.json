@@ -1,0 +1,48 @@
+{
+ "doctype": "DocType",
+ "name": "Inventory Authority Settings",
+ "module": "Vitalvida",
+ "issingle": 1,
+ "field_order": [
+  "authority_mode",
+  "block_negative_stock",
+  "section",
+  "central_warehouse"
+ ],
+ "fields": [
+  {
+   "fieldname": "authority_mode",
+   "label": "Authority Mode",
+   "fieldtype": "Select",
+   "options": "Transition\nLive",
+   "default": "Transition",
+   "reqd": 1
+  },
+  {
+   "fieldname": "block_negative_stock",
+   "label": "Block Negative Stock",
+   "fieldtype": "Check",
+   "default": "1"
+  },
+  {
+   "fieldname": "section",
+   "fieldtype": "Section Break",
+   "label": "Warehouses"
+  },
+  {
+   "fieldname": "central_warehouse",
+   "label": "Central Warehouse",
+   "fieldtype": "Link",
+   "options": "Warehouse"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1
+  }
+ ],
+ "track_changes": 1
+}

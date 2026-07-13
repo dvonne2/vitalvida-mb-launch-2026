@@ -1,0 +1,102 @@
+{
+ "doctype": "DocType",
+ "name": "Inventory Custody Event",
+ "module": "Vitalvida",
+ "autoname": "hash",
+ "engine": "InnoDB",
+ "track_changes": 1,
+ "field_order": [
+  "source_key",
+  "event_type",
+  "status",
+  "occurred_at",
+  "source_doctype",
+  "source_name",
+  "consequence_doctype",
+  "consequence_name",
+  "reversal_of",
+  "payload_json"
+ ],
+ "fields": [
+  {
+   "fieldname": "source_key",
+   "fieldtype": "Data",
+   "label": "Source Key",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "event_type",
+   "fieldtype": "Select",
+   "label": "Event Type",
+   "options": "INVENTORY_RECEIVED\nINVENTORY_TRANSFERRED\nINVENTORY_DELIVERED\nINVENTORY_COUNTED\nINVENTORY_RECONCILED\nINVENTORY_WRITTEN_OFF\nINVENTORY_REVERSED",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Recorded\nPosted\nReversed\nException",
+   "default": "Recorded",
+   "reqd": 1
+  },
+  {
+   "fieldname": "occurred_at",
+   "fieldtype": "Datetime",
+   "label": "Occurred At",
+   "reqd": 1
+  },
+  {
+   "fieldname": "source_doctype",
+   "fieldtype": "Data",
+   "label": "Source DocType"
+  },
+  {
+   "fieldname": "source_name",
+   "fieldtype": "Data",
+   "label": "Source Name"
+  },
+  {
+   "fieldname": "consequence_doctype",
+   "fieldtype": "Data",
+   "label": "ERPNext Consequence DocType"
+  },
+  {
+   "fieldname": "consequence_name",
+   "fieldtype": "Dynamic Link",
+   "options": "consequence_doctype",
+   "label": "ERPNext Consequence"
+  },
+  {
+   "fieldname": "reversal_of",
+   "fieldtype": "Link",
+   "options": "Inventory Custody Event",
+   "label": "Reversal Of"
+  },
+  {
+   "fieldname": "payload_json",
+   "fieldtype": "Code",
+   "options": "JSON",
+   "label": "Payload"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "create": 1,
+   "report": 1,
+   "export": 1
+  },
+  {
+   "role": "Inventory Manager",
+   "read": 1,
+   "create": 1,
+   "report": 1
+  }
+ ],
+ "sort_field": "occurred_at",
+ "sort_order": "DESC"
+}

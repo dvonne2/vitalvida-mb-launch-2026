@@ -28,6 +28,18 @@ from vitalvida.recipe import classify
 
 
 def deduct_on_payment(order_name):
+    # Package 03 cutover router. Transition preserves Package 02 legacy behavior.
+    from vitalvida.inventory.authority import is_live
+    if is_live():
+        try:
+            from vitalvida.inventory.movements import delivery_note_for_order
+            return delivery_note_for_order(order_name)
+        except Exception as exc:
+            frappe.log_error(f"Package 03 inventory consequence failed for {order_name}: {exc}", "INV-004 Delivery Note Error")
+            return
+    return _legacy_deduct_on_payment(order_name)
+
+def _legacy_deduct_on_payment(order_name):
     """
     Deduct DA stock for a paid order.
 
