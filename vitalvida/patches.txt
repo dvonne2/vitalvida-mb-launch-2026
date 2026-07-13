@@ -13,3 +13,5 @@ vitalvida.patches.v5_0.seed_loop5_settings
 vitalvida.patches.v6_0.seed_event_ownership_register
 vitalvida.patches.v6_1.deprecate_custom_product
 vitalvida.patches.v6_2.install_inventory_foundation
+vitalvida.patches.v7_0.add_operational_fields
+vitalvida.patches.v7_0.seed_operational_events

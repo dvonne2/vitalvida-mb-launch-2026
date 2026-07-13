@@ -234,10 +234,10 @@ def _reassign_open_orders(delivery_agent: str) -> None:
         }, fields=["name"])
 
         for order in open_orders:
-            frappe.db.set_value("VV Order", order.name, {
-                "delivery_agent": None,
-                "order_status": "Pending"
-            })
+            # Package 05: sanctioned un-assignment (-> Confirmed, map-legal),
+            # replacing the raw Pending regression.
+            from vitalvida.domain.orders import unassign_order
+            unassign_order(order.name, "DA suspended/frozen")
         if open_orders:
             frappe.db.commit()
     except Exception as e:

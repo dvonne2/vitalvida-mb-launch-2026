@@ -8,7 +8,8 @@ def open_recovery_case(order_name):
     """Open a cash Recovery Case for an order whose verification deadline passed."""
     existing = frappe.db.exists("Recovery Case", {"order": order_name, "state": ["in", ["OPEN", "ACTIVE RECOVERY"]]})
     if existing:
-        frappe.db.set_value("VV Order", order_name, "order_status", "Payment Recovery")
+        from vitalvida.domain.orders import transition
+        transition(order_name, "Payment Recovery")
         frappe.db.commit()
         return
     o = frappe.db.get_value("VV Order", order_name, ["total_payable", "released_by"], as_dict=True) or frappe._dict()
@@ -27,7 +28,8 @@ def open_recovery_case(order_name):
         "opened_at": now_datetime(),
     })
     case.insert(ignore_permissions=True)
-    frappe.db.set_value("VV Order", order_name, "order_status", "Payment Recovery")
+    from vitalvida.domain.orders import transition
+    transition(order_name, "Payment Recovery")
     frappe.db.commit()
     _alert_finance(order_name, "PaymentRecoveryOpened")
 
@@ -61,7 +63,8 @@ def mark_recovery_exhausted(case_name, cause=""):
     })
     inv.insert(ignore_permissions=True)
     if case.order:
-        frappe.db.set_value("VV Order", case.order, "order_status", "Payment Investigation")
+        from vitalvida.domain.orders import transition
+        transition(case.order, "Payment Investigation")
     frappe.db.commit()
     return {"success": True, "investigation_case": inv.name}
 

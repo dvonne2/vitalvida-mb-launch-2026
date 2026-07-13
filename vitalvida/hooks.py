@@ -39,6 +39,12 @@ fixtures = [
 doc_events = {
     "VV Order": {
         "after_insert": "vitalvida.emails.hook_order_received",
+        # Package 04-07: single-writer + commercial-projection guards
+        # (armed by VitalVida Settings.enforce_single_order_writer)
+        "before_save": [
+            "vitalvida.domain.orders.block_foreign_status_write",
+            "vitalvida.domain.orders.block_commercial_field_write",
+        ],
         "on_update": [
             "vitalvida.reconciliation.on_vv_order_update",
             "vitalvida.emails.dispatch_vv_order_email",
@@ -80,18 +86,13 @@ doc_events = {
     },
 }
 
-# ── Inventory Portal (React SPA served same-origin) ───────────────
-# Deep links like /inventory-portal/photo-check must render the shell,
-# not 404. The SPA router takes over client-side from there.
-website_route_rules = [
-    {"from_route": "/inventory-portal", "to_route": "inventory_portal"},
-    {"from_route": "/inventory-portal/<path:app_path>", "to_route": "inventory_portal"},
-]
-
-
 scheduler_events = {
     "all": [
-        "vitalvida.orders.process_webhook_queue"
+        "vitalvida.orders.process_webhook_queue",
+        # Package 04-07: drain the Integration Outbox (Package 01 worker was
+        # never scheduled anywhere -- consequences would otherwise sit Pending)
+        "vitalvida.integration.outbox.process_pending",
+        "vitalvida.domain.payments.repair_missing_e1",
     ],
     "cron": {
         # Loop 5: weekly DPSR champion evaluation, Monday 1:30 AM

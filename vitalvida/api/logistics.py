@@ -708,8 +708,18 @@ def confirm_and_ship(dispatch_id):
         if doc.status not in ["Pending", "Pending Approval"]:
             return {"success": False, "error": f"Cannot ship a dispatch with status '{doc.status}'"}
 
-        doc.db_set("status", "In Transit")
-        doc.db_set("shipped_at", now_datetime())
+        # Cutover DA: acknowledged dispatch = custody event Main->Logistics
+        # + native in-transit Stock Entry + E26 transport costs (LOG-001/005).
+        if (__import__("vitalvida.inventory.authority", fromlist=["is_live"]).is_live()):
+            from vitalvida.domain.logistics import (acknowledge_dispatch,
+                                                    record_transport_costs)
+            acknowledge_dispatch(dispatch_id)
+            record_transport_costs(dispatch_id)
+            doc.reload()
+            doc.db_set("shipped_at", now_datetime())
+        else:
+            doc.db_set("status", "In Transit")
+            doc.db_set("shipped_at", now_datetime())
         frappe.db.commit()
 
         # Create Consignment record linked to this dispatch
@@ -845,6 +855,19 @@ def process_return(return_id, action, reject_reason=""):
             doc.db_set("processed_by", frappe.session.user)
             frappe.db.commit()
             return {"success": True, "status": "Rejected"}
+
+        # Cutover DA: return leg of the custody chain (INV-010) — the
+        # Material Transfer to the Returns warehouse is the stock authority;
+        # the legacy clamp writes below are skipped entirely.
+        if (__import__("vitalvida.inventory.authority", fromlist=["is_live"]).is_live()):
+            doc.db_set("status", "Approved")
+            from vitalvida.domain.logistics import process_return as _domain_return
+            _domain_return(return_id)
+            doc.db_set("processed_at", now_datetime())
+            doc.db_set("processed_by", frappe.session.user)
+            frappe.db.commit()
+            return {"success": True, "status": "Completed",
+                    "mode": "custody"}
 
         # Accept — deduct from DA stock + credit back to factory
         items = []
