@@ -1,0 +1,74 @@
+{
+  "doctype": "DocType",
+  "name": "Remittance Clearing Event",
+  "module": "Vitalvida",
+  "custom": 0,
+  "is_submittable": 0,
+  "autoname": "hash",
+  "engine": "InnoDB",
+  "field_order": [
+    "outstanding_remittance",
+    "amount",
+    "bank_reference",
+    "paid_by",
+    "paid_at",
+    "idempotency_key",
+    "payment_entry"
+  ],
+  "fields": [
+    {
+      "fieldname": "outstanding_remittance",
+      "label": "Outstanding Remittance",
+      "fieldtype": "Link",
+      "options": "Outstanding Remittance Event",
+      "reqd": 1
+    },
+    {
+      "fieldname": "amount",
+      "label": "Amount",
+      "fieldtype": "Currency",
+      "reqd": 1
+    },
+    {
+      "fieldname": "bank_reference",
+      "label": "Bank Reference",
+      "fieldtype": "Data",
+      "reqd": 1
+    },
+    {
+      "fieldname": "paid_by",
+      "label": "Recorded By",
+      "fieldtype": "Link",
+      "options": "User",
+      "reqd": 1
+    },
+    {
+      "fieldname": "paid_at",
+      "label": "Recorded At",
+      "fieldtype": "Datetime",
+      "reqd": 1
+    },
+    {
+      "fieldname": "idempotency_key",
+      "label": "Idempotency Key",
+      "fieldtype": "Data",
+      "reqd": 1,
+      "unique": 1
+    },
+    {
+      "fieldname": "payment_entry",
+      "label": "Payment Entry",
+      "fieldtype": "Link",
+      "options": "Payment Entry",
+      "read_only": 1
+    }
+  ],
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1
+    }
+  ]
+}

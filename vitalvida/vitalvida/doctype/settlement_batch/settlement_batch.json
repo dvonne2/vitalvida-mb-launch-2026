@@ -1,0 +1,41 @@
+{
+ "doctype": "DocType",
+ "name": "Settlement Batch",
+ "module": "Vitalvida",
+ "engine": "InnoDB",
+ "naming_rule": "Expression",
+ "autoname": "format:SBATCH-{YYYY}-{#####}",
+ "field_order": ["batch_date", "delivery_agent", "supplier", "earnings",
+                 "total_amount", "status", "shortage_hold", "created_by_user",
+                 "ops_validated_by", "ops_validated_at", "finance_approved_by",
+                 "finance_approved_at", "purchase_invoice_ref",
+                 "payment_entry_ref", "payment_proof", "bank_reference",
+                 "paid_by_user", "paid_at", "idempotency_key"],
+ "fields": [
+  {"fieldname": "batch_date", "fieldtype": "Date", "label": "Batch Date", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "delivery_agent", "fieldtype": "Link", "options": "Delivery Agent", "label": "Delivery Agent", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "supplier", "fieldtype": "Link", "options": "Supplier", "label": "Supplier", "reqd": 1},
+  {"fieldname": "earnings", "fieldtype": "Table", "options": "Settlement Batch Earning", "label": "Earning Events"},
+  {"fieldname": "total_amount", "fieldtype": "Currency", "label": "Total (sum of member earnings)", "read_only": 1, "in_list_view": 1},
+  {"fieldname": "status", "fieldtype": "Select", "label": "Status", "reqd": 1, "in_list_view": 1,
+   "options": "Draft\nValidated\nApproved\nPaid\nCancelled", "default": "Draft"},
+  {"fieldname": "shortage_hold", "fieldtype": "Check", "label": "Shortage Hold (R46)", "read_only": 1, "default": "0"},
+  {"fieldname": "created_by_user", "fieldtype": "Link", "options": "User", "label": "Created By", "read_only": 1},
+  {"fieldname": "ops_validated_by", "fieldtype": "Link", "options": "User", "label": "Ops Validated By", "read_only": 1},
+  {"fieldname": "ops_validated_at", "fieldtype": "Datetime", "label": "Ops Validated At", "read_only": 1},
+  {"fieldname": "finance_approved_by", "fieldtype": "Link", "options": "User", "label": "Finance Approved By", "read_only": 1},
+  {"fieldname": "finance_approved_at", "fieldtype": "Datetime", "label": "Finance Approved At", "read_only": 1},
+  {"fieldname": "purchase_invoice_ref", "fieldtype": "Link", "options": "Purchase Invoice", "label": "Purchase Invoice", "read_only": 1},
+  {"fieldname": "payment_entry_ref", "fieldtype": "Link", "options": "Payment Entry", "label": "Payment Entry", "read_only": 1},
+  {"fieldname": "payment_proof", "fieldtype": "Attach", "label": "Payment Proof (R44)"},
+  {"fieldname": "bank_reference", "fieldtype": "Data", "label": "Bank Reference"},
+  {"fieldname": "paid_by_user", "fieldtype": "Link", "options": "User", "label": "Paid By", "read_only": 1},
+  {"fieldname": "paid_at", "fieldtype": "Datetime", "label": "Paid At", "read_only": 1},
+  {"fieldname": "idempotency_key", "fieldtype": "Data", "label": "Idempotency Key", "unique": 1, "read_only": 1, "no_copy": 1}
+ ],
+ "permissions": [
+  {"role": "System Manager", "read": 1, "create": 1, "write": 1},
+  {"role": "Accounts Manager", "read": 1, "write": 1},
+  {"role": "Accounts User", "read": 1}
+ ]
+}

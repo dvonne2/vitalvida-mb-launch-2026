@@ -1,0 +1,22 @@
+{
+ "doctype": "DocType",
+ "name": "Payroll Run Line",
+ "module": "Vitalvida",
+ "engine": "InnoDB",
+ "istable": 1,
+ "field_order": ["employee", "employee_name", "base_salary", "earnings_total",
+                 "earning_events_json", "gross_pay", "paye", "pension",
+                 "other_deductions", "net_pay"],
+ "fields": [
+  {"fieldname": "employee", "fieldtype": "Link", "options": "VV Employee", "label": "Employee", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "employee_name", "fieldtype": "Data", "label": "Name", "read_only": 1, "in_list_view": 1},
+  {"fieldname": "base_salary", "fieldtype": "Currency", "label": "Base", "read_only": 1},
+  {"fieldname": "earnings_total", "fieldtype": "Currency", "label": "Earnings", "read_only": 1, "in_list_view": 1},
+  {"fieldname": "earning_events_json", "fieldtype": "Long Text", "label": "Earning Events (JSON)", "read_only": 1},
+  {"fieldname": "gross_pay", "fieldtype": "Currency", "label": "Gross", "read_only": 1, "in_list_view": 1},
+  {"fieldname": "paye", "fieldtype": "Currency", "label": "PAYE", "read_only": 1},
+  {"fieldname": "pension", "fieldtype": "Currency", "label": "Pension", "read_only": 1},
+  {"fieldname": "other_deductions", "fieldtype": "Currency", "label": "Other Ded.", "read_only": 1},
+  {"fieldname": "net_pay", "fieldtype": "Currency", "label": "Net", "read_only": 1, "in_list_view": 1}
+ ]
+}

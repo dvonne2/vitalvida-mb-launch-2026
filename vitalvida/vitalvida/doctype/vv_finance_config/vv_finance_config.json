@@ -1,0 +1,46 @@
+{
+ "doctype": "DocType",
+ "name": "VV Finance Config",
+ "module": "Vitalvida",
+ "issingle": 1,
+ "custom": 0,
+ "engine": "InnoDB",
+ "field_order": [
+  "company", "cost_center", "mode_of_payment", "sec_accounts",
+  "moniepoint_bank_account", "receivable_account", "income_account",
+  "cogs_account", "da_payable_account", "sec_defaults", "default_customer",
+  "default_sales_item", "sec_pf", "enable_profit_first_gl", "pf_source_account",
+  "pf_owner_pay_account", "pf_tax_reserve_account", "pf_profit_account",
+  "pf_opex_account", "pf_pct_owner_pay", "pf_pct_tax_reserve", "pf_pct_profit",
+  "pf_pct_opex"
+ ],
+ "fields": [
+  {"fieldname": "company", "fieldtype": "Link", "options": "Company", "label": "Company", "reqd": 1},
+  {"fieldname": "cost_center", "fieldtype": "Link", "options": "Cost Center", "label": "Default Cost Center"},
+  {"fieldname": "mode_of_payment", "fieldtype": "Link", "options": "Mode of Payment", "label": "Mode of Payment"},
+  {"fieldname": "sec_accounts", "fieldtype": "Section Break", "label": "Account Map (accountant-ratified, R126)"},
+  {"fieldname": "moniepoint_bank_account", "fieldtype": "Link", "options": "Account", "label": "Bank - Moniepoint"},
+  {"fieldname": "receivable_account", "fieldtype": "Link", "options": "Account", "label": "Accounts Receivable"},
+  {"fieldname": "income_account", "fieldtype": "Link", "options": "Account", "label": "Sales Revenue"},
+  {"fieldname": "cogs_account", "fieldtype": "Link", "options": "Account", "label": "Cost of Goods Sold"},
+  {"fieldname": "da_payable_account", "fieldtype": "Link", "options": "Account", "label": "Accounts Payable - DA"},
+  {"fieldname": "sec_defaults", "fieldtype": "Section Break", "label": "Defaults"},
+  {"fieldname": "default_customer", "fieldtype": "Link", "options": "Customer", "label": "Default Customer (fallback)"},
+  {"fieldname": "default_sales_item", "fieldtype": "Link", "options": "Item", "label": "Default Sales Item"},
+  {"fieldname": "sec_pf", "fieldtype": "Section Break", "label": "Profit First on GL (R63)"},
+  {"fieldname": "enable_profit_first_gl", "fieldtype": "Check", "label": "Enable Profit First GL Allocations", "default": "0"},
+  {"fieldname": "pf_source_account", "fieldtype": "Link", "options": "Account", "label": "PF Source Account"},
+  {"fieldname": "pf_owner_pay_account", "fieldtype": "Link", "options": "Account", "label": "PF Owner Pay"},
+  {"fieldname": "pf_tax_reserve_account", "fieldtype": "Link", "options": "Account", "label": "PF Tax Reserve"},
+  {"fieldname": "pf_profit_account", "fieldtype": "Link", "options": "Account", "label": "PF Profit"},
+  {"fieldname": "pf_opex_account", "fieldtype": "Link", "options": "Account", "label": "PF OpEx"},
+  {"fieldname": "pf_pct_owner_pay", "fieldtype": "Float", "label": "% Owner Pay"},
+  {"fieldname": "pf_pct_tax_reserve", "fieldtype": "Float", "label": "% Tax Reserve"},
+  {"fieldname": "pf_pct_profit", "fieldtype": "Float", "label": "% Profit"},
+  {"fieldname": "pf_pct_opex", "fieldtype": "Float", "label": "% OpEx"}
+ ],
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 1},
+  {"role": "Accounts Manager", "read": 1, "write": 1}
+ ]
+}
