@@ -1,0 +1,168 @@
+{
+ "actions": [],
+ "creation": "2026-07-15 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "source_key",
+  "payout_batch",
+  "media_buyer",
+  "period_start",
+  "period_end",
+  "total_amount",
+  "line_count",
+  "lines",
+  "lines_hash",
+  "currency",
+  "external_reference",
+  "paid_on",
+  "paid_at",
+  "paid_by",
+  "approved_by",
+  "recorded_by_service",
+  "payment_entry",
+  "vv_source_event_key"
+ ],
+ "fields": [
+  {
+   "fieldname": "source_key",
+   "fieldtype": "Data",
+   "label": "Source Key",
+   "reqd": 1,
+   "unique": 1,
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "payout_batch",
+   "fieldtype": "Link",
+   "label": "Payout Batch",
+   "options": "Affiliate Payout Batch",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "media_buyer",
+   "fieldtype": "Link",
+   "label": "Media Buyer",
+   "options": "VV Media Buyer",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "period_start",
+   "fieldtype": "Date",
+   "label": "Period Start",
+   "reqd": 1
+  },
+  {
+   "fieldname": "period_end",
+   "fieldtype": "Date",
+   "label": "Period End",
+   "reqd": 1
+  },
+  {
+   "fieldname": "total_amount",
+   "fieldtype": "Currency",
+   "label": "Total Amount",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "line_count",
+   "fieldtype": "Int",
+   "label": "Line Count"
+  },
+  {
+   "fieldname": "lines",
+   "fieldtype": "Table",
+   "label": "Lines",
+   "options": "Affiliate Payout Line"
+  },
+  {
+   "fieldname": "lines_hash",
+   "fieldtype": "Data",
+   "label": "Lines Hash",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Data",
+   "label": "Currency",
+   "default": "NGN"
+  },
+  {
+   "fieldname": "external_reference",
+   "fieldtype": "Data",
+   "label": "External Reference",
+   "reqd": 1,
+   "description": "bank/transfer reference. Evidence, not the consequence."
+  },
+  {
+   "fieldname": "paid_on",
+   "fieldtype": "Date",
+   "label": "Paid On",
+   "reqd": 1
+  },
+  {
+   "fieldname": "paid_at",
+   "fieldtype": "Datetime",
+   "label": "Paid At",
+   "reqd": 1
+  },
+  {
+   "fieldname": "paid_by",
+   "fieldtype": "Data",
+   "label": "Paid By",
+   "reqd": 1
+  },
+  {
+   "fieldname": "approved_by",
+   "fieldtype": "Data",
+   "label": "Approved By"
+  },
+  {
+   "fieldname": "recorded_by_service",
+   "fieldtype": "Data",
+   "label": "Recorded By Service"
+  },
+  {
+   "fieldname": "payment_entry",
+   "fieldtype": "Link",
+   "label": "Payment Entry",
+   "options": "Payment Entry",
+   "read_only": 1,
+   "description": "THE authoritative consequence. Empty means no money is recorded as moved."
+  },
+  {
+   "fieldname": "vv_source_event_key",
+   "fieldtype": "Data",
+   "label": "Vv Source Event Key",
+   "read_only": 1,
+   "hidden": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-07-15 00:00:00",
+ "module": "Vitalvida",
+ "name": "Affiliate Payout Event",
+ "owner": "Administrator",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1,
+ "autoname": "field:source_key",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "create": 0,
+   "write": 0,
+   "delete": 0,
+   "report": 1,
+   "export": 1,
+   "share": 1,
+   "print": 1
+  }
+ ]
+}

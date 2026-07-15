@@ -37,6 +37,10 @@ fixtures = [
 # M21: Auto-create FIRS eInvoice on Sales Invoice submit
 # M31: Auto-provision role on LMS course completion
 doc_events = {
+    # --- Package 17 affiliate consequence guards (do not edit by hand) ---
+    "Affiliate Payout Batch": {
+        "before_save": "vitalvida.affiliate.legacy_guard.guard_payout_batch",
+    },
     "VV Order": {
         "after_insert": "vitalvida.emails.hook_order_received",
         # Package 04-07: single-writer + commercial-projection guards
@@ -44,6 +48,7 @@ doc_events = {
         "before_save": [
             "vitalvida.domain.orders.block_foreign_status_write",
             "vitalvida.domain.orders.block_commercial_field_write",
+            "vitalvida.affiliate.legacy_guard.guard_order_payout_status",
         ],
         "on_update": [
             "vitalvida.reconciliation.on_vv_order_update",
