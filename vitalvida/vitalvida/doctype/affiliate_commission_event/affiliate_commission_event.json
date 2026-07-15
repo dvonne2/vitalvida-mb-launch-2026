@@ -1,0 +1,162 @@
+{
+ "actions": [],
+ "creation": "2026-07-15 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "source_key",
+  "vv_order",
+  "media_buyer",
+  "aff_id",
+  "bundle_name",
+  "affiliate_tier",
+  "commission_rule",
+  "rule_version",
+  "rule_payload_json",
+  "rule_payload_hash",
+  "commission_amount",
+  "currency",
+  "earned_on",
+  "computed_at",
+  "computed_by_service",
+  "purchase_invoice",
+  "vv_source_event_key"
+ ],
+ "fields": [
+  {
+   "fieldname": "source_key",
+   "fieldtype": "Data",
+   "label": "Source Key",
+   "reqd": 1,
+   "unique": 1,
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "vv_order",
+   "fieldtype": "Link",
+   "label": "Vv Order",
+   "options": "VV Order",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "media_buyer",
+   "fieldtype": "Link",
+   "label": "Media Buyer",
+   "options": "VV Media Buyer",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "aff_id",
+   "fieldtype": "Data",
+   "label": "Aff Id"
+  },
+  {
+   "fieldname": "bundle_name",
+   "fieldtype": "Data",
+   "label": "Bundle Name"
+  },
+  {
+   "fieldname": "affiliate_tier",
+   "fieldtype": "Data",
+   "label": "Affiliate Tier"
+  },
+  {
+   "fieldname": "commission_rule",
+   "fieldtype": "Link",
+   "label": "Commission Rule",
+   "options": "Affiliate Commission Rule",
+   "reqd": 1
+  },
+  {
+   "fieldname": "rule_version",
+   "fieldtype": "Data",
+   "label": "Rule Version",
+   "reqd": 1,
+   "description": "rule.modified at computation time"
+  },
+  {
+   "fieldname": "rule_payload_json",
+   "fieldtype": "Long Text",
+   "label": "Rule Payload Json",
+   "reqd": 1
+  },
+  {
+   "fieldname": "rule_payload_hash",
+   "fieldtype": "Data",
+   "label": "Rule Payload Hash",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "commission_amount",
+   "fieldtype": "Currency",
+   "label": "Commission Amount",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Data",
+   "label": "Currency",
+   "default": "NGN"
+  },
+  {
+   "fieldname": "earned_on",
+   "fieldtype": "Date",
+   "label": "Earned On",
+   "reqd": 1
+  },
+  {
+   "fieldname": "computed_at",
+   "fieldtype": "Datetime",
+   "label": "Computed At",
+   "reqd": 1
+  },
+  {
+   "fieldname": "computed_by_service",
+   "fieldtype": "Data",
+   "label": "Computed By Service",
+   "reqd": 1
+  },
+  {
+   "fieldname": "purchase_invoice",
+   "fieldtype": "Link",
+   "label": "Purchase Invoice",
+   "options": "Purchase Invoice",
+   "read_only": 1,
+   "description": "THE authoritative consequence. Empty means the buyer is not yet owed in ERPNext."
+  },
+  {
+   "fieldname": "vv_source_event_key",
+   "fieldtype": "Data",
+   "label": "Vv Source Event Key",
+   "read_only": 1,
+   "hidden": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-07-15 00:00:00",
+ "module": "Vitalvida",
+ "name": "Affiliate Commission Event",
+ "owner": "Administrator",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1,
+ "autoname": "field:source_key",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "create": 0,
+   "write": 0,
+   "delete": 0,
+   "report": 1,
+   "export": 1,
+   "share": 1,
+   "print": 1
+  }
+ ]
+}
