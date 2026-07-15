@@ -24,3 +24,4 @@ vitalvida.patches.v15_0.install_schemas
 vitalvida.patches.v16_0.install_coa
 vitalvida.patches.v14_0.install_tax_reference_snapshot
 vitalvida.patches.v17_0.install_affiliate_consequences
+vitalvida.patches.v18_0.install_coa_profit_first
