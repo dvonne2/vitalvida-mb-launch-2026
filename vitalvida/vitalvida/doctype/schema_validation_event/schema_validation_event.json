@@ -1,0 +1,112 @@
+{
+ "actions": [],
+ "creation": "2026-07-14 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "source_key",
+  "schema_definition",
+  "source_doctype",
+  "source_name",
+  "schema_hash",
+  "payload_hash",
+  "payload_json",
+  "result",
+  "errors_json",
+  "validated_at",
+  "validated_by"
+ ],
+ "fields": [
+  {
+   "fieldname": "source_key",
+   "fieldtype": "Data",
+   "label": "Source Key",
+   "reqd": 1,
+   "unique": 1,
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "schema_definition",
+   "fieldtype": "Link",
+   "label": "Schema Definition",
+   "options": "Event Schema Definition",
+   "reqd": 1
+  },
+  {
+   "fieldname": "source_doctype",
+   "fieldtype": "Data",
+   "label": "Source Doctype"
+  },
+  {
+   "fieldname": "source_name",
+   "fieldtype": "Data",
+   "label": "Source Name"
+  },
+  {
+   "fieldname": "schema_hash",
+   "fieldtype": "Data",
+   "label": "Schema Hash",
+   "read_only": 1
+  },
+  {
+   "fieldname": "payload_hash",
+   "fieldtype": "Data",
+   "label": "Payload Hash",
+   "read_only": 1
+  },
+  {
+   "fieldname": "payload_json",
+   "fieldtype": "Long Text",
+   "label": "Payload Json"
+  },
+  {
+   "fieldname": "result",
+   "fieldtype": "Select",
+   "label": "Result",
+   "options": "Pass\nFail",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "errors_json",
+   "fieldtype": "Long Text",
+   "label": "Errors Json"
+  },
+  {
+   "fieldname": "validated_at",
+   "fieldtype": "Datetime",
+   "label": "Validated At",
+   "reqd": 1
+  },
+  {
+   "fieldname": "validated_by",
+   "fieldtype": "Data",
+   "label": "Validated By",
+   "reqd": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-07-14 00:00:00",
+ "module": "Vitalvida",
+ "name": "Schema Validation Event",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "create": 0,
+   "write": 0,
+   "delete": 0,
+   "report": 1,
+   "export": 1,
+   "share": 1,
+   "print": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1,
+ "autoname": "field:source_key",
+ "allow_import": 0
+}

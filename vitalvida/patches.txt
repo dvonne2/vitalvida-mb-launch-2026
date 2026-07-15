@@ -18,3 +18,7 @@ vitalvida.patches.v7_0.seed_operational_events
 vitalvida.patches.v8_0.install_finance_consequences
 vitalvida.patches.v9_0.install_settlement
 vitalvida.patches.v10_0.install_payroll_events
+vitalvida.patches.v12_0.install_controls
+vitalvida.patches.v13_0.install_reporting
+vitalvida.patches.v15_0.install_schemas
+vitalvida.patches.v16_0.install_coa

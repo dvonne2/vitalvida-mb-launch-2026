@@ -1,0 +1,115 @@
+{
+ "actions": [],
+ "creation": "2026-07-14 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "source_key",
+  "control_definition",
+  "rule_version",
+  "source_doctype",
+  "source_name",
+  "input_json",
+  "input_hash",
+  "result",
+  "message",
+  "evaluated_at",
+  "evaluated_by"
+ ],
+ "fields": [
+  {
+   "fieldname": "source_key",
+   "fieldtype": "Data",
+   "label": "Source Key",
+   "reqd": 1,
+   "unique": 1,
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "control_definition",
+   "fieldtype": "Link",
+   "label": "Control Definition",
+   "options": "Control Definition",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "rule_version",
+   "fieldtype": "Data",
+   "label": "Rule Version",
+   "reqd": 1
+  },
+  {
+   "fieldname": "source_doctype",
+   "fieldtype": "Data",
+   "label": "Source Doctype",
+   "reqd": 1
+  },
+  {
+   "fieldname": "source_name",
+   "fieldtype": "Data",
+   "label": "Source Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "input_json",
+   "fieldtype": "Long Text",
+   "label": "Input Json"
+  },
+  {
+   "fieldname": "input_hash",
+   "fieldtype": "Data",
+   "label": "Input Hash",
+   "read_only": 1
+  },
+  {
+   "fieldname": "result",
+   "fieldtype": "Select",
+   "label": "Result",
+   "options": "Pass\nFail",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "message",
+   "fieldtype": "Small Text",
+   "label": "Message"
+  },
+  {
+   "fieldname": "evaluated_at",
+   "fieldtype": "Datetime",
+   "label": "Evaluated At",
+   "reqd": 1
+  },
+  {
+   "fieldname": "evaluated_by",
+   "fieldtype": "Data",
+   "label": "Evaluated By",
+   "reqd": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-07-14 00:00:00",
+ "module": "Vitalvida",
+ "name": "Control Execution Event",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "create": 0,
+   "write": 0,
+   "delete": 0,
+   "report": 1,
+   "export": 1,
+   "share": 1,
+   "print": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1,
+ "autoname": "field:source_key",
+ "allow_import": 0
+}

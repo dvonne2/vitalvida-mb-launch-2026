@@ -1,0 +1,88 @@
+{
+ "actions": [],
+ "creation": "2026-07-14 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "source_key",
+  "control_execution_event",
+  "control_definition",
+  "source_doctype",
+  "source_name",
+  "reason",
+  "opened_at",
+  "opened_by"
+ ],
+ "fields": [
+  {
+   "fieldname": "source_key",
+   "fieldtype": "Data",
+   "label": "Source Key",
+   "reqd": 1,
+   "unique": 1,
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "control_execution_event",
+   "fieldtype": "Link",
+   "label": "Control Execution Event",
+   "options": "Control Execution Event",
+   "reqd": 1
+  },
+  {
+   "fieldname": "control_definition",
+   "fieldtype": "Link",
+   "label": "Control Definition",
+   "options": "Control Definition"
+  },
+  {
+   "fieldname": "source_doctype",
+   "fieldtype": "Data",
+   "label": "Source Doctype"
+  },
+  {
+   "fieldname": "source_name",
+   "fieldtype": "Data",
+   "label": "Source Name"
+  },
+  {
+   "fieldname": "reason",
+   "fieldtype": "Small Text",
+   "label": "Reason"
+  },
+  {
+   "fieldname": "opened_at",
+   "fieldtype": "Datetime",
+   "label": "Opened At"
+  },
+  {
+   "fieldname": "opened_by",
+   "fieldtype": "Data",
+   "label": "Opened By"
+  }
+ ],
+ "links": [],
+ "modified": "2026-07-14 00:00:00",
+ "module": "Vitalvida",
+ "name": "Control Exception",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "create": 0,
+   "write": 0,
+   "delete": 0,
+   "report": 1,
+   "export": 1,
+   "share": 1,
+   "print": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1,
+ "autoname": "field:source_key",
+ "allow_import": 0
+}

@@ -1,0 +1,5 @@
+{
+  "version": "0-UNCONFIGURED",
+  "note": "Package 16 ships intentionally unconfigured. Populate 'accounts' with the accountant-ratified expected Chart of Accounts, bump 'version', and commit. Until then, drift audit reports UNCONFIGURED and compares nothing.",
+  "accounts": []
+}

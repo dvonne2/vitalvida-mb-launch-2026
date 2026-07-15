@@ -1,0 +1,92 @@
+{
+ "actions": [],
+ "creation": "2026-07-14 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "control_name",
+  "rule_version",
+  "applies_to_event_key",
+  "evaluator_code",
+  "evaluator_config",
+  "severity",
+  "policy_ref",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "control_name",
+   "fieldtype": "Data",
+   "label": "Control Name",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "rule_version",
+   "fieldtype": "Data",
+   "label": "Rule Version",
+   "reqd": 1
+  },
+  {
+   "fieldname": "applies_to_event_key",
+   "fieldtype": "Data",
+   "label": "Applies To Event Key",
+   "description": "Optional. If set, the control source MUST be the registered authoritative doctype for this event (verified via the Package 01 registry)."
+  },
+  {
+   "fieldname": "evaluator_code",
+   "fieldtype": "Select",
+   "label": "Evaluator Code",
+   "options": "record_exists.v1\nfield_equals.v1\nfinance_document_submitted.v1\nno_negative_stock.v1",
+   "reqd": 1,
+   "in_list_view": 1,
+   "description": "Source-controlled evaluator. Python paths are not accepted."
+  },
+  {
+   "fieldname": "evaluator_config",
+   "fieldtype": "Small Text",
+   "label": "Evaluator Config (JSON)"
+  },
+  {
+   "fieldname": "severity",
+   "fieldtype": "Select",
+   "label": "Severity",
+   "options": "Low\nMedium\nHigh\nCritical",
+   "default": "Medium",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "policy_ref",
+   "fieldtype": "Data",
+   "label": "Policy Ref"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  }
+ ],
+ "links": [],
+ "modified": "2026-07-14 00:00:00",
+ "module": "Vitalvida",
+ "name": "Control Definition",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "create": 1,
+   "write": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1,
+   "share": 1,
+   "print": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1,
+ "autoname": "field:control_name"
+}
