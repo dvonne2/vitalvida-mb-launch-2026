@@ -1,0 +1,140 @@
+{
+ "actions": [],
+ "creation": "2026-07-15 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "autoname": "field:source_key",
+ "field_order": [
+  "source_key",
+  "tax_exception",
+  "resolution_type",
+  "resolution_note",
+  "supporting_document",
+  "accounting_reference_doctype",
+  "accounting_reference_name",
+  "resolved_at",
+  "resolved_by",
+  "approved_by",
+  "approval_event",
+  "evidence_hash"
+ ],
+ "fields": [
+  {
+   "fieldname": "source_key",
+   "fieldtype": "Data",
+   "label": "Source Key",
+   "reqd": 1,
+   "unique": 1,
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "tax_exception",
+   "fieldtype": "Link",
+   "options": "Tax Exception",
+   "label": "Tax Exception",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "resolution_type",
+   "fieldtype": "Select",
+   "label": "Resolution Type",
+   "options": "Authority Configuration Corrected\nERPNext Document Corrected\nExemption Confirmed\nPayment Confirmed\nAccepted Difference\nDuplicate Evidence\nOther",
+   "reqd": 1
+  },
+  {
+   "fieldname": "resolution_note",
+   "fieldtype": "Small Text",
+   "label": "Resolution Note",
+   "reqd": 1
+  },
+  {
+   "fieldname": "supporting_document",
+   "fieldtype": "Attach",
+   "label": "Supporting Document"
+  },
+  {
+   "fieldname": "accounting_reference_doctype",
+   "fieldtype": "Link",
+   "options": "DocType",
+   "label": "Accounting Reference DocType"
+  },
+  {
+   "fieldname": "accounting_reference_name",
+   "fieldtype": "Dynamic Link",
+   "options": "accounting_reference_doctype",
+   "label": "Accounting Reference Name"
+  },
+  {
+   "fieldname": "resolved_at",
+   "fieldtype": "Datetime",
+   "label": "Resolved At",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "resolved_by",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "Resolved By",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "approved_by",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "Approved By",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "evidence_hash",
+   "fieldtype": "Data",
+   "label": "Evidence Hash",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "approval_event",
+   "fieldtype": "Link",
+   "options": "Tax Approval Event",
+   "label": "Approval Event",
+   "reqd": 1,
+   "read_only": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-07-15 00:00:00",
+ "module": "Vitalvida",
+ "name": "Tax Resolution Event",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "create": 0,
+   "write": 0,
+   "delete": 0,
+   "report": 1,
+   "export": 1,
+   "share": 1,
+   "print": 1
+  },
+  {
+   "role": "Tax Manager",
+   "read": 1,
+   "create": 0,
+   "write": 0,
+   "delete": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1,
+ "allow_import": 0
+}
