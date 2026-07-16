@@ -1,0 +1,130 @@
+{
+ "doctype": "DocType",
+ "name": "Payroll Payment Event",
+ "module": "Vitalvida",
+ "engine": "InnoDB",
+ "naming_rule": "Expression",
+ "autoname": "format:PPAY-{YYYY}-{#####}",
+ "field_order": [
+  "payroll_run",
+  "approval_event",
+  "amount",
+  "bank_reference",
+  "paid_by",
+  "paid_at",
+  "evidence_json",
+  "idempotency_key",
+  "payment_entry",
+  "consequence_doctype",
+  "consequence_name",
+  "consequence_posted",
+  "reversal_of"
+ ],
+ "fields": [
+  {
+   "fieldname": "payroll_run",
+   "fieldtype": "Link",
+   "options": "Payroll Run Event",
+   "label": "Payroll Run",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "approval_event",
+   "fieldtype": "Link",
+   "options": "Payroll Approval Event",
+   "label": "Approval Event",
+   "reqd": 1
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "label": "Amount",
+   "reqd": 1
+  },
+  {
+   "fieldname": "bank_reference",
+   "fieldtype": "Data",
+   "label": "Bank Reference",
+   "reqd": 1
+  },
+  {
+   "fieldname": "paid_by",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "Paid By",
+   "reqd": 1
+  },
+  {
+   "fieldname": "paid_at",
+   "fieldtype": "Datetime",
+   "label": "Paid At",
+   "reqd": 1
+  },
+  {
+   "fieldname": "evidence_json",
+   "fieldtype": "Long Text",
+   "label": "Payment Evidence (JSON)"
+  },
+  {
+   "fieldname": "idempotency_key",
+   "fieldtype": "Data",
+   "label": "Idempotency Key",
+   "reqd": 1,
+   "unique": 1,
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "journal_entry",
+   "fieldtype": "Link",
+   "options": "Journal Entry",
+   "label": "Journal Entry (Net Wages Cleared)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "consequence_doctype",
+   "fieldtype": "Data",
+   "label": "Consequence DocType",
+   "read_only": 1
+  },
+  {
+   "fieldname": "consequence_name",
+   "fieldtype": "Data",
+   "label": "Consequence Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "consequence_posted",
+   "fieldtype": "Check",
+   "label": "Consequence Posted",
+   "read_only": 1,
+   "default": "0"
+  },
+  {
+   "fieldname": "reversal_of",
+   "fieldtype": "Link",
+   "options": "Payroll Payment Event",
+   "label": "Reversal Of",
+   "read_only": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "create": 1,
+   "write": 1
+  },
+  {
+   "role": "Accounts Manager",
+   "read": 1,
+   "create": 1,
+   "write": 1
+  },
+  {
+   "role": "HR Manager",
+   "read": 1
+  }
+ ]
+}

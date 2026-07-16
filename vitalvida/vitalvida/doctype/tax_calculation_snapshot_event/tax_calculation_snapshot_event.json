@@ -1,0 +1,214 @@
+{
+ "actions": [],
+ "creation": "2026-07-15 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "autoname": "field:source_key",
+ "field_order": [
+  "source_key",
+  "tax_type",
+  "company",
+  "source_doctype",
+  "source_name",
+  "source_event_key",
+  "transaction_date",
+  "tax_authority_snapshot",
+  "taxable_basis",
+  "rate_or_band_reference",
+  "expected_tax",
+  "actual_tax",
+  "variance",
+  "currency",
+  "input_payload_json",
+  "input_payload_hash",
+  "calculation_output_hash",
+  "result",
+  "calculated_at",
+  "calculated_by_service",
+  "erpnext_reference_doctype",
+  "erpnext_reference_name"
+ ],
+ "fields": [
+  {
+   "fieldname": "source_key",
+   "fieldtype": "Data",
+   "label": "Source Key",
+   "reqd": 1,
+   "unique": 1,
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "tax_type",
+   "fieldtype": "Select",
+   "label": "Tax Type",
+   "options": "PAYE\nVAT Output\nVAT Input\nOther",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "options": "Company",
+   "label": "Company",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "source_doctype",
+   "fieldtype": "Link",
+   "options": "DocType",
+   "label": "Source DocType",
+   "reqd": 1
+  },
+  {
+   "fieldname": "source_name",
+   "fieldtype": "Dynamic Link",
+   "options": "source_doctype",
+   "label": "Source Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "source_event_key",
+   "fieldtype": "Data",
+   "label": "Source Event Key"
+  },
+  {
+   "fieldname": "transaction_date",
+   "fieldtype": "Date",
+   "label": "Transaction Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "tax_authority_snapshot",
+   "fieldtype": "Link",
+   "options": "Tax Authority Snapshot Event",
+   "label": "Tax Authority Snapshot",
+   "reqd": 1
+  },
+  {
+   "fieldname": "taxable_basis",
+   "fieldtype": "Currency",
+   "label": "Taxable Basis",
+   "reqd": 1
+  },
+  {
+   "fieldname": "rate_or_band_reference",
+   "fieldtype": "Data",
+   "label": "Rate or Band Reference",
+   "reqd": 1
+  },
+  {
+   "fieldname": "expected_tax",
+   "fieldtype": "Currency",
+   "label": "Expected Tax",
+   "reqd": 1
+  },
+  {
+   "fieldname": "actual_tax",
+   "fieldtype": "Currency",
+   "label": "Actual Tax",
+   "reqd": 1
+  },
+  {
+   "fieldname": "variance",
+   "fieldtype": "Currency",
+   "label": "Variance",
+   "reqd": 1
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "options": "Currency",
+   "label": "Currency",
+   "reqd": 1
+  },
+  {
+   "fieldname": "input_payload_json",
+   "fieldtype": "Long Text",
+   "label": "Input Payload",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "input_payload_hash",
+   "fieldtype": "Data",
+   "label": "Input Payload Hash",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "calculation_output_hash",
+   "fieldtype": "Data",
+   "label": "Calculation Output Hash",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "result",
+   "fieldtype": "Select",
+   "label": "Result",
+   "options": "Matched\nVariance\nNot Applicable\nExempt\nConfiguration Missing\nCalculation Error",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "calculated_at",
+   "fieldtype": "Datetime",
+   "label": "Calculated At",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "calculated_by_service",
+   "fieldtype": "Data",
+   "label": "Calculated By Service",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "erpnext_reference_doctype",
+   "fieldtype": "Link",
+   "options": "DocType",
+   "label": "ERPNext Reference DocType"
+  },
+  {
+   "fieldname": "erpnext_reference_name",
+   "fieldtype": "Dynamic Link",
+   "options": "erpnext_reference_doctype",
+   "label": "ERPNext Reference Name"
+  }
+ ],
+ "links": [],
+ "modified": "2026-07-15 00:00:00",
+ "module": "Vitalvida",
+ "name": "Tax Calculation Snapshot Event",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "create": 0,
+   "write": 0,
+   "delete": 0,
+   "report": 1,
+   "export": 1,
+   "share": 1,
+   "print": 1
+  },
+  {
+   "role": "Tax Manager",
+   "read": 1,
+   "create": 0,
+   "write": 0,
+   "delete": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1,
+ "allow_import": 0
+}

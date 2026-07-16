@@ -1,0 +1,205 @@
+{
+ "actions": [],
+ "creation": "2026-07-15 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "autoname": "field:source_key",
+ "field_order": [
+  "source_key",
+  "tax_type",
+  "company",
+  "jurisdiction",
+  "period_start",
+  "period_end",
+  "snapshot_at",
+  "authority_snapshots_json",
+  "source_documents_hash",
+  "taxable_basis_total",
+  "tax_total",
+  "paid_total",
+  "variance_total",
+  "prepared_by",
+  "reviewed_by",
+  "approved_by",
+  "review_approval_event",
+  "final_approval_event",
+  "filing_reference",
+  "amends_snapshot",
+  "evidence_hash"
+ ],
+ "fields": [
+  {
+   "fieldname": "source_key",
+   "fieldtype": "Data",
+   "label": "Source Key",
+   "reqd": 1,
+   "unique": 1,
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "tax_type",
+   "fieldtype": "Select",
+   "label": "Tax Type",
+   "options": "PAYE\nVAT Output\nVAT Input\nOther",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "options": "Company",
+   "label": "Company",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "jurisdiction",
+   "fieldtype": "Data",
+   "label": "Jurisdiction",
+   "reqd": 1
+  },
+  {
+   "fieldname": "period_start",
+   "fieldtype": "Date",
+   "label": "Period Start",
+   "reqd": 1
+  },
+  {
+   "fieldname": "period_end",
+   "fieldtype": "Date",
+   "label": "Period End",
+   "reqd": 1
+  },
+  {
+   "fieldname": "snapshot_at",
+   "fieldtype": "Datetime",
+   "label": "Snapshot At",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "authority_snapshots_json",
+   "fieldtype": "Long Text",
+   "label": "Authority Snapshots",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "source_documents_hash",
+   "fieldtype": "Data",
+   "label": "Source Documents Hash",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "taxable_basis_total",
+   "fieldtype": "Currency",
+   "label": "Taxable Basis Total",
+   "reqd": 1
+  },
+  {
+   "fieldname": "tax_total",
+   "fieldtype": "Currency",
+   "label": "Tax Total",
+   "reqd": 1
+  },
+  {
+   "fieldname": "paid_total",
+   "fieldtype": "Currency",
+   "label": "Paid Total",
+   "reqd": 1
+  },
+  {
+   "fieldname": "variance_total",
+   "fieldtype": "Currency",
+   "label": "Variance Total",
+   "reqd": 1
+  },
+  {
+   "fieldname": "prepared_by",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "Prepared By",
+   "reqd": 1
+  },
+  {
+   "fieldname": "reviewed_by",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "Reviewed By"
+  },
+  {
+   "fieldname": "approved_by",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "Approved By"
+  },
+  {
+   "fieldname": "filing_reference",
+   "fieldtype": "Data",
+   "label": "Filing Reference"
+  },
+  {
+   "fieldname": "amends_snapshot",
+   "fieldtype": "Link",
+   "options": "Tax Filing Snapshot Event",
+   "label": "Amends Snapshot"
+  },
+  {
+   "fieldname": "evidence_hash",
+   "fieldtype": "Data",
+   "label": "Evidence Hash",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "review_approval_event",
+   "fieldtype": "Link",
+   "options": "Tax Approval Event",
+   "label": "Review Approval Event",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "final_approval_event",
+   "fieldtype": "Link",
+   "options": "Tax Approval Event",
+   "label": "Final Approval Event",
+   "reqd": 1,
+   "read_only": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-07-15 00:00:00",
+ "module": "Vitalvida",
+ "name": "Tax Filing Snapshot Event",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "create": 0,
+   "write": 0,
+   "delete": 0,
+   "report": 1,
+   "export": 1,
+   "share": 1,
+   "print": 1
+  },
+  {
+   "role": "Tax Manager",
+   "read": 1,
+   "create": 0,
+   "write": 0,
+   "delete": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1,
+ "allow_import": 0
+}

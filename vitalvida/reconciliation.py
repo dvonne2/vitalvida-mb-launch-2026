@@ -297,7 +297,7 @@ def _auto_confirm(webhook, order, tier, confidence):
         return _flag_for_review(webhook, order, tier, confidence)
     now = now_datetime()
 
-    frappe.get_doc({
+    reconciliation = frappe.get_doc({
         "doctype": "Payment Reconciliation Log",
         "webhook": webhook_name,
         "order": order_name,
@@ -314,8 +314,10 @@ def _auto_confirm(webhook, order, tier, confidence):
         "processing_status": "Processed",
         "matched_order": order_name,
     })
+    # Payment flags, E1 outbox enqueue, and the reconciliation record share
+    # one transaction. There is no committed payment-without-event window.
+    _mark_order_paid(order_name, reconciliation.name)
     frappe.db.commit()
-    _mark_order_paid(order_name)
 
 
 def _flag_for_review(webhook, order, tier, confidence, commit=True):
@@ -356,7 +358,7 @@ def _log_unmatched(webhook):
     _alert_finance(webhook["name"], None, "PaymentUnmatched")
 
 
-def _mark_order_paid(order_name):
+def _mark_order_paid(order_name, reconciliation_log=None):
     now = now_datetime()
     order_status = frappe.db.get_value("VV Order", order_name, "order_status")
     if order_status == "Paid":
@@ -367,7 +369,10 @@ def _mark_order_paid(order_name):
         "paid_at": now,
         "payment_confirmed_at": now,
     })
-    frappe.db.commit()
+
+    if reconciliation_log:
+        from vitalvida.domain.payments import emit_payment_confirmed
+        emit_payment_confirmed(reconciliation_log)
 
     if order_status in ("Delivered", "Released - Payment Evidence", "Payment Recovery", "Payment Investigation"):
         _finalize_paid_order(order_name)
@@ -400,8 +405,9 @@ def _finalize_paid_order(order_name):
         )
         return
 
-    # 1. Update status to Paid
-    frappe.db.set_value("VV Order", order_name, {"order_status": "Paid"})
+    # 1. Update status to Paid — via the single writer (CORE-002).
+    from vitalvida.domain.orders import transition
+    transition(order_name, "Paid")
     frappe.db.commit()
 
     # Loop 1: a late payment that finalizes a recovered order closes its Recovery Case.
@@ -411,10 +417,15 @@ def _finalize_paid_order(order_name):
     except Exception:
         frappe.log_error(frappe.get_traceback(), "Loop1 Recovery Close Error")
 
-    # 2. M13: Deduct stock (all bundle components)
+    # 2. Inventory consumption.
+    #    Package 03 Live authority: the Paid transition
+    #    above already enqueued the fulfilment consumer (E2 -> Delivery Note).
+    #    Transition mode: keep M13 deduction until Package 03 Live cutover.
     try:
-        from vitalvida.deduction import deduct_on_payment
-        deduct_on_payment(order_name)
+        da = frappe.db.get_value("VV Order", order_name, "delivery_agent")
+        if not (da and (__import__("vitalvida.inventory.authority", fromlist=["is_live"]).is_live())):
+            from vitalvida.deduction import deduct_on_payment
+            deduct_on_payment(order_name)
     except Exception as e:
         frappe.log_error(
             f"Deduction failed for {order_name}: {str(e)}",

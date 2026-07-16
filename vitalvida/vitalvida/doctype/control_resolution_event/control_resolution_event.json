@@ -1,0 +1,86 @@
+{
+ "actions": [],
+ "creation": "2026-07-14 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "source_key",
+  "control_exception",
+  "resolution",
+  "resolution_hash",
+  "evidence_reference",
+  "resolved_at",
+  "resolved_by"
+ ],
+ "fields": [
+  {
+   "fieldname": "source_key",
+   "fieldtype": "Data",
+   "label": "Source Key",
+   "reqd": 1,
+   "unique": 1,
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "control_exception",
+   "fieldtype": "Link",
+   "label": "Control Exception",
+   "options": "Control Exception",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "resolution",
+   "fieldtype": "Small Text",
+   "label": "Resolution",
+   "reqd": 1
+  },
+  {
+   "fieldname": "resolution_hash",
+   "fieldtype": "Data",
+   "label": "Resolution Hash",
+   "read_only": 1
+  },
+  {
+   "fieldname": "evidence_reference",
+   "fieldtype": "Data",
+   "label": "Evidence Reference"
+  },
+  {
+   "fieldname": "resolved_at",
+   "fieldtype": "Datetime",
+   "label": "Resolved At",
+   "reqd": 1
+  },
+  {
+   "fieldname": "resolved_by",
+   "fieldtype": "Data",
+   "label": "Resolved By",
+   "reqd": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-07-14 00:00:00",
+ "module": "Vitalvida",
+ "name": "Control Resolution Event",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "create": 0,
+   "write": 0,
+   "delete": 0,
+   "report": 1,
+   "export": 1,
+   "share": 1,
+   "print": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1,
+ "autoname": "field:source_key",
+ "allow_import": 0
+}

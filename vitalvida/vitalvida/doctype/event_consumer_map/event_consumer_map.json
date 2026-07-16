@@ -1,0 +1,71 @@
+{
+ "actions": [],
+ "creation": "2026-07-11 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "consumer_module",
+  "consumer_method",
+  "read_mode",
+  "delivery",
+  "notes"
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-07-11 00:00:00",
+ "module": "Vitalvida",
+ "name": "Event Consumer Map",
+ "owner": "Administrator",
+ "fields": [
+  {
+   "fieldname": "consumer_module",
+   "fieldtype": "Data",
+   "label": "Consumer Module",
+   "in_list_view": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "consumer_method",
+   "fieldtype": "Data",
+   "label": "Consumer Method (dotted path)",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "read_mode",
+   "fieldtype": "Select",
+   "label": "Read Mode",
+   "options": "Reads authoritative record\nReads projection\nRecomputes (DEFECT)",
+   "in_list_view": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "delivery",
+   "fieldtype": "Select",
+   "label": "Delivery",
+   "options": "Sync\nAsync (outbox)",
+   "default": "Sync",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "create": 1,
+   "write": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1,
+ "istable": 1,
+ "editable_grid": 1
+}

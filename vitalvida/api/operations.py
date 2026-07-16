@@ -50,25 +50,23 @@ def _pill(status):
     return m.get(status, "blue")
 
 
-def _finalize_order(order_id):
+def _finalize_order(order_id, reconciliation_log=None):
+    """Finalize a confirmed payment and emit E1 from its authority record.
+
+    The caller must create/update Payment Reconciliation Log first. This keeps
+    the authority row, payment flags, and outbox emission in one transaction.
     """
-    Set payment_confirmed=1, commit, then call _finalize_paid_order.
-    This is the single entry point for all manual payment confirmations.
-    """
+    if not reconciliation_log:
+        frappe.throw("Payment Reconciliation Log is required for payment confirmation.")
     frappe.db.set_value("VV Order", order_id, {
         "payment_confirmed": 1,
         "payment_confirmed_at": now_datetime(),
         "paid_at": now_datetime(),
     })
-    frappe.db.commit()
-    try:
-        from vitalvida.reconciliation import _finalize_paid_order
-        _finalize_paid_order(order_id)
-    except Exception as e:
-        frappe.log_error(
-            f"_finalize_paid_order failed for {order_id}: {str(e)}\n{frappe.get_traceback()}",
-            "Ops Finalize Error"
-        )
+    from vitalvida.domain.payments import emit_payment_confirmed
+    emit_payment_confirmed(reconciliation_log)
+    from vitalvida.reconciliation import _finalize_paid_order
+    _finalize_paid_order(order_id)
 
 
 # ═══════════════════════════════════════════════════════════
@@ -1041,55 +1039,44 @@ def action_reject_payout(payout_id, reason=""):
 
 @frappe.whitelist()
 def action_manual_confirm_payment(order_id, reason=""):
-    """Manual payment confirmation for stuck orders (no webhook received)."""
+    """CTL-002 manual override: authority row first, then E1 exactly once."""
     _require_ops_role()
-
     if not (reason or "").strip():
         return {"success": False, "error": "Reason is required for manual payment confirmation."}
-
-    # Daily limit: max 5 manual confirms per user per day
-    today = str(date.today())
-    if _table_exists("Payment Reconciliation Log"):
-        # FIX 7: matched_by/matched_at don't exist. Correct fields are reconciled_by/reconciled_at.
-        # Also filter on reconciliation_status='Manually Confirmed' not match_tier to count only manuals.
+    try:
+        today = str(date.today())
         manual_count = frappe.db.count("Payment Reconciliation Log", {
             "reconciliation_status": "Manually Confirmed",
             "reconciled_by": frappe.session.user,
             "reconciled_at": [">=", today],
-        })
+        }) if _table_exists("Payment Reconciliation Log") else 0
         if manual_count >= 5:
             return {"success": False, "error": "Daily limit reached. Max 5 manual confirmations per day."}
-
-    try:
-        # Finalize the order
-        _finalize_order(order_id)
-
-        # Log the manual confirmation
-        if _table_exists("Payment Reconciliation Log"):
-            try:
-                frappe.get_doc({
-                    "doctype": "Payment Reconciliation Log",
-                    "order": order_id,
-                    "match_tier": "Tier 1 \u2014 Exact",
-                    "reconciliation_status": "Manually Confirmed",
-                    "amount_expected": frappe.db.get_value("VV Order", order_id, "total_payable") or 0,
-                }).insert(ignore_permissions=True, ignore_mandatory=True)
-                frappe.db.commit()
-            except Exception:
-                pass
-
-        # Alert Owner
-        try:
-            from vitalvida.notifications import send_notification
-            order_doc = frappe.get_doc("VV Order", order_id)
-            send_notification(order_doc, event="ManualPaymentConfirm", recipient_type="Owner")
-        except Exception:
-            pass
-
-        return {"success": True, "order_id": order_id}
+        if not _table_exists("Payment Reconciliation Log"):
+            frappe.throw("Payment Reconciliation Log is required; manual confirmation refused.")
+        existing = frappe.db.get_value("Payment Reconciliation Log", {
+            "order": order_id, "reconciliation_status": "Manually Confirmed"}, "name")
+        if existing:
+            recon_name = existing
+        else:
+            recon = frappe.get_doc({
+                "doctype": "Payment Reconciliation Log",
+                "order": order_id,
+                "match_tier": "Manual Override",
+                "reconciliation_status": "Manually Confirmed",
+                "amount_expected": frappe.db.get_value("VV Order", order_id, "total_payable") or 0,
+                "reconciled_by": frappe.session.user,
+                "reconciled_at": now_datetime(),
+                "notes": reason,
+            })
+            recon.insert(ignore_permissions=True, ignore_mandatory=True)
+            recon_name = recon.name
+        _finalize_order(order_id, recon_name)
+        return {"success": True, "order_id": order_id, "reconciliation_log": recon_name}
     except frappe.PermissionError:
         raise
     except Exception as e:
+        frappe.db.rollback()
         frappe.log_error(frappe.get_traceback(), "action_manual_confirm_payment Error")
         return {"success": False, "error": str(e)}
 
@@ -1108,20 +1095,32 @@ def action_match_webhook(webhook_id, order_id):
             "matched_order": order_id,
         })
 
-        # 2. Update existing reconciliation log record to Manually Confirmed
+        # 2. Create/update the authoritative reconciliation row first.
         existing_recon = frappe.db.get_value(
-            "Payment Reconciliation Log",
-            {"webhook": webhook_id},
-            "name"
-        )
+            "Payment Reconciliation Log", {"webhook": webhook_id}, "name")
         if existing_recon:
-            frappe.db.set_value("Payment Reconciliation Log", existing_recon,
-                "reconciliation_status", "Manually Confirmed")
+            frappe.db.set_value("Payment Reconciliation Log", existing_recon, {
+                "order": order_id,
+                "reconciliation_status": "Manually Confirmed",
+                "reconciled_by": frappe.session.user,
+                "reconciled_at": now_datetime(),
+            })
+        else:
+            recon = frappe.get_doc({
+                "doctype": "Payment Reconciliation Log",
+                "webhook": webhook_id,
+                "order": order_id,
+                "match_tier": "Manual Override",
+                "reconciliation_status": "Manually Confirmed",
+                "amount_expected": frappe.db.get_value("VV Order", order_id, "total_payable") or 0,
+                "reconciled_by": frappe.session.user,
+                "reconciled_at": now_datetime(),
+            })
+            recon.insert(ignore_permissions=True, ignore_mandatory=True)
+            existing_recon = recon.name
 
-        frappe.db.commit()
-
-        # 3. Finalize order (sets payment_confirmed=1, commits, calls _finalize_paid_order)
-        _finalize_order(order_id)
+        # 3. Finalize from the authoritative reconciliation row.
+        _finalize_order(order_id, existing_recon)
 
         return {"success": True}
     except frappe.PermissionError:
@@ -1159,7 +1158,7 @@ def action_confirm_recon_match(recon_id):
         frappe.db.commit()
 
         # Finalize order
-        _finalize_order(recon.order)
+        _finalize_order(recon.order, recon_id)
 
         return {"success": True}
     except frappe.PermissionError:

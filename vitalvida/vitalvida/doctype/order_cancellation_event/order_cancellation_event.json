@@ -1,0 +1,94 @@
+{
+ "doctype": "DocType",
+ "name": "Order Cancellation Event",
+ "module": "Vitalvida",
+ "custom": 0,
+ "istable": 0,
+ "editable_grid": 0,
+ "autoname": "hash",
+ "engine": "InnoDB",
+ "track_changes": 1,
+ "in_create": 0,
+ "fields": [
+  {
+   "fieldname": "idempotency_key",
+   "fieldtype": "Data",
+   "label": "Idempotency Key",
+   "reqd": 1,
+   "unique": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "order",
+   "fieldtype": "Link",
+   "label": "Order",
+   "options": "VV Order",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "reason",
+   "fieldtype": "Small Text",
+   "label": "Reason"
+  },
+  {
+   "fieldname": "cancellation_source",
+   "fieldtype": "Data",
+   "label": "Cancellation Source",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cancelled_by",
+   "fieldtype": "Link",
+   "label": "Cancelled By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cancelled_at",
+   "fieldtype": "Datetime",
+   "label": "Cancelled At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "consequence_doctype",
+   "fieldtype": "Data",
+   "label": "ERPNext Consequence DocType",
+   "read_only": 1
+  },
+  {
+   "fieldname": "consequence_name",
+   "fieldtype": "Data",
+   "label": "ERPNext Consequence",
+   "read_only": 1
+  },
+  {
+   "fieldname": "consequence_posted",
+   "fieldtype": "Check",
+   "label": "Consequence Posted",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sales_order",
+   "fieldtype": "Link",
+   "label": "Sales Order (typed consequence)",
+   "options": "Sales Order",
+   "read_only": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1
+  },
+  {
+   "role": "Operations Manager",
+   "read": 1,
+   "create": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}

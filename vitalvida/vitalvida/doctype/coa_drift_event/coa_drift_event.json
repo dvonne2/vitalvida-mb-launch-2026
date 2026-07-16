@@ -1,0 +1,107 @@
+{
+ "actions": [],
+ "creation": "2026-07-15 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "autoname": "field:source_key",
+ "field_order": [
+  "source_key",
+  "company",
+  "expected_version",
+  "expected_hash",
+  "drift_count",
+  "missing_json",
+  "extra_json",
+  "mismatched_json",
+  "audited_at",
+  "audited_by"
+ ],
+ "fields": [
+  {
+   "fieldname": "source_key",
+   "fieldtype": "Data",
+   "label": "Source Key",
+   "reqd": 1,
+   "unique": 1,
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "options": "Company",
+   "label": "Company",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "expected_version",
+   "fieldtype": "Data",
+   "label": "Expected Structure Version",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "expected_hash",
+   "fieldtype": "Data",
+   "label": "Expected Structure Hash",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "drift_count",
+   "fieldtype": "Int",
+   "label": "Drift Count",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "missing_json",
+   "fieldtype": "Long Text",
+   "label": "Missing Accounts"
+  },
+  {
+   "fieldname": "extra_json",
+   "fieldtype": "Long Text",
+   "label": "Extra Accounts"
+  },
+  {
+   "fieldname": "mismatched_json",
+   "fieldtype": "Long Text",
+   "label": "Mismatched Accounts"
+  },
+  {
+   "fieldname": "audited_at",
+   "fieldtype": "Datetime",
+   "label": "Audited At",
+   "reqd": 1
+  },
+  {
+   "fieldname": "audited_by",
+   "fieldtype": "Data",
+   "label": "Audited By",
+   "reqd": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-07-15 00:00:00",
+ "module": "Vitalvida",
+ "name": "COA Drift Event",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "create": 0,
+   "write": 0,
+   "delete": 0,
+   "report": 1,
+   "export": 1,
+   "share": 1,
+   "print": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1,
+ "allow_import": 0
+}

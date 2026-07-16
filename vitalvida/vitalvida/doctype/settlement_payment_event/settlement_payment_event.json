@@ -1,0 +1,94 @@
+{
+  "doctype": "DocType",
+  "name": "Settlement Payment Event",
+  "module": "Vitalvida",
+  "custom": 0,
+  "is_submittable": 0,
+  "autoname": "hash",
+  "engine": "InnoDB",
+  "field_order": [
+    "settlement_batch",
+    "approval_event",
+    "amount",
+    "bank_reference",
+    "payment_proof",
+    "paid_by",
+    "paid_at",
+    "evidence_json",
+    "idempotency_key",
+    "payment_entry"
+  ],
+  "fields": [
+    {
+      "fieldname": "settlement_batch",
+      "label": "Settlement Batch",
+      "fieldtype": "Link",
+      "options": "Settlement Batch",
+      "reqd": 1
+    },
+    {
+      "fieldname": "approval_event",
+      "label": "Approval Event",
+      "fieldtype": "Link",
+      "options": "Settlement Approval Event",
+      "reqd": 1
+    },
+    {
+      "fieldname": "amount",
+      "label": "Amount",
+      "fieldtype": "Currency",
+      "reqd": 1
+    },
+    {
+      "fieldname": "bank_reference",
+      "label": "Bank Reference",
+      "fieldtype": "Data",
+      "reqd": 1
+    },
+    {
+      "fieldname": "payment_proof",
+      "label": "Payment Proof",
+      "fieldtype": "Attach"
+    },
+    {
+      "fieldname": "paid_by",
+      "label": "Paid By",
+      "fieldtype": "Link",
+      "options": "User",
+      "reqd": 1
+    },
+    {
+      "fieldname": "paid_at",
+      "label": "Paid At",
+      "fieldtype": "Datetime",
+      "reqd": 1
+    },
+    {
+      "fieldname": "evidence_json",
+      "label": "Evidence",
+      "fieldtype": "Long Text"
+    },
+    {
+      "fieldname": "idempotency_key",
+      "label": "Idempotency Key",
+      "fieldtype": "Data",
+      "reqd": 1,
+      "unique": 1
+    },
+    {
+      "fieldname": "payment_entry",
+      "label": "Payment Entry",
+      "fieldtype": "Link",
+      "options": "Payment Entry",
+      "read_only": 1
+    }
+  ],
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1
+    }
+  ]
+}

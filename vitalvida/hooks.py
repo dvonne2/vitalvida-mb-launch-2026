@@ -37,8 +37,19 @@ fixtures = [
 # M21: Auto-create FIRS eInvoice on Sales Invoice submit
 # M31: Auto-provision role on LMS course completion
 doc_events = {
+    # --- Package 17 affiliate consequence guards (do not edit by hand) ---
+    "Affiliate Payout Batch": {
+        "before_save": "vitalvida.affiliate.legacy_guard.guard_payout_batch",
+    },
     "VV Order": {
         "after_insert": "vitalvida.emails.hook_order_received",
+        # Package 04-07: single-writer + commercial-projection guards
+        # (armed by VitalVida Settings.enforce_single_order_writer)
+        "before_save": [
+            "vitalvida.domain.orders.block_foreign_status_write",
+            "vitalvida.domain.orders.block_commercial_field_write",
+            "vitalvida.affiliate.legacy_guard.guard_order_payout_status",
+        ],
         "on_update": [
             "vitalvida.reconciliation.on_vv_order_update",
             "vitalvida.emails.dispatch_vv_order_email",
@@ -82,7 +93,11 @@ doc_events = {
 
 scheduler_events = {
     "all": [
-        "vitalvida.orders.process_webhook_queue"
+        "vitalvida.orders.process_webhook_queue",
+        # Package 04-07: drain the Integration Outbox (Package 01 worker was
+        # never scheduled anywhere -- consequences would otherwise sit Pending)
+        "vitalvida.integration.outbox.process_pending",
+        "vitalvida.domain.payments.repair_missing_e1",
     ],
     "cron": {
         # Loop 5: weekly DPSR champion evaluation, Monday 1:30 AM

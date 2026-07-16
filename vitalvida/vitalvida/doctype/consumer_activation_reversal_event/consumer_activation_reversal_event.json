@@ -1,0 +1,87 @@
+{
+ "actions": [],
+ "creation": "2026-07-15 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "autoname": "field:source_key",
+ "field_order": [
+  "source_key",
+  "activation_request",
+  "consumer_activation_event",
+  "removed_child_row",
+  "reason",
+  "reversed_by",
+  "reversed_at"
+ ],
+ "fields": [
+  {
+   "fieldname": "source_key",
+   "fieldtype": "Data",
+   "label": "Source Key",
+   "reqd": 1,
+   "unique": 1,
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "activation_request",
+   "fieldtype": "Link",
+   "label": "Activation Request",
+   "options": "Consumer Activation Request",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "consumer_activation_event",
+   "fieldtype": "Link",
+   "label": "Consumer Activation Event",
+   "options": "Consumer Activation Event",
+   "reqd": 1
+  },
+  {
+   "fieldname": "removed_child_row",
+   "fieldtype": "Data",
+   "label": "Removed Child Row"
+  },
+  {
+   "fieldname": "reason",
+   "fieldtype": "Small Text",
+   "label": "Reason",
+   "reqd": 1
+  },
+  {
+   "fieldname": "reversed_by",
+   "fieldtype": "Data",
+   "label": "Reversed By",
+   "reqd": 1
+  },
+  {
+   "fieldname": "reversed_at",
+   "fieldtype": "Datetime",
+   "label": "Reversed At",
+   "reqd": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-07-15 00:00:00",
+ "module": "Vitalvida",
+ "name": "Consumer Activation Reversal Event",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "create": 0,
+   "write": 0,
+   "delete": 0,
+   "report": 1,
+   "export": 1,
+   "share": 1,
+   "print": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1,
+ "allow_import": 0
+}

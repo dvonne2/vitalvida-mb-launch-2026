@@ -1,0 +1,66 @@
+{
+  "doctype": "DocType",
+  "name": "Settlement Approval Event",
+  "module": "Vitalvida",
+  "custom": 0,
+  "is_submittable": 0,
+  "autoname": "hash",
+  "engine": "InnoDB",
+  "field_order": [
+    "settlement_batch",
+    "approved_by",
+    "approved_at",
+    "evidence_json",
+    "idempotency_key",
+    "purchase_invoice"
+  ],
+  "fields": [
+    {
+      "fieldname": "settlement_batch",
+      "label": "Settlement Batch",
+      "fieldtype": "Link",
+      "options": "Settlement Batch",
+      "reqd": 1
+    },
+    {
+      "fieldname": "approved_by",
+      "label": "Approved By",
+      "fieldtype": "Link",
+      "options": "User",
+      "reqd": 1
+    },
+    {
+      "fieldname": "approved_at",
+      "label": "Approved At",
+      "fieldtype": "Datetime",
+      "reqd": 1
+    },
+    {
+      "fieldname": "evidence_json",
+      "label": "Evidence",
+      "fieldtype": "Long Text"
+    },
+    {
+      "fieldname": "idempotency_key",
+      "label": "Idempotency Key",
+      "fieldtype": "Data",
+      "reqd": 1,
+      "unique": 1
+    },
+    {
+      "fieldname": "purchase_invoice",
+      "label": "Purchase Invoice",
+      "fieldtype": "Link",
+      "options": "Purchase Invoice",
+      "read_only": 1
+    }
+  ],
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1
+    }
+  ]
+}

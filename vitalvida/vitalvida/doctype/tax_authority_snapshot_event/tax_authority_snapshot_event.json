@@ -1,0 +1,129 @@
+{
+ "actions": [],
+ "creation": "2026-07-15 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "autoname": "field:source_key",
+ "field_order": [
+  "source_key",
+  "tax_type",
+  "jurisdiction",
+  "authority_doctype",
+  "authority_name",
+  "authority_version",
+  "effective_date",
+  "authority_payload_json",
+  "authority_payload_hash",
+  "captured_at",
+  "captured_by_service"
+ ],
+ "fields": [
+  {
+   "fieldname": "source_key",
+   "fieldtype": "Data",
+   "label": "Source Key",
+   "reqd": 1,
+   "unique": 1,
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "tax_type",
+   "fieldtype": "Select",
+   "label": "Tax Type",
+   "options": "PAYE\nVAT Output\nVAT Input\nOther",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "jurisdiction",
+   "fieldtype": "Data",
+   "label": "Jurisdiction",
+   "reqd": 1
+  },
+  {
+   "fieldname": "authority_doctype",
+   "fieldtype": "Link",
+   "options": "DocType",
+   "label": "Authority DocType",
+   "reqd": 1
+  },
+  {
+   "fieldname": "authority_name",
+   "fieldtype": "Data",
+   "label": "Authority Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "authority_version",
+   "fieldtype": "Data",
+   "label": "Authority Version"
+  },
+  {
+   "fieldname": "effective_date",
+   "fieldtype": "Date",
+   "label": "Effective Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "authority_payload_json",
+   "fieldtype": "Long Text",
+   "label": "Authority Payload",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "authority_payload_hash",
+   "fieldtype": "Data",
+   "label": "Authority Payload Hash",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "captured_at",
+   "fieldtype": "Datetime",
+   "label": "Captured At",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "captured_by_service",
+   "fieldtype": "Data",
+   "label": "Captured By Service",
+   "reqd": 1,
+   "read_only": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-07-15 00:00:00",
+ "module": "Vitalvida",
+ "name": "Tax Authority Snapshot Event",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "create": 0,
+   "write": 0,
+   "delete": 0,
+   "report": 1,
+   "export": 1,
+   "share": 1,
+   "print": 1
+  },
+  {
+   "role": "Tax Manager",
+   "read": 1,
+   "create": 0,
+   "write": 0,
+   "delete": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1,
+ "allow_import": 0
+}

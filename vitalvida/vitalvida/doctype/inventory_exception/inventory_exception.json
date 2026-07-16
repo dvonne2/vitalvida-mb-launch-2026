@@ -1,0 +1,80 @@
+{
+ "doctype": "DocType",
+ "name": "Inventory Exception",
+ "module": "Vitalvida",
+ "autoname": "format:INV-EX-{#####}",
+ "track_changes": 1,
+ "field_order": [
+  "exception_type",
+  "source_key",
+  "status",
+  "details_json",
+  "resolved_by",
+  "resolved_at",
+  "resolution"
+ ],
+ "fields": [
+  {
+   "fieldname": "exception_type",
+   "fieldtype": "Data",
+   "label": "Exception Type",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "source_key",
+   "fieldtype": "Data",
+   "label": "Source Key",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "options": "Open\nResolved",
+   "default": "Open",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "details_json",
+   "fieldtype": "Code",
+   "options": "JSON",
+   "label": "Details"
+  },
+  {
+   "fieldname": "resolved_by",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "Resolved By"
+  },
+  {
+   "fieldname": "resolved_at",
+   "fieldtype": "Datetime",
+   "label": "Resolved At"
+  },
+  {
+   "fieldname": "resolution",
+   "fieldtype": "Text",
+   "label": "Resolution"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1
+  },
+  {
+   "role": "Inventory Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC"
+}

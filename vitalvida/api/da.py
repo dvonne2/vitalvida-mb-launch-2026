@@ -561,7 +561,8 @@ def mark_delivered(order_id, da_id=None, photo_base64=None, delivery_note=""):
                 return {"success": False, "error": "Proof of payment is required to release this order before payment is confirmed."}
             _rel_now = now_datetime()
             _old_status = doc.order_status
-            doc.db_set("order_status", "Released - Payment Evidence")
+            from vitalvida.domain.orders import transition
+            transition(order_id, "Released - Payment Evidence", actor=da_id)
             doc.db_set("released_at", _rel_now)
             if _field_exists("VV Order", "released_by"):
                 doc.db_set("released_by", da_id)
@@ -599,11 +600,11 @@ def mark_delivered(order_id, da_id=None, photo_base64=None, delivery_note=""):
                 frappe.log_error(str(photo_err), "mark_delivered Photo Upload Error")
                 # Non-blocking — continue without photo
 
-        # Update order
-        update_fields = {
-            "order_status": "Delivered",
-            "delivered_at": now,
-        }
+        # Update order — status + delivered_at via the single writer.
+        from vitalvida.domain.orders import transition
+        transition(order_id, "Delivered", actor=da_id,
+                   note=delivery_note or "")
+        update_fields = {}
 
         # Only set delivered_by if field exists on VV Order
         if _field_exists("VV Order", "delivered_by"):
@@ -750,6 +751,15 @@ def submit_stock_audit(da_id=None, product=None, count=0, expected=0, photo_base
 # ═══════════════════════════════════════════════════════════
 
 @frappe.whitelist()
+def _payout_frozen_guard(da_id):
+    """SET-010: no fee request while a shortage keeps the payout frozen."""
+    if frappe.db.get_value("Delivery Agent", da_id, "payout_frozen"):
+        return {"success": False,
+                "error": "Payouts are frozen until your stock shortage is "
+                         "resolved (SET-010). Contact operations."}
+    return None
+
+
 def request_fee_payment(order_id, da_id=None):
     # FIX C4 (IDOR): force session DA — no admin override for fee requests
     da_id, err = _resolve_da_id(da_id, allow_admin_override=False)
@@ -878,6 +888,9 @@ def da_confirm_payment_received(order_id, da_id=None):
     da_id, err = _resolve_da_id(da_id, allow_admin_override=False)
     if err:
         return {"success": False, "error": "Not authenticated"}
+    frozen = _payout_frozen_guard(da_id)
+    if frozen:
+        return frozen
 
     try:
         doc = frappe.get_doc("VV Order", order_id)
@@ -1189,6 +1202,29 @@ def confirm_dispatch_receipt(dispatch_id=None, da_id=None):
 
         if dispatch.status == "Confirmed":
             return {"success": False, "error": "Already confirmed"}
+
+        # Cutover DA: formal receipt = custody event + ERPNext end-transit
+        # transfer (LOG-006/INV-003). Legacy DA Stock Entry path below is
+        # skipped entirely for cutover DAs.
+        if (__import__("vitalvida.inventory.authority", fromlist=["is_live"]).is_live()):
+            consignment = frappe.db.get_value(
+                "Consignment", {"linked_dispatch": dispatch_id}, "name")
+            if not consignment:
+                return {"success": False,
+                        "error": "No consignment found for this dispatch; "
+                                 "contact logistics."}
+            rows = frappe.get_all("Stock Dispatch Item",
+                                  filters={"parent": dispatch_id},
+                                  fields=["product", "quantity_dispatched"])
+            counted = [{"item": r.product, "qty": r.quantity_dispatched}
+                       for r in rows]
+            from vitalvida.domain.logistics import da_acknowledge_receipt
+            da_acknowledge_receipt(consignment, counted, actor=da_id)
+            frappe.db.set_value("Stock Dispatch", dispatch_id,
+                                "status", "Confirmed")
+            frappe.db.commit()
+            return {"success": True, "dispatch_id": dispatch_id,
+                    "mode": "custody"}
 
         # Get items from child table
         items = frappe.get_all("Stock Dispatch Item",

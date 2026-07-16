@@ -1,0 +1,194 @@
+{
+ "doctype": "DocType",
+ "name": "Payroll Run Event",
+ "module": "Vitalvida",
+ "engine": "InnoDB",
+ "naming_rule": "Expression",
+ "autoname": "format:PRUN-{YYYY}-{#####}",
+ "field_order": [
+  "payroll_period",
+  "run_type",
+  "lines",
+  "total_gross",
+  "total_paye",
+  "total_pension",
+  "total_other_deductions",
+  "total_net",
+  "status",
+  "computed_by",
+  "computed_at",
+  "finance_approved_by",
+  "finance_approved_at",
+  "idempotency_key",
+  "consequence_doctype",
+  "consequence_name",
+  "consequence_posted",
+  "net_wages_cleared_by",
+  "approval_event",
+  "journal_entry",
+  "payment_event"
+ ],
+ "fields": [
+  {
+   "fieldname": "payroll_period",
+   "fieldtype": "Data",
+   "label": "Period",
+   "reqd": 1,
+   "in_list_view": 1,
+   "description": "e.g. 2026-07 (monthly) or 2026-W28 (weekly bonus run)"
+  },
+  {
+   "fieldname": "run_type",
+   "fieldtype": "Select",
+   "label": "Run Type",
+   "reqd": 1,
+   "options": "Monthly Base + Earnings\nWeekly Bonus",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "lines",
+   "fieldtype": "Table",
+   "options": "Payroll Run Line",
+   "label": "Lines"
+  },
+  {
+   "fieldname": "total_gross",
+   "fieldtype": "Currency",
+   "label": "Total Gross",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "total_paye",
+   "fieldtype": "Currency",
+   "label": "Total PAYE",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_pension",
+   "fieldtype": "Currency",
+   "label": "Total Pension",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_other_deductions",
+   "fieldtype": "Currency",
+   "label": "Total Other Ded.",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_net",
+   "fieldtype": "Currency",
+   "label": "Total Net",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "reqd": 1,
+   "in_list_view": 1,
+   "options": "Computed\nApproved\nPosted\nPaid\nCancelled",
+   "default": "Computed"
+  },
+  {
+   "fieldname": "computed_by",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "Computed By",
+   "read_only": 1
+  },
+  {
+   "fieldname": "computed_at",
+   "fieldtype": "Datetime",
+   "label": "Computed At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "finance_approved_by",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "Finance Approved By",
+   "read_only": 1
+  },
+  {
+   "fieldname": "finance_approved_at",
+   "fieldtype": "Datetime",
+   "label": "Finance Approved At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "idempotency_key",
+   "fieldtype": "Data",
+   "label": "Idempotency Key",
+   "unique": 1,
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "consequence_doctype",
+   "fieldtype": "Data",
+   "label": "Consequence DocType",
+   "read_only": 1
+  },
+  {
+   "fieldname": "consequence_name",
+   "fieldtype": "Data",
+   "label": "Approval Consequence Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "consequence_posted",
+   "fieldtype": "Check",
+   "label": "Consequence Posted",
+   "read_only": 1,
+   "default": "0"
+  },
+  {
+   "fieldname": "net_wages_cleared_by",
+   "fieldtype": "Link",
+   "options": "Journal Entry",
+   "label": "Net Wages Payment Entry",
+   "read_only": 1
+  },
+  {
+   "fieldname": "approval_event",
+   "fieldtype": "Link",
+   "options": "Payroll Approval Event",
+   "label": "Approval Event",
+   "read_only": 1
+  },
+  {
+   "fieldname": "journal_entry",
+   "fieldtype": "Link",
+   "options": "Journal Entry",
+   "label": "Payroll Journal Entry",
+   "read_only": 1
+  },
+  {
+   "fieldname": "payment_event",
+   "fieldtype": "Link",
+   "options": "Payroll Payment Event",
+   "label": "Payment Event",
+   "read_only": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "create": 1,
+   "write": 1
+  },
+  {
+   "role": "HR Manager",
+   "read": 1
+  },
+  {
+   "role": "Accounts Manager",
+   "read": 1,
+   "write": 1
+  }
+ ]
+}

@@ -1,0 +1,170 @@
+{
+ "doctype": "DocType",
+ "name": "Outstanding Remittance Event",
+ "module": "Vitalvida",
+ "engine": "InnoDB",
+ "naming_rule": "Expression",
+ "autoname": "format:ORE-{YYYY}-{#####}",
+ "field_order": [
+  "delivery_agent",
+  "supplier",
+  "source_order",
+  "amount",
+  "reason",
+  "status",
+  "raised_by",
+  "raised_at",
+  "approved_by",
+  "approved_at",
+  "resolved_at",
+  "idempotency_key",
+  "reversal_of",
+  "journal_entry",
+  "consequence_doctype",
+  "consequence_name",
+  "consequence_posted",
+  "clearing_payment_entry"
+ ],
+ "fields": [
+  {
+   "fieldname": "delivery_agent",
+   "fieldtype": "Link",
+   "options": "Delivery Agent",
+   "label": "Delivery Agent",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "supplier",
+   "fieldtype": "Link",
+   "options": "Supplier",
+   "label": "Supplier (party)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "source_order",
+   "fieldtype": "Data",
+   "label": "Source Order",
+   "description": "Order whose remittance is missing (if order-specific)"
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "label": "Amount Outstanding",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "reason",
+   "fieldtype": "Small Text",
+   "label": "Reason",
+   "reqd": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "reqd": 1,
+   "in_list_view": 1,
+   "options": "Open\nApproved\nCleared\nWaived\nReversed",
+   "default": "Open"
+  },
+  {
+   "fieldname": "raised_by",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "Raised By",
+   "read_only": 1
+  },
+  {
+   "fieldname": "raised_at",
+   "fieldtype": "Datetime",
+   "label": "Raised At",
+   "reqd": 1
+  },
+  {
+   "fieldname": "approved_by",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "Approved By",
+   "read_only": 1
+  },
+  {
+   "fieldname": "approved_at",
+   "fieldtype": "Datetime",
+   "label": "Approved At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "resolved_at",
+   "fieldtype": "Datetime",
+   "label": "Resolved At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "idempotency_key",
+   "fieldtype": "Data",
+   "label": "Idempotency Key",
+   "reqd": 1,
+   "unique": 1,
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "reversal_of",
+   "fieldtype": "Link",
+   "options": "Outstanding Remittance Event",
+   "label": "Reversal Of"
+  },
+  {
+   "fieldname": "journal_entry",
+   "fieldtype": "Link",
+   "options": "Journal Entry",
+   "label": "Journal Entry (Liability Posted)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "consequence_doctype",
+   "fieldtype": "Data",
+   "label": "Consequence DocType",
+   "read_only": 1
+  },
+  {
+   "fieldname": "consequence_name",
+   "fieldtype": "Data",
+   "label": "Consequence (Journal Entry)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "consequence_posted",
+   "fieldtype": "Check",
+   "label": "Consequence Posted",
+   "read_only": 1,
+   "default": "0"
+  },
+  {
+   "fieldname": "clearing_payment_entry",
+   "fieldtype": "Link",
+   "options": "Payment Entry",
+   "label": "Clearing Payment Entry",
+   "read_only": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "create": 1,
+   "write": 1
+  },
+  {
+   "role": "Accounts Manager",
+   "read": 1,
+   "write": 1
+  },
+  {
+   "role": "Accounts User",
+   "read": 1
+  }
+ ]
+}

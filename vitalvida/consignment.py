@@ -108,6 +108,33 @@ def da_confirm_consignment(consignment_name: str, confirmed_items: list) -> dict
     if consignment.status != "Delivered":
         frappe.throw("Consignment is not in Delivered status. Cannot confirm.")
 
+    # Cutover DA: the custody chain is the writer (LOG-006). Compute the
+    # legacy-shaped discrepancy list for the caller, then hand off.
+    if (__import__("vitalvida.inventory.authority", fromlist=["is_live"]).is_live()):
+        counted, discrepancies = [], []
+        for conf in confirmed_items:
+            product = conf.get("product")
+            qty_received = float(conf.get("qty_received", 0))
+            matching = next((i for i in consignment.items
+                             if i.product == product), None)
+            if not matching:
+                continue
+            qty_sent = float(matching.qty_sent or 0)
+            frappe.db.set_value("Consignment Item", matching.name,
+                                "qty_received", qty_received)
+            counted.append({"item": product, "qty": qty_received})
+            if qty_received < qty_sent:
+                discrepancies.append({
+                    "product": product, "qty_sent": qty_sent,
+                    "qty_received": qty_received,
+                    "shortage": qty_sent - qty_received})
+        from vitalvida.domain.logistics import da_acknowledge_receipt
+        da_acknowledge_receipt(consignment.name, counted,
+                               actor=frappe.session.user)
+        if discrepancies:
+            return {"status": "discrepancy", "items": discrepancies}
+        return {"status": "ok"}
+
     discrepancies = []
 
     for conf in confirmed_items:
@@ -209,6 +236,11 @@ def _update_da_stock_on_arrival(delivery_agent: str, product: str, qty: float, c
     """
     from frappe.utils import now_datetime as _now
     from vitalvida.stock import _create_stock_entry
+
+    # Cutover DA: the custody chain + ERPNext Bin own this credit. The legacy
+    # DA Stock Entry / DA Warehouse path is disabled for cutover DAs.
+    if (__import__("vitalvida.inventory.authority", fromlist=["is_live"]).is_live()):
+        return
 
     # Ensure DA Warehouse row exists so the after_insert hook has a target
     warehouse_name = frappe.db.exists("DA Warehouse", {

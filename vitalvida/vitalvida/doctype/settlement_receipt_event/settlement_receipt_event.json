@@ -1,0 +1,30 @@
+{
+ "doctype": "DocType",
+ "name": "Settlement Receipt Event",
+ "module": "Vitalvida",
+ "engine": "InnoDB",
+ "naming_rule": "Expression",
+ "autoname": "format:SRCPT-{YYYY}-{#####}",
+ "field_order": ["settlement_batch", "delivery_agent", "payment_entry_ref",
+                 "outcome", "dispute_note", "confirmed_by", "confirmed_at",
+                 "idempotency_key"],
+ "fields": [
+  {"fieldname": "settlement_batch", "fieldtype": "Link", "options": "Settlement Batch",
+   "label": "Settlement Batch", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "delivery_agent", "fieldtype": "Link", "options": "Delivery Agent",
+   "label": "Delivery Agent", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "payment_entry_ref", "fieldtype": "Link", "options": "Payment Entry",
+   "label": "Payment Entry", "reqd": 1},
+  {"fieldname": "outcome", "fieldtype": "Select", "label": "Outcome", "reqd": 1,
+   "options": "Confirmed\nDisputed", "in_list_view": 1},
+  {"fieldname": "dispute_note", "fieldtype": "Small Text", "label": "Dispute Note"},
+  {"fieldname": "confirmed_by", "fieldtype": "Link", "options": "User", "label": "Recorded By", "read_only": 1},
+  {"fieldname": "confirmed_at", "fieldtype": "Datetime", "label": "Recorded At", "reqd": 1},
+  {"fieldname": "idempotency_key", "fieldtype": "Data", "label": "Idempotency Key", "unique": 1, "read_only": 1, "no_copy": 1}
+ ],
+ "permissions": [
+  {"role": "System Manager", "read": 1, "create": 1},
+  {"role": "Accounts Manager", "read": 1},
+  {"role": "Accounts User", "read": 1}
+ ]
+}

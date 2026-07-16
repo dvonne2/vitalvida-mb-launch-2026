@@ -151,31 +151,27 @@ def update_order_status(order, status, note='', reschedule_date='', cancellation
                 'error': 'Cannot manually set to Paid. Use reconciliation flow.'
             }
 
-        # Validate transition via state machine
-        allowed = VALID_TRANSITIONS.get(current_status, [])
-        if status not in allowed:
-            return {
-                'success': False,
-                'error': f'Invalid transition: {current_status} \u2192 {status}.'
-            }
-
-        doc.order_status   = status
-        doc.attempt_count  = (doc.attempt_count or 0) + 1
-
-        if note:
-            doc.reschedule_note = note
-        if reschedule_date:
-            doc.expected_delivery_date = reschedule_date
-
-        # NOTE: delivered_at / delivered_by are exclusively set by da.py mark_delivered().
-        # No stamping here.
-
+        # Package 05: the domain writer validates the transition and logs it.
+        # Cancellation routes through the Cancellation Event (ORD-009).
         if status == 'Cancelled':
             if not cancellation_source:
                 frappe.throw('cancellation_source is required.')
-            doc.cancellation_source = cancellation_source
+            frappe.db.set_value("VV Order", order,
+                                "cancellation_source", cancellation_source)
+            from vitalvida.domain.orders import cancel_order
+            cancel_order(order, note or "Telesales cancellation",
+                         cancellation_source)
+        else:
+            from vitalvida.domain.orders import transition
+            transition(order, status, note=note or "")
 
-        doc.save(ignore_permissions=True)
+        # Separate facts (not lifecycle position) stay direct writes:
+        updates = {"attempt_count": (doc.attempt_count or 0) + 1}
+        if note:
+            updates["reschedule_note"] = note
+        if reschedule_date:
+            updates["expected_delivery_date"] = reschedule_date
+        frappe.db.set_value("VV Order", order, updates)
         frappe.db.commit()
 
         return {'success': True, 'order': order, 'status': status}
@@ -367,12 +363,14 @@ def assign_da_to_order(order, da):
     rather than is_double_risk (which is a risk rating, not the freeze flag).
     """
     try:
-        # Check DA Warehouse freeze status first (authoritative)
-        frozen_wh = frappe.db.exists("DA Warehouse", {"delivery_agent": da, "is_frozen": 1})
-        if frozen_wh:
-            return {'success': False, 'error': f'Cannot assign to {da} — DA warehouse is frozen.'}
-
-        # Secondary check: is_double_risk as an additional risk gate
+        # Package 04: ONE eligibility gate for every assignment path
+        # (DA-004) — subsumes the freeze + double-risk checks.
+        from vitalvida.domain.delivery_agents import assignment_eligibility
+        elig = assignment_eligibility(da)
+        if not elig["eligible"]:
+            return {'success': False,
+                    'error': f'Cannot assign to {da}: '
+                             + "; ".join(elig["reasons"])}
         da_doc = frappe.get_doc('Delivery Agent', da)
         if getattr(da_doc, 'is_double_risk', 0):
             return {'success': False, 'error': f'Cannot assign to {da} — DA is flagged as high risk.'}
@@ -381,9 +379,10 @@ def assign_da_to_order(order, da):
         if doc.order_status not in ['Confirmed', 'Rescheduled']:
             return {'success': False, 'error': f'Cannot assign — order is {doc.order_status}.'}
 
+        # Setting delivery_agent triggers vv_order.handle_da_assignment on
+        # save, which routes the status change through the single writer
+        # (transition -> Assigned). No direct status write here.
         doc.delivery_agent = da
-        doc.order_status   = 'Assigned'
-        doc.assigned_at    = frappe.utils.now_datetime()
         doc.save(ignore_permissions=True)
         frappe.db.commit()
 

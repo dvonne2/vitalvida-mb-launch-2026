@@ -193,15 +193,26 @@ class VVOrder(Document):
         # ── M12: Stock gate — block assignment if DA has zero stock ──────────
         self._validate_da_stock_available()
 
-        # Move status to Assigned
+        # Package 04: one eligibility gate for every assignment path (DA-004)
+        from vitalvida.domain.delivery_agents import assignment_eligibility
+        _elig = assignment_eligibility(self.delivery_agent)
+        if not _elig["eligible"]:
+            frappe.throw("DA not eligible for assignment: "
+                         + "; ".join(_elig["reasons"]))
+
+        # Move status to Assigned — via the single writer (CORE-002)
+        from vitalvida.domain.orders import transition
+        transition(self.name, "Assigned")
         frappe.db.set_value("VV Order", self.name, {
-            "order_status": "Assigned",
             "assigned_at": now_datetime(),
             "status_changed_at": now_datetime(),
         })
 
-        # Update in-memory too so notifications use correct status
-        self.order_status = "Assigned"
+        # Update in-memory too so notifications use correct status.
+        # transition() already wrote the row; this sync is what the flag
+        # exempts from the document guard.
+        self.flags.via_domain_transition = True
+        self.order_status = "Assigned"  # single-writer-ok (in-memory sync of transition write)
         self.assigned_at = now_datetime()
 
         # Fire notifications to DA, Customer, Logistics

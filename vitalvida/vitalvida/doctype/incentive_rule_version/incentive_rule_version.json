@@ -1,0 +1,30 @@
+{
+ "doctype": "DocType",
+ "name": "Incentive Rule Version",
+ "module": "Vitalvida",
+ "engine": "InnoDB",
+ "autoname": "format:{rule_key}-v{version}",
+ "field_order": ["rule_key", "version", "rule_type", "effective_from",
+                 "effective_to", "amount", "percentage", "parameters_json",
+                 "is_active", "approved_by", "notes"],
+ "fields": [
+  {"fieldname": "rule_key", "fieldtype": "Data", "label": "Rule Key", "reqd": 1,
+   "in_list_view": 1, "description": "e.g. da_delivery_fee, telesales_per_order"},
+  {"fieldname": "version", "fieldtype": "Int", "label": "Version", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "rule_type", "fieldtype": "Select", "label": "Type", "reqd": 1,
+   "options": "Flat Amount\nPercentage\nParameterised"},
+  {"fieldname": "effective_from", "fieldtype": "Date", "label": "Effective From", "reqd": 1},
+  {"fieldname": "effective_to", "fieldtype": "Date", "label": "Effective To"},
+  {"fieldname": "amount", "fieldtype": "Currency", "label": "Flat Amount"},
+  {"fieldname": "percentage", "fieldtype": "Float", "label": "Percentage"},
+  {"fieldname": "parameters_json", "fieldtype": "Long Text", "label": "Parameters (JSON)"},
+  {"fieldname": "is_active", "fieldtype": "Check", "label": "Active", "default": "1"},
+  {"fieldname": "approved_by", "fieldtype": "Link", "options": "User", "label": "Approved By"},
+  {"fieldname": "notes", "fieldtype": "Small Text", "label": "Notes"}
+ ],
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1},
+  {"role": "Accounts Manager", "read": 1, "write": 1, "create": 1},
+  {"role": "Accounts User", "read": 1}
+ ]
+}

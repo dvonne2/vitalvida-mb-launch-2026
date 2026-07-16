@@ -1,0 +1,160 @@
+{
+ "actions": [],
+ "creation": "2026-07-15 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "autoname": "field:source_key",
+ "field_order": [
+  "source_key",
+  "tax_type",
+  "company",
+  "tax_account",
+  "period_start",
+  "period_end",
+  "expected_amount",
+  "invoiced_amount",
+  "gl_amount",
+  "paid_amount",
+  "variance_amount",
+  "source_documents_hash",
+  "reconciled_at",
+  "reconciled_by_service",
+  "evidence_hash"
+ ],
+ "fields": [
+  {
+   "fieldname": "source_key",
+   "fieldtype": "Data",
+   "label": "Source Key",
+   "reqd": 1,
+   "unique": 1,
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "tax_type",
+   "fieldtype": "Select",
+   "label": "Tax Type",
+   "options": "PAYE\nVAT Output\nVAT Input\nOther",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "options": "Company",
+   "label": "Company",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "tax_account",
+   "fieldtype": "Link",
+   "options": "Account",
+   "label": "Tax Account",
+   "reqd": 1
+  },
+  {
+   "fieldname": "period_start",
+   "fieldtype": "Date",
+   "label": "Period Start",
+   "reqd": 1
+  },
+  {
+   "fieldname": "period_end",
+   "fieldtype": "Date",
+   "label": "Period End",
+   "reqd": 1
+  },
+  {
+   "fieldname": "expected_amount",
+   "fieldtype": "Currency",
+   "label": "Expected Amount",
+   "reqd": 1
+  },
+  {
+   "fieldname": "invoiced_amount",
+   "fieldtype": "Currency",
+   "label": "Invoiced Amount",
+   "reqd": 1
+  },
+  {
+   "fieldname": "gl_amount",
+   "fieldtype": "Currency",
+   "label": "GL Amount",
+   "reqd": 1
+  },
+  {
+   "fieldname": "paid_amount",
+   "fieldtype": "Currency",
+   "label": "Paid Amount",
+   "reqd": 1
+  },
+  {
+   "fieldname": "variance_amount",
+   "fieldtype": "Currency",
+   "label": "Variance Amount",
+   "reqd": 1
+  },
+  {
+   "fieldname": "source_documents_hash",
+   "fieldtype": "Data",
+   "label": "Source Documents Hash",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "reconciled_at",
+   "fieldtype": "Datetime",
+   "label": "Reconciled At",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "reconciled_by_service",
+   "fieldtype": "Data",
+   "label": "Reconciled By Service",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "evidence_hash",
+   "fieldtype": "Data",
+   "label": "Evidence Hash",
+   "reqd": 1,
+   "read_only": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-07-15 00:00:00",
+ "module": "Vitalvida",
+ "name": "Tax Reconciliation Snapshot Event",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "create": 0,
+   "write": 0,
+   "delete": 0,
+   "report": 1,
+   "export": 1,
+   "share": 1,
+   "print": 1
+  },
+  {
+   "role": "Tax Manager",
+   "read": 1,
+   "create": 0,
+   "write": 0,
+   "delete": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1,
+ "allow_import": 0
+}

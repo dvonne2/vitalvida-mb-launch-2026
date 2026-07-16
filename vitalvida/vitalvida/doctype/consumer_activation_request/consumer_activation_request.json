@@ -1,0 +1,141 @@
+{
+ "actions": [],
+ "creation": "2026-07-15 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "autoname": "field:request_key",
+ "field_order": [
+  "request_key",
+  "package_name",
+  "parent_event_key",
+  "proposed_consumer_module",
+  "proposed_consumer_method",
+  "proposed_read_mode",
+  "proposed_delivery",
+  "authoritative_source_doctype",
+  "authoritative_source_description",
+  "authoritative_consequence",
+  "justification",
+  "change_hash",
+  "requested_by",
+  "requested_at"
+ ],
+ "fields": [
+  {
+   "fieldname": "request_key",
+   "fieldtype": "Data",
+   "label": "Request Key",
+   "reqd": 1,
+   "unique": 1,
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "package_name",
+   "fieldtype": "Data",
+   "label": "Package Name",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "parent_event_key",
+   "fieldtype": "Data",
+   "label": "Parent Event Key",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "proposed_consumer_module",
+   "fieldtype": "Data",
+   "label": "Proposed Consumer Module",
+   "reqd": 1
+  },
+  {
+   "fieldname": "proposed_consumer_method",
+   "fieldtype": "Data",
+   "label": "Proposed Consumer Method",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "proposed_read_mode",
+   "fieldtype": "Select",
+   "label": "Proposed Read Mode",
+   "options": "Reads authoritative record\nReads projection\nRecomputes (DEFECT)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "proposed_delivery",
+   "fieldtype": "Select",
+   "label": "Proposed Delivery",
+   "options": "Sync\nAsync (outbox)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "authoritative_source_doctype",
+   "fieldtype": "Data",
+   "label": "Authoritative Source Doctype",
+   "reqd": 1
+  },
+  {
+   "fieldname": "authoritative_source_description",
+   "fieldtype": "Small Text",
+   "label": "Authoritative Source Description"
+  },
+  {
+   "fieldname": "authoritative_consequence",
+   "fieldtype": "Data",
+   "label": "Authoritative Consequence"
+  },
+  {
+   "fieldname": "justification",
+   "fieldtype": "Small Text",
+   "label": "Justification",
+   "reqd": 1
+  },
+  {
+   "fieldname": "change_hash",
+   "fieldtype": "Data",
+   "label": "Change Hash",
+   "reqd": 1,
+   "read_only": 1,
+   "description": "sha256 of the canonical proposed change; approval binds to this exact hash"
+  },
+  {
+   "fieldname": "requested_by",
+   "fieldtype": "Data",
+   "label": "Requested By",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "requested_at",
+   "fieldtype": "Datetime",
+   "label": "Requested At",
+   "reqd": 1,
+   "read_only": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-07-15 00:00:00",
+ "module": "Vitalvida",
+ "name": "Consumer Activation Request",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "create": 0,
+   "write": 0,
+   "delete": 0,
+   "report": 1,
+   "export": 1,
+   "share": 1,
+   "print": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1,
+ "allow_import": 0
+}
